@@ -147,24 +147,28 @@ function PhysicalCard3D({
         }
       }
     }
-    // --- 2. ÉTAPE FAMILLE (Déploiement des 6 cartes de la famille choisie) ---
+    // --- 2. ÉTAPE FAMILLE (Éventail de joueur complet avec les 6 cartes) ---
     else if (currentStage === "family") {
       if (isCardInSelectedFamily) {
-        // Les 6 cartes s'ouvrent avec un espacement harmonieux et sans déborder de l'écran
-        const centerOffset = indexInFamily - 2.5; // -2.5 à +2.5
-        targetX = centerOffset * 1.35;
-        targetZ = -Math.abs(centerOffset) * 0.15 + 1.2;
-        targetY = -Math.pow(centerOffset, 2) * 0.035;
-        targetScale = 0.88;
+        // Authentique éventail de joueur de cartes (pivoté en éventail depuis la base)
+        const centerOffset = indexInFamily - 2.5; // -2.5, -1.5, -0.5, 0.5, 1.5, 2.5
+        const fanAngle = centerOffset * 0.11; // Éventail angulaire naturel (~ -16° à +16°)
 
-        targetRotY = -centerOffset * 0.035;
-        targetRotZ = -centerOffset * 0.055;
-        targetRotX = isHovered ? -0.04 : -0.1;
+        // Rayon de l'éventail de cartes tenu en main
+        const fanRadius = 5.2;
+        targetX = Math.sin(fanAngle) * fanRadius;
+        targetY = -Math.cos(fanAngle) * fanRadius + 4.1;
+        targetZ = indexInFamily * 0.05 + 0.8;
+        targetScale = 0.82;
+
+        targetRotZ = -fanAngle; // Inclinaison angulaire comme tenu en main
+        targetRotY = -fanAngle * 0.35;
+        targetRotX = isHovered ? -0.02 : -0.14;
 
         if (isHovered) {
-          targetY += 0.28;
-          targetZ += 0.25;
-          targetScale = 0.98;
+          targetY += 0.38;
+          targetZ += 0.35;
+          targetScale = 0.94;
         }
       } else {
         // Les autres familles s'estompent doucement vers l'arrière-plan
@@ -177,14 +181,14 @@ function PhysicalCard3D({
         targetRotY = -angle;
       }
     }
-    // --- 3. ÉTAPE CARTE INDIVIDUELLE ---
+    // --- 3. ÉTAPE CARTE INDIVIDUELLE (Carte active au centre + éventail de joueur complet visible en arrière-plan) ---
     else if (currentStage === "card") {
       if (isTargetSelectedCard) {
-        // La carte choisie reste entièrement visible avec de belles marges
+        // La carte choisie se détache vers l'avant, centrée et parfaitement cadrée
         targetX = 0;
-        targetY = 0.08;
-        targetZ = 2.2;
-        targetScale = 0.95;
+        targetY = 0.15;
+        targetZ = 2.4;
+        targetScale = 0.86;
 
         // Retournement à 180°
         targetRotY = isFlipped ? Math.PI : 0;
@@ -195,16 +199,19 @@ function PhysicalCard3D({
         targetRotX = -mouseY;
         targetRotZ = -mouseX * 0.4;
       } else if (isCardInSelectedFamily) {
-        // Les 5 autres cartes de la famille s'affichent en arrière-plan en un élégant éventail étagé
+        // LES 5 AUTRES CARTES FORMENT UN ÉVENTAIL DE JOUEUR LISIBLE DERRIÈRE LA CARTE
         const centerOffset = indexInFamily - 2.5; // -2.5 à +2.5
-        targetX = centerOffset * 1.15;
-        targetY = 0.25 - Math.abs(centerOffset) * 0.08;
-        targetZ = -0.6 - Math.abs(centerOffset) * 0.2;
-        targetScale = 0.68;
+        const fanAngle = centerOffset * 0.15; // Éventail plus ouvert pour voir l'index et le coin de chaque carte
 
-        targetRotY = -centerOffset * 0.06;
-        targetRotZ = -centerOffset * 0.04;
-        targetRotX = -0.08;
+        const fanRadius = 6.0;
+        targetX = Math.sin(fanAngle) * fanRadius;
+        targetY = -Math.cos(fanAngle) * fanRadius + 4.5;
+        targetZ = -1.2 + indexInFamily * 0.04;
+        targetScale = 0.62;
+
+        targetRotZ = -fanAngle; // Orientation en éventail de joueur
+        targetRotY = -fanAngle * 0.4;
+        targetRotX = -0.15;
       } else {
         // Les autres familles sont repoussées hors champ
         targetZ = -6;
