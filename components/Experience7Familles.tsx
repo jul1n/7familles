@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { FAMILIES, CARDS, CardData } from "@/data/cards";
+import { FAMILIES, CARDS } from "@/data/cards";
 import {
   Layers,
   RotateCcw,
@@ -13,15 +13,24 @@ import {
   Upload,
   Copy,
   Check,
-  Eye,
-  Info,
   ChevronUp,
   X,
-  Share2,
+  Sparkles,
+  Compass,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
-// Import dynamique de Three.js sans SSR pour un rendu 3D immédiat
+// Chargement dynamique des scènes 3D Three.js
+const Deck3DScene = dynamic(() => import("@/components/Deck3D"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+      <div className="w-12 h-12 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin" />
+      <span className="text-xs text-slate-400 font-medium">Chargement du deck 3D...</span>
+    </div>
+  ),
+});
+
 const Card3DViewer = dynamic(() => import("@/components/Card3D"), {
   ssr: false,
   loading: () => (
@@ -37,6 +46,10 @@ export default function Experience7Familles() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
+  // État du Deck 3D (pile compacte vs éventail des 7 familles)
+  const [isDeckSpread, setIsDeckSpread] = useState<boolean>(true);
+  const [hoveredFamily, setHoveredFamily] = useState<string | null>(null);
+
   // Bottom sheet mobile (collapsed | intermediate | expanded)
   const [sheetState, setSheetState] = useState<"collapsed" | "intermediate" | "expanded">("collapsed");
 
@@ -47,7 +60,7 @@ export default function Experience7Familles() {
   const [copiedNotice, setCopiedNotice] = useState<boolean>(false);
   const [saveStatus, setSaveStatus] = useState<string>("Enregistré automatiquement");
 
-  // Chargement des modifications locales (localStorage) pour l'édition collaborative
+  // Chargement des modifications locales (localStorage)
   useEffect(() => {
     try {
       const saved = localStorage.getItem("7familles_markdown_edits");
@@ -125,7 +138,6 @@ export default function Experience7Familles() {
     reader.readAsText(file);
   };
 
-  // Navigation carte suivante / précédente dans la même famille
   const handlePrevCard = () => {
     if (!currentCard || familyCards.length === 0) return;
     const idx = familyCards.findIndex((c) => c.id === currentCard.id);
@@ -142,17 +154,28 @@ export default function Experience7Familles() {
     setIsFlipped(false);
   };
 
+  const activeHoveredFamilyObj = FAMILIES.find((f) => f.id === hoveredFamily) || null;
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans select-none">
-      {/* 1. BARRE SUPÉRIEURE FLUIDE */}
-      <header className="h-16 px-4 md:px-8 border-b border-white/10 flex items-center justify-between backdrop-blur-md bg-slate-950/70 z-30">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+      {/* 1. BARRE SUPÉRIEURE ÉPURÉE ET MODERNE */}
+      <header className="h-16 px-4 md:px-8 border-b border-white/10 flex items-center justify-between backdrop-blur-md bg-slate-950/80 z-40">
+        <div
+          className="flex items-center gap-3 cursor-pointer group"
+          onClick={() => {
+            setSelectedFamilyId(null);
+            setSelectedCardId(null);
+          }}
+        >
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
             <Layers className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-white leading-tight">
+            <h1 className="text-sm md:text-base font-bold tracking-tight text-white leading-tight flex items-center gap-2">
               7 Familles des Barrages
+              <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                3D Experience
+              </span>
             </h1>
             <p className="text-[11px] text-slate-400">
               CFBR • Centenaire 1926–2026
@@ -191,58 +214,85 @@ export default function Experience7Familles() {
 
       {/* 2. ZONE PRINCIPALE DE L'EXPÉRIENCE CONTINUE */}
       <div className="flex-1 relative flex flex-col md:flex-row overflow-hidden">
-        {/* VUE 1 : ACCUEIL SÉLECTION DES 7 FAMILLES */}
+        {/* VUE 1 : LE DECK DE CARTES 3D SPECTACULAIRE */}
         {!selectedFamilyId && (
-          <div className="w-full h-full overflow-y-auto px-4 py-8 md:py-12 max-w-6xl mx-auto flex flex-col items-center">
-            <div className="text-center max-w-2xl mb-8">
-              <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mb-3">
-                Expérience Pédagogique Interactive
+          <div className="w-full h-full relative flex flex-col items-center justify-between">
+            {/* Overlay d'information haut */}
+            <div className="z-10 pt-6 px-4 text-center pointer-events-none">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mb-2 backdrop-blur-md">
+                <Sparkles className="w-3 h-3" /> Deck interactif de 42 cartes
               </span>
-              <h2 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight mb-2">
-                Explorez l'univers des barrages
+              <h2 className="text-xl md:text-3xl font-extrabold text-white tracking-tight">
+                Touchez ou cliquez sur une famille pour l'ouvrir
               </h2>
-              <p className="text-sm md:text-base text-slate-400">
-                42 cartes d'exception réparties en 7 familles thématiques.
-                Sélectionnez une famille pour manipuler ses cartes en 3D et
-                découvrir ses secrets d'ingénierie.
-              </p>
             </div>
 
-            {/* Grille responsive des 7 familles */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full pb-16">
-              {FAMILIES.map((fam, idx) => (
-                <div
-                  key={fam.id}
-                  onClick={() => {
-                    setSelectedFamilyId(fam.id);
-                    setSelectedCardId(null);
-                  }}
-                  className="group relative bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/10 hover:-translate-y-1 flex flex-col justify-between"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <span
-                      className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-md"
-                      style={{ backgroundColor: fam.color }}
-                    >
-                      {idx + 1}
-                    </span>
-                    <span className="text-xs font-medium text-slate-400 px-2.5 py-1 rounded-full bg-white/5">
-                      6 cartes
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">
-                      {fam.name}
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                      {fam.description}
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center text-xs font-semibold text-cyan-400 group-hover:translate-x-1 transition-transform">
-                    Explorer la famille →
-                  </div>
+            {/* SCÈNE 3D DU DECK COMPLET */}
+            <div className="absolute inset-0 w-full h-full">
+              <Deck3DScene
+                onSelectFamily={(fId) => {
+                  setSelectedFamilyId(fId);
+                  setSelectedCardId(null);
+                }}
+                hoveredFamily={hoveredFamily}
+                setHoveredFamily={setHoveredFamily}
+                isSpread={isDeckSpread}
+              />
+            </div>
+
+            {/* Barre de contrôle du Deck & sélecteur rapide bas */}
+            <div className="z-10 pb-6 px-4 w-full max-w-4xl flex flex-col items-center gap-3">
+              {/* Info bulle dynamique au survol d'une famille */}
+              {activeHoveredFamilyObj && (
+                <div className="px-4 py-2 rounded-xl bg-slate-900/90 border border-cyan-500/40 backdrop-blur-xl shadow-2xl flex items-center gap-3 animate-fade-in">
+                  <span
+                    className="w-3.5 h-3.5 rounded-full shadow-md"
+                    style={{ backgroundColor: activeHoveredFamilyObj.color }}
+                  />
+                  <span className="text-sm font-bold text-white">
+                    Famille {activeHoveredFamilyObj.name}
+                  </span>
+                  <span className="text-xs text-slate-400 hidden sm:inline">
+                    — {activeHoveredFamilyObj.description}
+                  </span>
                 </div>
-              ))}
+              )}
+
+              {/* Sélecteur de mode 3D & onglets des 7 familles */}
+              <div className="flex flex-wrap items-center justify-center gap-2 bg-slate-950/80 p-2 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl max-w-full overflow-x-auto">
+                <button
+                  onClick={() => setIsDeckSpread(!isDeckSpread)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition flex items-center gap-1.5"
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  {isDeckSpread ? "Rassembler le paquet" : "Déployer en éventail"}
+                </button>
+
+                <div className="h-4 w-[1px] bg-white/10 mx-1 hidden sm:block" />
+
+                {FAMILIES.map((fam) => (
+                  <button
+                    key={fam.id}
+                    onMouseEnter={() => setHoveredFamily(fam.id)}
+                    onMouseLeave={() => setHoveredFamily(null)}
+                    onClick={() => {
+                      setSelectedFamilyId(fam.id);
+                      setSelectedCardId(null);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
+                      hoveredFamily === fam.id
+                        ? "bg-white/20 text-white scale-105"
+                        : "bg-white/5 hover:bg-white/10 text-slate-300"
+                    }`}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: fam.color }}
+                    />
+                    {fam.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -254,14 +304,14 @@ export default function Experience7Familles() {
             <div className="flex items-center justify-between mb-6">
               <button
                 onClick={() => setSelectedFamilyId(null)}
-                className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-white transition"
+                className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-white transition px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
               >
-                <ChevronLeft className="w-4 h-4" /> Les 7 familles
+                <ChevronLeft className="w-4 h-4" /> Revenir au deck 3D
               </button>
               {activeFamily && (
                 <div className="flex items-center gap-2">
                   <span
-                    className="w-3 h-3 rounded-full"
+                    className="w-3.5 h-3.5 rounded-full shadow-md"
                     style={{ backgroundColor: activeFamily.color }}
                   />
                   <span className="text-sm font-bold text-white">
@@ -271,17 +321,16 @@ export default function Experience7Familles() {
               )}
             </div>
 
-            {/* Éventail / Grille des 6 cartes */}
             <div className="text-center mb-6">
               <h2 className="text-xl md:text-2xl font-bold text-white">
                 Famille {activeFamily?.name}
               </h2>
               <p className="text-xs md:text-sm text-slate-400 mt-1">
-                Choisissez une carte pour la manipuler en 3D et ouvrir son
-                dossier complet.
+                Choisissez une carte pour la manipuler en 3D et ouvrir son dossier complet.
               </p>
             </div>
 
+            {/* Grille des 6 cartes de la famille */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 pb-16">
               {familyCards.map((card) => (
                 <div
@@ -361,7 +410,7 @@ export default function Experience7Familles() {
                 </button>
               </div>
 
-              {/* Canvas WebGL 3D */}
+              {/* Canvas WebGL 3D Carte individuelle */}
               <div className="flex-1 w-full h-full relative">
                 <Card3DViewer
                   frontUrl={currentCard.frontImage}
@@ -370,7 +419,6 @@ export default function Experience7Familles() {
                   onFlipToggle={() => setIsFlipped(!isFlipped)}
                 />
 
-                {/* Indication tactile interactive */}
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-slate-950/70 border border-white/10 backdrop-blur-md text-[11px] text-slate-400 pointer-events-none flex items-center gap-1.5 shadow-md">
                   <RotateCcw className="w-3 h-3 text-cyan-400" />
                   Touchez ou cliquez pour retourner
@@ -419,7 +467,7 @@ export default function Experience7Familles() {
               </div>
             </div>
 
-            {/* Expérience Mobile (Bottom Sheet à 3 états : Collapsed, Intermediate, Expanded) */}
+            {/* Expérience Mobile (Bottom Sheet à 3 états) */}
             <div
               className={`md:hidden absolute bottom-0 left-0 right-0 z-30 bg-slate-900/95 border-t border-white/15 backdrop-blur-2xl rounded-t-3xl transition-all duration-300 ease-out flex flex-col shadow-2xl ${
                 sheetState === "collapsed"
@@ -429,7 +477,6 @@ export default function Experience7Familles() {
                   : "h-[92%]"
               }`}
             >
-              {/* Barre de glissement tactile */}
               <div
                 className="w-full pt-3 pb-2 flex flex-col items-center cursor-pointer select-none"
                 onClick={() => {
@@ -453,7 +500,6 @@ export default function Experience7Familles() {
                 </div>
               </div>
 
-              {/* Contenu du Bottom Sheet */}
               <div className="px-5 pb-6 overflow-y-auto flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <span
@@ -476,7 +522,6 @@ export default function Experience7Familles() {
                   {currentCard.shortDescription}
                 </p>
 
-                {/* Détails complémentaires affichés en intermediate et expanded */}
                 {sheetState !== "collapsed" && (
                   <div className="mt-5 pt-4 border-t border-white/10 prose prose-invert prose-xs max-w-none text-slate-300">
                     <ReactMarkdown>{currentMarkdown}</ReactMarkdown>
@@ -497,7 +542,6 @@ export default function Experience7Familles() {
       {isEditing && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 md:p-6">
           <div className="bg-slate-900 border border-amber-500/30 w-full max-w-4xl h-[88vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden">
-            {/* En-tête de l'éditeur */}
             <div className="px-5 py-3.5 border-b border-white/10 bg-slate-950 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Edit3 className="w-4 h-4 text-amber-400" />
@@ -508,17 +552,14 @@ export default function Experience7Familles() {
                   {saveStatus}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Outils d'import / export / copie */}
             <div className="px-5 py-2.5 bg-slate-900/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
                 <button
@@ -577,7 +618,6 @@ export default function Experience7Familles() {
               </div>
             </div>
 
-            {/* Corps de l'éditeur */}
             <div className="flex-1 p-4 overflow-hidden bg-slate-950">
               {currentCard ? (
                 editTab === "write" ? (
@@ -594,7 +634,6 @@ export default function Experience7Familles() {
                 )
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-sm">
-                  <Info className="w-8 h-8 mb-2" />
                   Veuillez d'abord sélectionner une carte dans le jeu pour modifier son texte.
                 </div>
               )}
