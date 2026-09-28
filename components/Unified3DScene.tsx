@@ -30,6 +30,8 @@ function PhysicalCard3D({
   onSelectCard,
   onFlipToggle,
   isHovered,
+  hoveredIndexInFamily,
+  hoveredFamilyIndex,
   setHoveredCardId,
   isDeckSpread,
   deckScrollOffset,
@@ -45,11 +47,15 @@ function PhysicalCard3D({
   onSelectCard: (cId: string) => void;
   onFlipToggle: () => void;
   isHovered: boolean;
+  hoveredIndexInFamily: number;
+  hoveredFamilyIndex: number;
   setHoveredCardId: (id: string | null) => void;
   isDeckSpread: boolean;
   deckScrollOffset: number;
 }) {
   const meshRef = useRef<THREE.Group>(null);
+  const hoverProgressRef = useRef<number>(0);
+  const evadeProgressRef = useRef<number>(0);
 
   // Textures Recto et Verso
   const [frontTexture, backTexture] = useTexture([card.frontImage, "/cards/card-back.webp"]);
@@ -77,7 +83,7 @@ function PhysicalCard3D({
     s.lineTo(x + r, y + h);
     s.quadraticCurveTo(x, y + h, x, y + h - r);
     s.lineTo(x, y + r);
-    s.quadraticCurveTo(x, y, x + r, y);
+    s.quadraticCurveTo(x, y + r);
     return s;
   }, [width, height, radius]);
 
@@ -109,6 +115,19 @@ function PhysicalCard3D({
   useFrame((state, delta) => {
     if (!meshRef.current) return;
 
+    // 1. Progression fluide du survol de la carte (0 -> 1)
+    const targetHover = isHovered ? 1 : 0;
+    hoverProgressRef.current = THREE.MathUtils.damp(hoverProgressRef.current, targetHover, 8.5, delta);
+    const hp = hoverProgressRef.current;
+
+    // 2. Progression d'évitement physique pour les cartes soeurs du même deck (0 -> 1)
+    const isSisterEvading =
+      (currentStage === "family" && isCardInSelectedFamily && hoveredIndexInFamily >= 0 && hoveredIndexInFamily !== indexInFamily) ||
+      (currentStage === "card" && isCardInSelectedFamily && !isTargetSelectedCard && hoveredIndexInFamily >= 0 && hoveredIndexInFamily !== indexInFamily);
+    const targetEvade = isSisterEvading ? 1 : 0;
+    evadeProgressRef.current = THREE.MathUtils.damp(evadeProgressRef.current, targetEvade, 7.5, delta);
+    const ep = evadeProgressRef.current;
+
     let targetX = 0;
     let targetY = 0;
     let targetZ = 0;
@@ -117,7 +136,7 @@ function PhysicalCard3D({
     let targetRotZ = 0;
     let targetScale = 1;
 
-    // --- 1. ÉTAPE DECK (Les 7 familles avec défilement fluide au survol gauche/droite) ---
+    // --- 1. ÉTAPE DECK (Les 7 familles avec défilement horizontal fluide) ---
     if (currentStage === "deck") {
       if (!isDeckSpread) {
         // Paquet unique compact
@@ -129,8 +148,6 @@ function PhysicalCard3D({
         targetRotY = 0.45;
         targetRotZ = jitter.rotZ;
       } else {
-        // Défilement horizontal fluide des 7 familles via deckScrollOffset
-        // familyIndex varie de 0 à 6. Avec deckScrollOffset, on fait défiler le carrousel.
         const effectiveFamilyPos = (familyIndex - 3) + deckScrollOffset;
         const angleStep = 0.38;
         const angle = effectiveFamilyPos * angleStep;
@@ -143,39 +160,120 @@ function PhysicalCard3D({
         // La carte n°1 (indexInFamily = 0) est au-dessus du paquet de 6, orientée vers le joueur
         const stackOffset = (5 - indexInFamily) * 0.018;
 
-        // Déplacement perpendiculaire à la face de la carte pour un empilement physique parfait
-        targetX = Math.sin(angle) * arcRadius + Math.sin(targetRotY) * stackOffset + jitter.offsetX;
-        targetZ = -Math.cos(angle) * (arcRadius * 0.42) + 2.0 + Math.cos(targetRotY) * stackOffset;
-        targetY = Math.cos(effectiveFamilyPos * 0.25) * 0.2 + jitter.offsetY;
+        let baseX = Math.sin(angle) * arcRadius + Math.sin(targetRotY) * stackOffset + jitter.offsetX;
+        let baseZ = -Math.cos(angle) * (arcRadius * 0.42) + 2.0 + Math.cos(targetRotY) * stackOffset;
+        let baseY = Math.cos(effectiveFamilyPos * 0.25) * 0.2 + jitter.offsetY;
+        let baseScale = 1.0;
 
-        if (isHovered) {
-          targetY += 0.35;
-          targetZ += 0.35;
-          targetScale = 1.06;
+        // Évitement horizontal entre familles voisines au survol d'un paquet
+        if (hoveredFamilyIndex >= 0 && hoveredFamilyIndex !== familyIndex) {
+          const dFam = familyIndex - hoveredFamilyIndex;
+          const distFam = Math.abs(dFam);
+          const pushFamDir = Math.sign(dFam);
+          const weightFam = Math.exp(-(distFam - 1) * 0.7);
+          baseX += pushFamDir * (0.28 * weightFam);
+          baseZ -= 0.12 * weightFam;
+        }
+
+        if (hp > 0.001) {
+          // Sortie en 2 temps de la carte de couverture du paquet
+          const stage1 = Math.min(hp / 0.40, 1.0);
+          const s1 = THREE.MathUtils.smoothstep(stage1, 0, 1);
+          const stage2 = Math.max(0, (hp - 0.40) / 0.60);
+          const s2 = THREE.MathUtils.smoothstep(stage2, 0, 1);
+
+          targetY = baseY + 0.24 * s1 + 0.16 * s2;
+          targetZ = baseZ + 0.22 * s1 + 0.22 * s2;
+          targetScale = baseScale + 0.03 * s1 + 0.05 * s2;
+          targetX = baseX;
+        } else {
+          targetX = baseX;
+          targetY = baseY;
+          targetZ = baseZ;
+          targetScale = baseScale;
         }
       }
     }
-    // --- 2. ÉTAPE FAMILLE (Éventail de joueur complet avec les 6 cartes déployées) ---
+    // --- 2. ÉTAPE FAMILLE (Éventail avec simulation physique de sortie latérale puis zoom + évitement des voisines) ---
     else if (currentStage === "family") {
       if (isCardInSelectedFamily) {
-        // Authentique éventail de joueur de cartes pivoté depuis le bas
+        // Base naturelle de l'éventail de cartes en main
         const centerOffset = indexInFamily - 2.5; // -2.5, -1.5, -0.5, 0.5, 1.5, 2.5
         const fanAngle = centerOffset * 0.11; // ~ -16° à +16°
-
         const fanRadius = 5.2;
-        targetX = Math.sin(fanAngle) * fanRadius;
-        targetY = -Math.cos(fanAngle) * fanRadius + 4.1;
-        targetZ = indexInFamily * 0.06 + 0.8;
-        targetScale = 0.82;
 
-        targetRotZ = -fanAngle; // Orientation naturelle en main
-        targetRotY = -fanAngle * 0.32;
-        targetRotX = isHovered ? -0.02 : -0.14;
+        const baseX = Math.sin(fanAngle) * fanRadius;
+        const baseY = -Math.cos(fanAngle) * fanRadius + 4.1;
+        const baseZ = indexInFamily * 0.06 + 0.8;
+        const baseRotZ = -fanAngle;
+        const baseRotY = -fanAngle * 0.32;
+        const baseRotX = -0.14;
+        const baseScale = 0.82;
 
-        if (isHovered) {
-          targetY += 0.38;
-          targetZ += 0.35;
-          targetScale = 0.94;
+        if (hp > 0.001) {
+          // --- 1. DÉPLACEMENT DE LA CARTE SURVOLÉE (SORTIE DU DECK PUIS ZOOM) ---
+          // Phase 1 (0 -> 0.38) : Décalage latéral & glissement hors de la fente (dégagement physique du paquet)
+          // Phase 2 (0.38 -> 1.0) : Zoom vers la caméra, redressement face au joueur
+          const stage1 = Math.min(hp / 0.38, 1.0);
+          const s1 = THREE.MathUtils.smoothstep(stage1, 0, 1);
+
+          const stage2 = Math.max(0, (hp - 0.38) / 0.62);
+          const s2 = THREE.MathUtils.smoothstep(stage2, 0, 1);
+
+          // Phase 1 : Sortie de la fente le long du rayon + décalage latéral vers l'extérieur
+          const radialSlide = 0.52 * s1;
+          const sideSlideDir = centerOffset >= 0 ? 1 : -1;
+          const lateralSlide = sideSlideDir * 0.18 * s1;
+          const liftOutZ = 0.32 * s1;
+
+          // Phase 2 : Zoom, avancée vers le joueur et redressement
+          const zoomZ = 0.48 * s2;
+          const zoomY = 0.16 * s2;
+          const zoomScale = 0.22 * s2;
+
+          targetX = baseX + Math.sin(fanAngle) * radialSlide + Math.cos(fanAngle) * lateralSlide;
+          targetY = baseY + Math.cos(fanAngle) * radialSlide + zoomY;
+          targetZ = baseZ + liftOutZ + zoomZ;
+          targetScale = baseScale + 0.04 * s1 + zoomScale;
+
+          // Redressement progressif pour faire face au joueur
+          targetRotZ = THREE.MathUtils.lerp(baseRotZ, -fanAngle * 0.12, s2);
+          targetRotY = THREE.MathUtils.lerp(baseRotY, 0, s2);
+          targetRotX = THREE.MathUtils.lerp(baseRotX, 0.02, s2);
+
+          // Réactivité fine au curseur en hover
+          targetRotX += -state.pointer.y * 0.08 * s2;
+          targetRotZ += -state.pointer.x * 0.08 * s2;
+        } else if (ep > 0.001) {
+          // --- 2. ÉVITEMENT PHYSIQUE DES AUTRES CARTES DU DECK ---
+          // Les cartes voisines s'écartent pour laisser passer la carte qui sort
+          const d = indexInFamily - hoveredIndexInFamily; // < 0 pour gauche, > 0 pour droite
+          const dist = Math.abs(d);
+          const pushDir = Math.sign(d);
+
+          // Force d'écartement : maximale pour les voisins immédiats (|d| = 1), décroît avec la distance
+          const weight = Math.exp(-(dist - 1) * 0.7);
+          const pushX = pushDir * (0.36 * weight) * ep;
+          const pushAngle = pushDir * (0.055 * weight) * ep;
+          const pushZ = -(0.08 * weight) * ep; // Recul en profondeur
+          const pushY = -(0.05 * weight) * ep;
+
+          targetX = baseX + pushX;
+          targetY = baseY + pushY;
+          targetZ = baseZ + pushZ;
+          targetRotZ = baseRotZ - pushAngle;
+          targetRotY = baseRotY;
+          targetRotX = baseRotX;
+          targetScale = baseScale - 0.02 * ep;
+        } else {
+          // Position de repos normale
+          targetX = baseX;
+          targetY = baseY;
+          targetZ = baseZ;
+          targetRotZ = baseRotZ;
+          targetRotY = baseRotY;
+          targetRotX = baseRotX;
+          targetScale = baseScale;
         }
       } else {
         // Les autres familles s'estompent doucement vers l'arrière-plan
@@ -209,21 +307,56 @@ function PhysicalCard3D({
         // Les 5 autres cartes forment un éventail visible en arrière-plan pour naviguer
         const centerOffset = indexInFamily - 2.5; // -2.5 à +2.5
         const fanAngle = centerOffset * 0.22;
-
         const fanRadius = 5.8;
-        targetX = Math.sin(fanAngle) * fanRadius;
-        targetY = -Math.cos(fanAngle) * fanRadius + 4.9;
-        targetZ = 0.15 + (5 - Math.abs(centerOffset)) * 0.05;
-        targetScale = 0.68;
 
-        targetRotZ = -fanAngle;
-        targetRotY = -fanAngle * 0.35;
-        targetRotX = -0.12;
+        const baseX = Math.sin(fanAngle) * fanRadius;
+        const baseY = -Math.cos(fanAngle) * fanRadius + 4.9;
+        const baseZ = 0.15 + (5 - Math.abs(centerOffset)) * 0.05;
+        const baseRotZ = -fanAngle;
+        const baseRotY = -fanAngle * 0.35;
+        const baseRotX = -0.12;
+        const baseScale = 0.68;
 
-        if (isHovered) {
-          targetY += 0.32;
-          targetZ += 0.5;
-          targetScale = 0.78;
+        if (hp > 0.001) {
+          // Sortie et zoom de la carte soeur survolée
+          const stage1 = Math.min(hp / 0.40, 1.0);
+          const s1 = THREE.MathUtils.smoothstep(stage1, 0, 1);
+          const stage2 = Math.max(0, (hp - 0.40) / 0.60);
+          const s2 = THREE.MathUtils.smoothstep(stage2, 0, 1);
+
+          const radialSlide = 0.45 * s1;
+          const sideSlideDir = centerOffset >= 0 ? 1 : -1;
+          const lateralSlide = sideSlideDir * 0.15 * s1;
+
+          targetX = baseX + Math.sin(fanAngle) * radialSlide + Math.cos(fanAngle) * lateralSlide;
+          targetY = baseY + Math.cos(fanAngle) * radialSlide + 0.15 * s2;
+          targetZ = baseZ + 0.30 * s1 + 0.40 * s2;
+          targetScale = baseScale + 0.04 * s1 + 0.14 * s2;
+          targetRotZ = THREE.MathUtils.lerp(baseRotZ, -fanAngle * 0.15, s2);
+          targetRotY = THREE.MathUtils.lerp(baseRotY, 0, s2);
+          targetRotX = THREE.MathUtils.lerp(baseRotX, 0, s2);
+        } else if (ep > 0.001) {
+          // Évitement des cartes soeurs voisines en arrière-plan
+          const d = indexInFamily - hoveredIndexInFamily;
+          const dist = Math.abs(d);
+          const pushDir = Math.sign(d);
+          const weight = Math.exp(-(dist - 1) * 0.7);
+
+          targetX = baseX + pushDir * (0.30 * weight) * ep;
+          targetY = baseY - (0.04 * weight) * ep;
+          targetZ = baseZ - (0.06 * weight) * ep;
+          targetRotZ = baseRotZ - pushDir * (0.045 * weight) * ep;
+          targetRotY = baseRotY;
+          targetRotX = baseRotX;
+          targetScale = baseScale;
+        } else {
+          targetX = baseX;
+          targetY = baseY;
+          targetZ = baseZ;
+          targetRotZ = baseRotZ;
+          targetRotY = baseRotY;
+          targetRotX = baseRotX;
+          targetScale = baseScale;
         }
       } else {
         // Les autres familles sont repoussées hors champ
@@ -367,6 +500,16 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
           <group position={[0, 0, 0]}>
             {FAMILIES.map((family, fIdx) => {
               const famCards = CARDS.filter((c) => c.familyId === family.id);
+              const hoveredFamilyCard = props.hoveredCardId
+                ? famCards.find((c) => c.id === props.hoveredCardId)
+                : null;
+              const hoveredIndexInFamily = hoveredFamilyCard
+                ? famCards.indexOf(hoveredFamilyCard)
+                : -1;
+              const hoveredFamilyIndex = props.hoveredCardId
+                ? FAMILIES.findIndex((f) => props.hoveredCardId?.startsWith(f.id))
+                : -1;
+
               return famCards.map((card, cIdx) => (
                 <PhysicalCard3D
                   key={card.id}
@@ -383,8 +526,11 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
                   isHovered={
                     props.hoveredCardId === card.id ||
                     (props.currentStage === "deck" &&
-                      props.hoveredCardId?.startsWith(family.id))
+                      props.hoveredCardId?.startsWith(family.id) &&
+                      cIdx === 0)
                   }
+                  hoveredIndexInFamily={hoveredIndexInFamily}
+                  hoveredFamilyIndex={hoveredFamilyIndex}
                   setHoveredCardId={props.setHoveredCardId}
                   isDeckSpread={props.isDeckSpread}
                   deckScrollOffset={props.deckScrollOffset}
