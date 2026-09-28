@@ -195,13 +195,16 @@ function PhysicalCard3D({
         targetRotX = -mouseY;
         targetRotZ = -mouseX * 0.4;
       } else if (isCardInSelectedFamily) {
-        // Les cartes soeurs restent discrètement visibles en bas
-        const centerOffset = indexInFamily - 2.5;
-        targetX = centerOffset * 1.05;
-        targetY = -2.35;
-        targetZ = 0.4;
-        targetScale = 0.45;
-        targetRotX = -0.3;
+        // Les 5 autres cartes de la famille s'affichent en arrière-plan en un élégant éventail étagé
+        const centerOffset = indexInFamily - 2.5; // -2.5 à +2.5
+        targetX = centerOffset * 1.15;
+        targetY = 0.25 - Math.abs(centerOffset) * 0.08;
+        targetZ = -0.6 - Math.abs(centerOffset) * 0.2;
+        targetScale = 0.68;
+
+        targetRotY = -centerOffset * 0.06;
+        targetRotZ = -centerOffset * 0.04;
+        targetRotX = -0.08;
       } else {
         // Les autres familles sont repoussées hors champ
         targetZ = -6;
