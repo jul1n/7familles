@@ -40,6 +40,15 @@ const Card3DViewer = dynamic(() => import("@/components/Card3D"), {
   ),
 });
 
+const FamilyFan3D = dynamic(() => import("@/components/FamilyFan3D"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="w-12 h-12 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin" />
+    </div>
+  ),
+});
+
 export default function Experience7Familles() {
   // Navigation & états monopage (SPA)
   const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
@@ -297,71 +306,67 @@ export default function Experience7Familles() {
           </div>
         )}
 
-        {/* VUE 2 : SÉLECTION DES 6 CARTES DE LA FAMILLE */}
-        {selectedFamilyId && !selectedCardId && (
-          <div className="w-full h-full flex flex-col overflow-y-auto px-4 py-6 md:py-8 max-w-6xl mx-auto">
-            {/* Fil d'Ariane & retour */}
-            <div className="flex items-center justify-between mb-6">
+        {/* VUE 2 : SÉLECTION DES 6 CARTES DE LA FAMILLE (DÉPLOIEMENT 3D EN ÉVENTAIL) */}
+        {selectedFamilyId && !selectedCardId && activeFamily && (
+          <div className="w-full h-full relative flex flex-col items-center justify-between">
+            {/* Fil d'Ariane & titre haut */}
+            <div className="z-10 pt-5 px-4 w-full max-w-6xl flex items-center justify-between pointer-events-auto">
               <button
                 onClick={() => setSelectedFamilyId(null)}
-                className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-white transition px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
+                className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-slate-300 hover:text-white transition px-3.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/10 backdrop-blur-md shadow-lg"
               >
                 <ChevronLeft className="w-4 h-4" /> Revenir au deck 3D
               </button>
-              {activeFamily && (
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-3.5 h-3.5 rounded-full shadow-md"
-                    style={{ backgroundColor: activeFamily.color }}
-                  />
-                  <span className="text-sm font-bold text-white">
-                    {activeFamily.name}
-                  </span>
-                </div>
-              )}
+
+              <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-white/10 backdrop-blur-md shadow-lg">
+                <span
+                  className="w-3.5 h-3.5 rounded-full shadow-md"
+                  style={{ backgroundColor: activeFamily.color }}
+                />
+                <span className="text-sm font-bold text-white">
+                  Famille {activeFamily.name}
+                </span>
+                <span className="text-xs text-slate-400">• 6 cartes</span>
+              </div>
             </div>
 
-            <div className="text-center mb-6">
-              <h2 className="text-xl md:text-2xl font-bold text-white">
-                Famille {activeFamily?.name}
-              </h2>
-              <p className="text-xs md:text-sm text-slate-400 mt-1">
-                Choisissez une carte pour la manipuler en 3D et ouvrir son dossier complet.
-              </p>
+            {/* Instruction discrète */}
+            <div className="z-10 text-center px-4 pointer-events-none mt-2">
+              <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 backdrop-blur-md">
+                Cliquez ou touchez une carte pour l'examiner en 3D
+              </span>
             </div>
 
-            {/* Grille des 6 cartes de la famille */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 pb-16">
+            {/* SCÈNE 3D DU DÉPLOIEMENT EN ÉVENTAIL DES 6 CARTES */}
+            <div className="absolute inset-0 w-full h-full">
+              <FamilyFan3D
+                cards={familyCards}
+                family={activeFamily}
+                onSelectCard={(cId) => {
+                  setSelectedCardId(cId);
+                  setIsFlipped(false);
+                  setSheetState("collapsed");
+                }}
+              />
+            </div>
+
+            {/* Sélecteur miniature rapide en bas */}
+            <div className="z-10 pb-5 px-4 flex items-center justify-center gap-2 max-w-full overflow-x-auto">
               {familyCards.map((card) => (
-                <div
+                <button
                   key={card.id}
                   onClick={() => {
                     setSelectedCardId(card.id);
                     setIsFlipped(false);
                     setSheetState("collapsed");
                   }}
-                  className="group relative flex flex-col bg-slate-900 border border-white/10 hover:border-cyan-400 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/20 hover:-translate-y-1.5"
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 backdrop-blur-md transition shadow-md flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  <div className="aspect-[70/100] w-full bg-slate-950 relative overflow-hidden">
-                    <img
-                      src={card.frontImage}
-                      alt={card.title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-slate-950/80 backdrop-blur-md flex items-center justify-center text-xs font-bold text-white border border-white/20">
-                      {card.num}
-                    </div>
-                  </div>
-                  <div className="p-2.5 flex-1 flex flex-col justify-between">
-                    <h4 className="text-xs font-bold text-white truncate group-hover:text-cyan-400">
-                      {card.title}
-                    </h4>
-                    <span className="text-[10px] text-slate-400 line-clamp-2 mt-1">
-                      {card.shortDescription}
-                    </span>
-                  </div>
-                </div>
+                  <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold">
+                    {card.num}
+                  </span>
+                  <span>{card.title}</span>
+                </button>
               ))}
             </div>
           </div>
