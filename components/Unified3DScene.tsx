@@ -87,6 +87,7 @@ function PhysicalCard3D({
   const meshRef = useRef<THREE.Group>(null);
   const hoverProgressRef = useRef<number>(0);
   const evadeProgressRef = useRef<number>(0);
+  const selectProgressRef = useRef<number>(0);
 
   // Textures Recto et Verso
   const [frontTexture, backTexture] = useTexture([card.frontImage, "/cards/card-back.webp"]);
@@ -148,14 +149,21 @@ function PhysicalCard3D({
   useFrame((state, delta) => {
     if (!meshRef.current) return;
 
-    // 1. Progression fluide du survol de la carte (0 -> 1)
-    const targetHover = isHovered ? 1 : 0;
+    // 1. Progression fluide de sélection de la carte (sortie vers le premier plan 0 -> 1, retour 1 -> 0)
+    const isCurrentlySelected = currentStage === "card" && isTargetSelectedCard;
+    const targetSelect = isCurrentlySelected ? 1 : 0;
+    selectProgressRef.current = THREE.MathUtils.damp(selectProgressRef.current, targetSelect, 5.2, delta);
+    const sp = selectProgressRef.current;
+
+    // 2. Progression fluide du survol de la carte (0 -> 1)
+    // Si la carte est en cours de sélection (sp > 0.05), le survol s'efface au profit de la sélection
+    const targetHover = (isHovered && sp < 0.05) ? 1 : 0;
     hoverProgressRef.current = THREE.MathUtils.damp(hoverProgressRef.current, targetHover, 8.5, delta);
     const hp = hoverProgressRef.current;
 
-    // 2. Progression d'évitement physique pour les cartes soeurs du même deck (0 -> 1)
+    // 3. Progression d'évitement physique pour les cartes soeurs du même deck (0 -> 1)
     const isSisterEvading =
-      (currentStage === "family" && isCardInSelectedFamily && hoveredIndexInFamily >= 0 && hoveredIndexInFamily !== indexInFamily) ||
+      (currentStage === "family" && isCardInSelectedFamily && hoveredIndexInFamily >= 0 && hoveredIndexInFamily !== indexInFamily && sp < 0.05) ||
       (currentStage === "card" && isCardInSelectedFamily && !isTargetSelectedCard && hoveredIndexInFamily >= 0 && hoveredIndexInFamily !== indexInFamily);
     const targetEvade = isSisterEvading ? 1 : 0;
     evadeProgressRef.current = THREE.MathUtils.damp(evadeProgressRef.current, targetEvade, 7.5, delta);
@@ -227,117 +235,78 @@ function PhysicalCard3D({
         }
       }
     }
-    // --- 2. ÉTAPE FAMILLE (Éventail avec simulation physique de sortie latérale puis zoom + évitement des voisines) ---
-    else if (currentStage === "family") {
-      if (isCardInSelectedFamily) {
-        // Base naturelle de l'éventail de cartes en main
-        const centerOffset = indexInFamily - 2.5; // -2.5, -1.5, -0.5, 0.5, 1.5, 2.5
+    // --- 2 & 3. ÉTAPES FAMILLE ET CARTE (AVEC CONTOURNEMENT PHYSIQUE ET CHEMIN INVERSE SANS CHOC) ---
+    else if (isCardInSelectedFamily) {
+      if (sp > 0.001) {
+        // === 1. CARTE SÉLECTIONNÉE : TRAJECTOIRE DE CONTOURNEMENT EN 2 PHASES (ALLER & RETOUR) ===
+        // Phase 1 (0 -> 0.42) : Glissement radial et déport latéral hors de l'éventail (dégagement de la fente)
+        // Phase 2 (0.42 -> 1.0) : Avancée vers le joueur en Z et centrage face à la caméra
+        const p1 = THREE.MathUtils.smoothstep(Math.min(sp / 0.42, 1.0), 0, 1);
+        const p2 = THREE.MathUtils.smoothstep(Math.max(0, (sp - 0.42) / 0.58), 0, 1);
+
+        // Position de repos dans l'éventail de la famille
+        const centerOffset = indexInFamily - 2.5;
         const fanAngle = centerOffset * (isPortrait ? 0.095 : 0.11);
         const fanRadius = isPortrait ? 4.2 : 5.2;
 
-        const baseX = Math.sin(fanAngle) * fanRadius;
-        const baseY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 3.4 : 4.1);
-        const baseZ = indexInFamily * 0.06 + 0.8;
-        const baseRotZ = -fanAngle;
-        const baseRotY = -fanAngle * 0.32;
-        const baseRotX = -0.14;
-        const baseScale = isPortrait ? 0.64 : 0.82;
+        const restX = Math.sin(fanAngle) * fanRadius;
+        const restY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 3.4 : 4.1);
+        const restZ = indexInFamily * 0.06 + 0.8;
+        const restRotZ = -fanAngle;
+        const restRotY = -fanAngle * 0.32;
+        const restRotX = -0.14;
+        const restScale = isPortrait ? 0.64 : 0.82;
 
-        if (hp > 0.001) {
-          // --- 1. DÉPLACEMENT DE LA CARTE SURVOLÉE (SORTIE DU DECK PUIS ZOOM) ---
-          // Phase 1 (0 -> 0.38) : Décalage latéral & glissement hors de la fente (dégagement physique du paquet)
-          // Phase 2 (0.38 -> 1.0) : Zoom vers la caméra, redressement face au joueur
-          const stage1 = Math.min(hp / 0.38, 1.0);
-          const s1 = THREE.MathUtils.smoothstep(stage1, 0, 1);
+        // Waypoint extérieur de contournement latéral (dégagement physique complet du paquet)
+        const sideDir = centerOffset >= 0 ? 1 : -1;
+        const radX = Math.sin(fanAngle);
+        const radY = Math.cos(fanAngle);
+        const latX = Math.cos(fanAngle) * sideDir;
+        const latY = -Math.sin(fanAngle) * sideDir;
 
-          const stage2 = Math.max(0, (hp - 0.38) / 0.62);
-          const s2 = THREE.MathUtils.smoothstep(stage2, 0, 1);
+        const radDist = isPortrait ? 0.95 : 1.15;
+        const latDist = (isPortrait ? 0.52 : 0.68) + Math.abs(centerOffset) * 0.08;
 
-          // Phase 1 : Sortie de la fente le long du rayon + décalage latéral vers l'extérieur
-          const radialSlide = (isPortrait ? 0.44 : 0.52) * s1;
-          const sideSlideDir = centerOffset >= 0 ? 1 : -1;
-          const lateralSlide = sideSlideDir * 0.18 * s1;
-          const liftOutZ = 0.32 * s1;
+        const clearX = restX + radX * radDist + latX * latDist;
+        const clearY = restY + radY * radDist + latY * latDist;
+        const clearZ = restZ + 0.08; // Reste strictement dans sa couche de profondeur pour ne percuter aucune carte
+        const clearRotZ = restRotZ - sideDir * 0.12;
+        const clearRotY = restRotY * 0.5;
+        const clearRotX = -0.06;
+        const clearScale = restScale * 1.05;
 
-          // Phase 2 : Zoom, avancée vers le joueur et redressement
-          const zoomZ = 0.48 * s2;
-          const zoomY = 0.16 * s2;
-          const zoomScale = (isPortrait ? 0.18 : 0.22) * s2;
-
-          targetX = baseX + Math.sin(fanAngle) * radialSlide + Math.cos(fanAngle) * lateralSlide;
-          targetY = baseY + Math.cos(fanAngle) * radialSlide + zoomY;
-          targetZ = baseZ + liftOutZ + zoomZ;
-          targetScale = baseScale + 0.04 * s1 + zoomScale;
-
-          // Redressement progressif pour faire face au joueur
-          targetRotZ = THREE.MathUtils.lerp(baseRotZ, -fanAngle * 0.12, s2);
-          targetRotY = THREE.MathUtils.lerp(baseRotY, 0, s2);
-          targetRotX = THREE.MathUtils.lerp(baseRotX, 0.02, s2);
-
-          // Réactivité fine au curseur en hover
-          targetRotX += -state.pointer.y * 0.08 * s2;
-          targetRotZ += -state.pointer.x * 0.08 * s2;
-        } else if (ep > 0.001) {
-          // --- 2. ÉVITEMENT PHYSIQUE DES AUTRES CARTES DU DECK ---
-          // Les cartes voisines s'écartent pour laisser passer la carte qui sort
-          const d = indexInFamily - hoveredIndexInFamily; // < 0 pour gauche, > 0 pour droite
-          const dist = Math.abs(d);
-          const pushDir = Math.sign(d);
-
-          // Force d'écartement : maximale pour les voisins immédiats (|d| = 1), décroît avec la distance
-          const weight = Math.exp(-(dist - 1) * 0.7);
-          const pushX = pushDir * (0.34 * weight) * ep;
-          const pushAngle = pushDir * (0.055 * weight) * ep;
-          const pushZ = -(0.08 * weight) * ep; // Recul en profondeur
-          const pushY = -(0.05 * weight) * ep;
-
-          targetX = baseX + pushX;
-          targetY = baseY + pushY;
-          targetZ = baseZ + pushZ;
-          targetRotZ = baseRotZ - pushAngle;
-          targetRotY = baseRotY;
-          targetRotX = baseRotX;
-          targetScale = baseScale - 0.02 * ep;
-        } else {
-          // Position de repos normale
-          targetX = baseX;
-          targetY = baseY;
-          targetZ = baseZ;
-          targetRotZ = baseRotZ;
-          targetRotY = baseRotY;
-          targetRotX = baseRotX;
-          targetScale = baseScale;
-        }
-      } else {
-        // Les autres familles s'estompent doucement vers l'arrière-plan
-        const angleStep = 0.5;
-        const angle = (familyIndex - 3) * angleStep;
-        targetX = Math.sin(angle) * 7.5;
-        targetZ = -4.5;
-        targetY = -0.5;
-        targetScale = 0.5;
-        targetRotY = -angle;
-      }
-    }
-    // --- 3. ÉTAPE CARTE INDIVIDUELLE (Carte active au centre + les 5 cartes soeurs visibles en arrière-plan) ---
-    else if (currentStage === "card") {
-      if (isTargetSelectedCard) {
-        // La carte choisie se détache vers l'avant, centrée et bien cadrée
-        targetX = 0;
-        targetY = isPortrait ? 0.65 : 0.15; // Élevée en portrait pour flotter au-dessus du bottom sheet
-        targetZ = 2.4;
-        targetScale = isPortrait ? 0.76 : 0.86;
-
-        // Retournement à 180°
-        targetRotY = isFlipped ? Math.PI : 0;
-
-        // Réaction interactive au curseur / gyroscope
+        // Position d'inspection au premier plan
         const mouseX = state.pointer.x * 0.15;
         const mouseY = state.pointer.y * 0.15;
-        targetRotX = -mouseY;
-        targetRotZ = -mouseX * 0.4;
-      } else if (isCardInSelectedFamily) {
-        // Les 5 autres cartes forment un éventail visible en arrière-plan pour naviguer
+        const frontX = 0;
+        const frontY = isPortrait ? 0.65 : 0.15;
+        const frontZ = 2.4;
+        const frontScale = isPortrait ? 0.76 : 0.86;
+        const frontRotX = -mouseY;
+        const frontRotY = isFlipped ? Math.PI : 0;
+        const frontRotZ = -mouseX * 0.4;
+
+        if (p2 > 0) {
+          // Trajectoire Phase 2 : entre le waypoint dégagé P_clear et le premier plan P_front (aller ou retour)
+          targetX = THREE.MathUtils.lerp(clearX, frontX, p2);
+          targetY = THREE.MathUtils.lerp(clearY, frontY, p2);
+          targetZ = THREE.MathUtils.lerp(clearZ, frontZ, p2);
+          targetRotX = THREE.MathUtils.lerp(clearRotX, frontRotX, p2);
+          targetRotY = THREE.MathUtils.lerp(clearRotY, frontRotY, p2);
+          targetRotZ = THREE.MathUtils.lerp(clearRotZ, frontRotZ, p2);
+          targetScale = THREE.MathUtils.lerp(clearScale, frontScale, p2);
+        } else {
+          // Trajectoire Phase 1 : glissement latéral & radial entre le slot de repos P_slot et P_clear (aller ou retour)
+          targetX = THREE.MathUtils.lerp(restX, clearX, p1);
+          targetY = THREE.MathUtils.lerp(restY, clearY, p1);
+          targetZ = THREE.MathUtils.lerp(restZ, clearZ, p1);
+          targetRotX = THREE.MathUtils.lerp(restRotX, clearRotX, p1);
+          targetRotY = THREE.MathUtils.lerp(restRotY, clearRotY, p1);
+          targetRotZ = THREE.MathUtils.lerp(restRotZ, clearRotZ, p1);
+          targetScale = THREE.MathUtils.lerp(restScale, clearScale, p1);
+        }
+      } else if (currentStage === "card") {
+        // === 2. LES 5 CARTES SOEURS EN ARRIÈRE-PLAN (MODE CARTE) ===
         const centerOffset = indexInFamily - 2.5;
         const fanAngle = centerOffset * (isPortrait ? 0.16 : 0.22);
         const fanRadius = isPortrait ? 5.0 : 5.8;
@@ -350,35 +319,41 @@ function PhysicalCard3D({
         const baseRotX = -0.12;
         const baseScale = isPortrait ? 0.48 : 0.68;
 
+        const sideDir = centerOffset >= 0 ? 1 : -1;
+        const radX = Math.sin(fanAngle);
+        const radY = Math.cos(fanAngle);
+        const latX = Math.cos(fanAngle) * sideDir;
+        const latY = -Math.sin(fanAngle) * sideDir;
+
         if (hp > 0.001) {
-          // Sortie et zoom de la carte soeur survolée
-          const stage1 = Math.min(hp / 0.40, 1.0);
-          const s1 = THREE.MathUtils.smoothstep(stage1, 0, 1);
-          const stage2 = Math.max(0, (hp - 0.40) / 0.60);
-          const s2 = THREE.MathUtils.smoothstep(stage2, 0, 1);
+          // Survol en arrière-plan : sortie latérale puis léger rapprochement
+          const h1 = THREE.MathUtils.smoothstep(Math.min(hp / 0.42, 1.0), 0, 1);
+          const h2 = THREE.MathUtils.smoothstep(Math.max(0, (hp - 0.42) / 0.58), 0, 1);
 
-          const radialSlide = 0.45 * s1;
-          const sideSlideDir = centerOffset >= 0 ? 1 : -1;
-          const lateralSlide = sideSlideDir * 0.15 * s1;
+          const hRadial = (isPortrait ? 0.45 : 0.58) * h1;
+          const hLateral = (isPortrait ? 0.18 : 0.24) * h1;
+          const hLiftZ = 0.04 * h1;
+          const hZoomZ = (isPortrait ? 0.30 : 0.42) * h2;
+          const hZoomY = 0.12 * h2;
+          const hZoomScale = 0.14 * h2;
 
-          targetX = baseX + Math.sin(fanAngle) * radialSlide + Math.cos(fanAngle) * lateralSlide;
-          targetY = baseY + Math.cos(fanAngle) * radialSlide + 0.15 * s2;
-          targetZ = baseZ + 0.30 * s1 + 0.40 * s2;
-          targetScale = baseScale + 0.04 * s1 + 0.14 * s2;
-          targetRotZ = THREE.MathUtils.lerp(baseRotZ, -fanAngle * 0.15, s2);
-          targetRotY = THREE.MathUtils.lerp(baseRotY, 0, s2);
-          targetRotX = THREE.MathUtils.lerp(baseRotX, 0, s2);
+          targetX = baseX + radX * hRadial + latX * hLateral;
+          targetY = baseY + radY * hRadial + latY * hLateral + hZoomY;
+          targetZ = baseZ + hLiftZ + hZoomZ;
+          targetScale = baseScale + 0.03 * h1 + hZoomScale;
+          targetRotZ = THREE.MathUtils.lerp(baseRotZ - sideDir * (0.06 * h1), -fanAngle * 0.10, h2);
+          targetRotY = THREE.MathUtils.lerp(baseRotY, 0, h2);
+          targetRotX = THREE.MathUtils.lerp(baseRotX, 0.02, h2);
         } else if (ep > 0.001) {
-          // Évitement des cartes soeurs voisines en arrière-plan
           const d = indexInFamily - hoveredIndexInFamily;
           const dist = Math.abs(d);
           const pushDir = Math.sign(d);
           const weight = Math.exp(-(dist - 1) * 0.7);
 
-          targetX = baseX + pushDir * (0.30 * weight) * ep;
+          targetX = baseX + pushDir * (0.28 * weight) * ep;
           targetY = baseY - (0.04 * weight) * ep;
           targetZ = baseZ - (0.06 * weight) * ep;
-          targetRotZ = baseRotZ - pushDir * (0.045 * weight) * ep;
+          targetRotZ = baseRotZ - pushDir * (0.04 * weight) * ep;
           targetRotY = baseRotY;
           targetRotX = baseRotX;
           targetScale = baseScale;
@@ -392,23 +367,103 @@ function PhysicalCard3D({
           targetScale = baseScale;
         }
       } else {
-        // Les autres familles sont repoussées hors champ
+        // === 3. MODE FAMILLE : LES 6 CARTES EN MAIN (SURVOL & CONTOURNEMENT INVERSE) ===
+        const centerOffset = indexInFamily - 2.5;
+        const fanAngle = centerOffset * (isPortrait ? 0.095 : 0.11);
+        const fanRadius = isPortrait ? 4.2 : 5.2;
+
+        const baseX = Math.sin(fanAngle) * fanRadius;
+        const baseY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 3.4 : 4.1);
+        const baseZ = indexInFamily * 0.06 + 0.8;
+        const baseRotZ = -fanAngle;
+        const baseRotY = -fanAngle * 0.32;
+        const baseRotX = -0.14;
+        const baseScale = isPortrait ? 0.64 : 0.82;
+
+        const sideDir = centerOffset >= 0 ? 1 : -1;
+        const radX = Math.sin(fanAngle);
+        const radY = Math.cos(fanAngle);
+        const latX = Math.cos(fanAngle) * sideDir;
+        const latY = -Math.sin(fanAngle) * sideDir;
+
+        if (hp > 0.001) {
+          // --- SURVOL D'UNE CARTE DANS LE DECK : GLISSEMENT LATÉRAL PUIS RAPPROCHEMENT (ET CHEMIN INVERSE) ---
+          // Phase 1 (0 -> 0.42) : Glissement radial & décalage latéral (dégagement physique de la fente sans choc)
+          // Phase 2 (0.42 -> 1.0) : Zoom d'avancée vers le joueur après dégagement
+          const h1 = THREE.MathUtils.smoothstep(Math.min(hp / 0.42, 1.0), 0, 1);
+          const h2 = THREE.MathUtils.smoothstep(Math.max(0, (hp - 0.42) / 0.58), 0, 1);
+
+          const hRadial = (isPortrait ? 0.60 : 0.75) * h1;
+          const hLateral = (isPortrait ? 0.28 : 0.36) * h1;
+          const hLiftZ = 0.04 * h1; // Reste strictement dans sa couche de profondeur
+
+          const hZoomZ = (isPortrait ? 0.45 : 0.55) * h2;
+          const hZoomY = 0.14 * h2;
+          const hZoomScale = (isPortrait ? 0.16 : 0.20) * h2;
+
+          targetX = baseX + radX * hRadial + latX * hLateral;
+          targetY = baseY + radY * hRadial + latY * hLateral + hZoomY;
+          targetZ = baseZ + hLiftZ + hZoomZ;
+          targetScale = baseScale + 0.03 * h1 + hZoomScale;
+
+          targetRotZ = THREE.MathUtils.lerp(baseRotZ - sideDir * (0.08 * h1), -fanAngle * 0.08, h2);
+          targetRotY = THREE.MathUtils.lerp(baseRotY, 0, h2);
+          targetRotX = THREE.MathUtils.lerp(baseRotX, 0.02, h2);
+
+          // Réactivité fine au curseur en hover
+          targetRotX += -state.pointer.y * 0.06 * h2;
+          targetRotZ += -state.pointer.x * 0.06 * h2;
+        } else if (ep > 0.001) {
+          // Évitement physique des autres cartes du deck
+          const d = indexInFamily - hoveredIndexInFamily;
+          const dist = Math.abs(d);
+          const pushDir = Math.sign(d);
+          const weight = Math.exp(-(dist - 1) * 0.7);
+
+          targetX = baseX + pushDir * (0.34 * weight) * ep;
+          targetY = baseY - (0.04 * weight) * ep;
+          targetZ = baseZ - (0.06 * weight) * ep;
+          targetRotZ = baseRotZ - pushDir * (0.05 * weight) * ep;
+          targetRotY = baseRotY;
+          targetRotX = baseRotX;
+          targetScale = baseScale - 0.02 * ep;
+        } else {
+          targetX = baseX;
+          targetY = baseY;
+          targetZ = baseZ;
+          targetRotZ = baseRotZ;
+          targetRotY = baseRotY;
+          targetRotX = baseRotX;
+          targetScale = baseScale;
+        }
+      }
+    } else {
+      // Les autres familles s'estompent doucement vers l'arrière-plan
+      if (currentStage === "family") {
+        const angleStep = 0.5;
+        const angle = (familyIndex - 3) * angleStep;
+        targetX = Math.sin(angle) * 7.5;
+        targetZ = -4.5;
+        targetY = -0.5;
+        targetScale = 0.5;
+        targetRotY = -angle;
+      } else {
         targetZ = -6;
         targetScale = 0.15;
       }
     }
 
     // Amortissement Three.js pour une transition physique ultra fluide
-    meshRef.current.position.x = THREE.MathUtils.damp(meshRef.current.position.x, targetX, 5.5, delta);
-    meshRef.current.position.y = THREE.MathUtils.damp(meshRef.current.position.y, targetY, 5.5, delta);
-    meshRef.current.position.z = THREE.MathUtils.damp(meshRef.current.position.z, targetZ, 5.5, delta);
+    meshRef.current.position.x = THREE.MathUtils.damp(meshRef.current.position.x, targetX, 6.8, delta);
+    meshRef.current.position.y = THREE.MathUtils.damp(meshRef.current.position.y, targetY, 6.8, delta);
+    meshRef.current.position.z = THREE.MathUtils.damp(meshRef.current.position.z, targetZ, 6.8, delta);
 
-    meshRef.current.rotation.x = THREE.MathUtils.damp(meshRef.current.rotation.x, targetRotX, 5.5, delta);
-    meshRef.current.rotation.y = THREE.MathUtils.damp(meshRef.current.rotation.y, targetRotY, 5.5, delta);
-    meshRef.current.rotation.z = THREE.MathUtils.damp(meshRef.current.rotation.z, targetRotZ, 5.5, delta);
+    meshRef.current.rotation.x = THREE.MathUtils.damp(meshRef.current.rotation.x, targetRotX, 6.8, delta);
+    meshRef.current.rotation.y = THREE.MathUtils.damp(meshRef.current.rotation.y, targetRotY, 6.8, delta);
+    meshRef.current.rotation.z = THREE.MathUtils.damp(meshRef.current.rotation.z, targetRotZ, 6.8, delta);
 
     meshRef.current.scale.setScalar(
-      THREE.MathUtils.damp(meshRef.current.scale.x, targetScale, 6, delta)
+      THREE.MathUtils.damp(meshRef.current.scale.x, targetScale, 7.0, delta)
     );
   });
 
