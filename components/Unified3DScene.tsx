@@ -437,11 +437,12 @@ function PhysicalCard3D({
         <group position={[0, -height / 2 - 0.22, 0.05]}>
           <Text
             fontSize={0.11}
-            color={isHovered ? "#38bdf8" : "#ffffff"}
+            color={isHovered ? "#0284c7" : "#1e293b"}
             anchorX="center"
             anchorY="top"
             maxWidth={1.5}
             textAlign="center"
+            fontWeight={600}
           >
             {card.num}. {card.title}
           </Text>
@@ -453,11 +454,12 @@ function PhysicalCard3D({
         <group position={[0, -height / 2 - 0.22, 0.05]}>
           <Text
             fontSize={0.10}
-            color={isHovered ? "#38bdf8" : "#94a3b8"}
+            color={isHovered ? "#0284c7" : "#64748b"}
             anchorX="center"
             anchorY="top"
             maxWidth={1.4}
             textAlign="center"
+            fontWeight={500}
           >
             {card.num}. {card.title}
           </Text>
@@ -469,11 +471,12 @@ function PhysicalCard3D({
         <group position={[0, -height / 2 - 0.28, 0.05]}>
           <Text
             fontSize={0.14}
-            color={isHovered ? "#38bdf8" : "#ffffff"}
+            color={isHovered ? "#0284c7" : "#0f172a"}
             anchorX="center"
             anchorY="top"
             maxWidth={2}
             textAlign="center"
+            fontWeight={700}
           >
             {card.familyName}
           </Text>
@@ -491,10 +494,10 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
-        <ambientLight intensity={1.5} />
-        <directionalLight position={[4, 8, 5]} intensity={1.6} />
-        <directionalLight position={[-4, -3, -2]} intensity={0.6} />
-        <pointLight position={[0, 1.5, 4]} intensity={0.9} color="#38bdf8" />
+        <ambientLight intensity={1.7} color="#fffcf5" />
+        <directionalLight position={[5, 10, 6]} intensity={1.8} color="#fffbf5" />
+        <directionalLight position={[-5, -2, -3]} intensity={0.5} color="#e2e8f0" />
+        <pointLight position={[0, 2, 5]} intensity={0.4} color="#fef3c7" />
 
         <Float speed={1.1} rotationIntensity={0.06} floatIntensity={0.12}>
           <group position={[0, 0, 0]}>
@@ -542,7 +545,7 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
 
         <ContactShadows
           position={[0, -1.9, 0]}
-          opacity={0.4}
+          opacity={0.22}
           scale={10}
           blur={2.4}
           far={4}
