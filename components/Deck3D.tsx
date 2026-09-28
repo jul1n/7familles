@@ -1,8 +1,8 @@
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useTexture, Float, ContactShadows, Text } from "@react-three/drei";
 import * as THREE from "three";
-import { FAMILIES } from "@/data/cards";
+import { FAMILIES, CARDS } from "@/data/cards";
 
 interface Deck3DProps {
   onSelectFamily: (familyId: string) => void;
@@ -11,34 +11,45 @@ interface Deck3DProps {
   isSpread: boolean;
 }
 
-// Composant d'une carte individuelle dans le deck 3D
-function DeckCardItem({
-  familyIndex,
-  cardIndexInFamily,
+// Récupère l'image de la 1ère carte pour chaque famille
+const FIRST_CARDS: Record<string, string> = {};
+FAMILIES.forEach((fam) => {
+  const card1 = CARDS.find((c) => c.familyId === fam.id && c.num === 1);
+  FIRST_CARDS[fam.id] = card1 ? card1.frontImage : "/cards/card-back.webp";
+});
+
+// Pile 3D d'une famille entière (6 cartes superposées avec désordre et épaisseur)
+function FamilyStack3D({
   family,
+  familyIndex,
   isSpread,
-  onSelectFamily,
   isHovered,
+  onSelectFamily,
   setHoveredFamily,
 }: {
-  familyIndex: number;
-  cardIndexInFamily: number;
   family: (typeof FAMILIES)[0];
+  familyIndex: number;
   isSpread: boolean;
-  onSelectFamily: (id: string) => void;
   isHovered: boolean;
+  onSelectFamily: (id: string) => void;
   setHoveredFamily: (id: string | null) => void;
 }) {
-  const meshRef = useRef<THREE.Group>(null);
-  const backTexture = useTexture("/cards/card-back.webp");
+  const groupRef = useRef<THREE.Group>(null);
+
+  // Textures : la première carte affiche son RECTO illustré, le dos de carte sert pour les cartes en dessous
+  const [frontTexture, backTexture] = useTexture([
+    FIRST_CARDS[family.id],
+    "/cards/card-back.webp",
+  ]);
+  frontTexture.colorSpace = THREE.SRGBColorSpace;
   backTexture.colorSpace = THREE.SRGBColorSpace;
 
-  const width = 1.8;
-  const height = 2.56;
-  const radius = 0.09;
-  const thickness = 0.015;
+  const width = 1.7;
+  const height = 2.42;
+  const radius = 0.085;
+  const singleThickness = 0.016;
 
-  // Géométrie arrondie physique
+  // Forme de carte aux coins arrondis
   const shape = React.useMemo(() => {
     const s = new THREE.Shape();
     const x = -width / 2;
@@ -60,22 +71,29 @@ function DeckCardItem({
 
   const extrudeSettings = React.useMemo(
     () => ({
-      depth: thickness,
+      depth: singleThickness,
       bevelEnabled: true,
       bevelSegments: 2,
       steps: 1,
-      bevelSize: 0.008,
-      bevelThickness: 0.006,
+      bevelSize: 0.007,
+      bevelThickness: 0.005,
     }),
-    [thickness]
+    [singleThickness]
   );
 
-  // Position cible dynamique
-  const totalCards = 42;
-  const globalIndex = familyIndex * 6 + cardIndexInFamily;
+  // Désordre naturel figé et pseudo-aléatoire propre à chaque carte du paquet de 6
+  const jitterArray = React.useMemo(() => {
+    return [0, 1, 2, 3, 4, 5].map((idx) => {
+      const seed = familyIndex * 17 + idx * 23;
+      const rotZ = Math.sin(seed) * 0.045; // petite rotation désordonnée
+      const offsetX = Math.cos(seed * 1.5) * 0.025; // petit décalage x
+      const offsetY = Math.sin(seed * 2.1) * 0.02; // petit décalage y
+      return { rotZ, offsetX, offsetY };
+    });
+  }, [familyIndex]);
 
   useFrame((state, delta) => {
-    if (!meshRef.current) return;
+    if (!groupRef.current) return;
 
     let targetX = 0;
     let targetY = 0;
@@ -83,50 +101,57 @@ function DeckCardItem({
     let targetRotX = 0;
     let targetRotY = 0;
     let targetRotZ = 0;
+    let targetScale = 1;
 
     if (!isSpread) {
-      // 1. ÉTAT PILE / DECK COMPACT (Vue Deck 3D groupé)
-      // Légère désynchronisation naturelle de chaque carte comme un vrai paquet
-      const jitterZ = (globalIndex - totalCards / 2) * 0.018;
-      const jitterRotZ = Math.sin(globalIndex * 0.8) * 0.015;
-      const jitterX = Math.cos(globalIndex * 1.2) * 0.02;
-
-      targetX = jitterX;
-      targetY = -0.1;
-      targetZ = jitterZ;
-      targetRotX = -0.55 + Math.sin(state.clock.elapsedTime * 0.8) * 0.03;
-      targetRotY = 0.45 + Math.cos(state.clock.elapsedTime * 0.6) * 0.04;
-      targetRotZ = jitterRotZ;
+      // 1. MODE PAQUET UNIQUE RASSEMBLÉ
+      // Les 7 familles sont empilées les unes sur les autres dans un gros deck compact
+      const stackZ = (familyIndex - 3) * (6 * 0.016);
+      targetX = 0;
+      targetY = 0;
+      targetZ = stackZ;
+      targetRotX = -0.55;
+      targetRotY = 0.45;
+      targetRotZ = (familyIndex - 3) * 0.015;
     } else {
-      // 2. ÉTAT ÉVENTAIL DES 7 FAMILLES (Arc en cercle 3D ultra moderne)
-      const angleStep = (Math.PI * 0.72) / 6;
+      // 2. MODE ÉVENTAIL 3D (Disposition élégante en arc de cercle face caméra)
+      const angleStep = 0.34;
       const angle = (familyIndex - 3) * angleStep;
-      const radiusArc = 3.6;
+      const arcRadius = 5.2;
 
-      const subOffset = (cardIndexInFamily - 2.5) * 0.02;
+      targetX = Math.sin(angle) * arcRadius;
+      targetZ = -Math.cos(angle) * (arcRadius * 0.45) + 1.8;
+      targetY = Math.cos((familyIndex - 3) * 0.35) * 0.22;
 
-      targetX = Math.sin(angle) * radiusArc;
-      targetZ = -Math.cos(angle) * (radiusArc * 0.5) + 1.2 + subOffset;
-      targetY = Math.cos((familyIndex - 3) * 0.4) * 0.35 + (isHovered ? 0.35 : 0);
+      // Rotation orientée naturellement vers la caméra pour une excellente lisibilité
+      targetRotY = -angle * 0.75;
+      targetRotX = -0.12;
+      targetRotZ = -angle * 0.15;
 
-      targetRotY = -angle * 0.85;
-      targetRotX = -0.15;
-      targetRotZ = -angle * 0.25;
+      if (isHovered) {
+        targetY += 0.4;
+        targetZ += 0.35;
+        targetScale = 1.08;
+      }
     }
 
-    // Amorti fluide Three.js (damp)
-    meshRef.current.position.x = THREE.MathUtils.damp(meshRef.current.position.x, targetX, 5, delta);
-    meshRef.current.position.y = THREE.MathUtils.damp(meshRef.current.position.y, targetY, 5, delta);
-    meshRef.current.position.z = THREE.MathUtils.damp(meshRef.current.position.z, targetZ, 5, delta);
+    // Amorti Three.js très doux
+    groupRef.current.position.x = THREE.MathUtils.damp(groupRef.current.position.x, targetX, 5.5, delta);
+    groupRef.current.position.y = THREE.MathUtils.damp(groupRef.current.position.y, targetY, 5.5, delta);
+    groupRef.current.position.z = THREE.MathUtils.damp(groupRef.current.position.z, targetZ, 5.5, delta);
 
-    meshRef.current.rotation.x = THREE.MathUtils.damp(meshRef.current.rotation.x, targetRotX, 5, delta);
-    meshRef.current.rotation.y = THREE.MathUtils.damp(meshRef.current.rotation.y, targetRotY, 5, delta);
-    meshRef.current.rotation.z = THREE.MathUtils.damp(meshRef.current.rotation.z, targetRotZ, 5, delta);
+    groupRef.current.rotation.x = THREE.MathUtils.damp(groupRef.current.rotation.x, targetRotX, 5.5, delta);
+    groupRef.current.rotation.y = THREE.MathUtils.damp(groupRef.current.rotation.y, targetRotY, 5.5, delta);
+    groupRef.current.rotation.z = THREE.MathUtils.damp(groupRef.current.rotation.z, targetRotZ, 5.5, delta);
+
+    groupRef.current.scale.setScalar(
+      THREE.MathUtils.damp(groupRef.current.scale.x, targetScale, 6, delta)
+    );
   });
 
   return (
     <group
-      ref={meshRef}
+      ref={groupRef}
       onPointerOver={(e) => {
         e.stopPropagation();
         setHoveredFamily(family.id);
@@ -138,35 +163,68 @@ function DeckCardItem({
       }}
       cursor="pointer"
     >
-      {/* Corps & tranches */}
-      <mesh position={[0, 0, -thickness / 2]}>
-        <extrudeGeometry args={[shape, extrudeSettings]} />
-        <meshStandardMaterial
-          color={isHovered ? family.color : "#edf2f7"}
-          roughness={0.3}
-          metalness={0.1}
-        />
-      </mesh>
+      {/* Empilement des 6 cartes de la famille */}
+      {[0, 1, 2, 3, 4, 5].map((cardIdx) => {
+        const isTopCard = cardIdx === 5;
+        const zPos = cardIdx * singleThickness;
+        const jitter = jitterArray[cardIdx];
 
-      {/* Texture Dos de carte haute définition */}
-      <mesh position={[0, 0, -thickness / 2 - 0.007]} rotation={[0, Math.PI, 0]}>
-        <planeGeometry args={[width * 0.98, height * 0.98]} />
-        <meshBasicMaterial map={backTexture} toneMapped={false} />
-      </mesh>
+        return (
+          <group
+            key={cardIdx}
+            position={[jitter.offsetX, jitter.offsetY, zPos]}
+            rotation={[0, 0, jitter.rotZ]}
+          >
+            {/* Tranche de carton de la carte */}
+            <mesh position={[0, 0, -singleThickness / 2]}>
+              <extrudeGeometry args={[shape, extrudeSettings]} />
+              <meshStandardMaterial
+                color={isTopCard && isHovered ? family.color : "#f8fafc"}
+                roughness={0.35}
+                metalness={0.05}
+              />
+            </mesh>
 
-      {/* Bordure lumineuse sur la carte de dessus de chaque famille */}
-      {cardIndexInFamily === 5 && isSpread && (
-        <Text
-          position={[0, -height / 2 - 0.22, 0]}
-          fontSize={0.14}
-          color={isHovered ? "#38bdf8" : "#ffffff"}
-          anchorX="center"
-          anchorY="top"
-          maxWidth={1.8}
-          textAlign="center"
-        >
-          {family.name.toUpperCase()}
-        </Text>
+            {/* La carte supérieure (carte 1) montre son RECTO avec l'illustration ! */}
+            {isTopCard ? (
+              <mesh position={[0, 0, singleThickness / 2 + 0.006]}>
+                <planeGeometry args={[width * 0.985, height * 0.985]} />
+                <meshBasicMaterial map={frontTexture} toneMapped={false} />
+              </mesh>
+            ) : (
+              /* Les cartes du dessous montrent le dos ou la tranche */
+              <mesh position={[0, 0, -singleThickness / 2 - 0.006]} rotation={[0, Math.PI, 0]}>
+                <planeGeometry args={[width * 0.985, height * 0.985]} />
+                <meshBasicMaterial map={backTexture} toneMapped={false} />
+              </mesh>
+            )}
+          </group>
+        );
+      })}
+
+      {/* Titre et badge de la famille sous le paquet */}
+      {isSpread && (
+        <group position={[0, -height / 2 - 0.28, 0.06]}>
+          <Text
+            fontSize={0.15}
+            color={isHovered ? "#38bdf8" : "#ffffff"}
+            anchorX="center"
+            anchorY="top"
+            maxWidth={2.2}
+            textAlign="center"
+          >
+            {family.name}
+          </Text>
+          <Text
+            position={[0, -0.2, 0]}
+            fontSize={0.095}
+            color={isHovered ? family.color : "#94a3b8"}
+            anchorX="center"
+            anchorY="top"
+          >
+            6 CARTES
+          </Text>
+        </group>
       )}
     </group>
   );
@@ -181,42 +239,37 @@ export default function Deck3DScene({
   return (
     <div className="w-full h-full relative cursor-grab active:cursor-grabbing">
       <Canvas
-        camera={{ position: [0, 0.4, 5.4], fov: 45 }}
+        camera={{ position: [0, 0.3, 6.0], fov: 42 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
-        <ambientLight intensity={1.2} />
-        <directionalLight position={[5, 8, 5]} intensity={1.6} />
-        <directionalLight position={[-5, -4, -3]} intensity={0.6} />
-        <pointLight position={[0, 2, 3]} intensity={0.8} color="#38bdf8" />
+        <ambientLight intensity={1.5} />
+        <directionalLight position={[4, 8, 5]} intensity={1.5} />
+        <directionalLight position={[-4, -3, -2]} intensity={0.6} />
+        <pointLight position={[0, 1.5, 4]} intensity={0.9} color="#38bdf8" />
 
-        <Float speed={1.5} rotationIntensity={0.15} floatIntensity={0.25}>
-          <group position={[0, 0, 0]}>
+        <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.2}>
+          <group position={[0, -0.15, 0]}>
             {FAMILIES.map((family, fIdx) => (
-              <React.Fragment key={family.id}>
-                {[0, 1, 2, 3, 4, 5].map((cIdx) => (
-                  <DeckCardItem
-                    key={`${family.id}-${cIdx}`}
-                    familyIndex={fIdx}
-                    cardIndexInFamily={cIdx}
-                    family={family}
-                    isSpread={isSpread}
-                    onSelectFamily={onSelectFamily}
-                    isHovered={hoveredFamily === family.id}
-                    setHoveredFamily={setHoveredFamily}
-                  />
-                ))}
-              </React.Fragment>
+              <FamilyStack3D
+                key={family.id}
+                family={family}
+                familyIndex={fIdx}
+                isSpread={isSpread}
+                isHovered={hoveredFamily === family.id}
+                onSelectFamily={onSelectFamily}
+                setHoveredFamily={setHoveredFamily}
+              />
             ))}
           </group>
         </Float>
 
         <ContactShadows
-          position={[0, -1.8, 0]}
-          opacity={0.4}
-          scale={7}
+          position={[0, -2.1, 0]}
+          opacity={0.45}
+          scale={9}
           blur={2.5}
-          far={4}
+          far={5}
         />
       </Canvas>
     </div>
