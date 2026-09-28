@@ -16,6 +16,8 @@ import {
   ChevronUp,
   X,
   Compass,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -35,6 +37,7 @@ export default function Experience7Familles() {
   const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
+  const [isCfbrModalOpen, setIsCfbrModalOpen] = useState<boolean>(false);
 
   // État du Deck 3D (pile compacte vs éventail des 7 familles)
   const [isDeckSpread, setIsDeckSpread] = useState<boolean>(true);
@@ -354,7 +357,9 @@ export default function Experience7Familles() {
       }
 
       if (e.key === "Escape") {
-        if (isEditing) {
+        if (isCfbrModalOpen) {
+          setIsCfbrModalOpen(false);
+        } else if (isEditing) {
           setIsEditing(false);
         } else if (selectedCardId) {
           setSelectedCardId(null);
@@ -426,6 +431,7 @@ export default function Experience7Familles() {
     selectedFamilyId,
     selectedCardId,
     isEditing,
+    isCfbrModalOpen,
     hoveredCardId,
     deckScrollOffset,
     familyCards,
@@ -439,53 +445,78 @@ export default function Experience7Familles() {
         {liveAnnouncement}
       </div>
 
-      {/* 1. BARRE SUPÉRIEURE ÉPURÉE */}
+      {/* 1. BARRE SUPÉRIEURE ÉPURÉE & MODERNE AUX COULEURS DU CFBR */}
+      {/* Liseré discret aux couleurs identitaires du CFBR (bleu canard / vert eau) */}
+      <div className="h-[3px] w-full bg-gradient-to-r from-[#1b5d78] via-[#247c9e] to-[#22c55e] z-50 flex-shrink-0" />
+
       <header
         role="banner"
-        className="h-16 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#F7F5F0]/85 z-40"
+        className="h-16 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 z-40 transition-colors"
       >
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label="Retour à l'accueil des 7 familles"
-          className="flex items-center gap-3 cursor-pointer group focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none rounded-xl p-1 -m-1"
-          onClick={() => {
-            setSelectedFamilyId(null);
-            setSelectedCardId(null);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
+        <div className="flex items-center gap-3">
+          {/* Logo officiel CFBR & Titre avec retour accueil */}
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Accueil du jeu des 7 familles - CFBR"
+            className="flex items-center gap-3 cursor-pointer group focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none rounded-xl p-1 -m-1"
+            onClick={() => {
               setSelectedFamilyId(null);
               setSelectedCardId(null);
-            }
-          }}
-        >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-700 flex items-center justify-center shadow-md shadow-cyan-600/20 group-hover:scale-105 transition-transform">
-            <Layers className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-sm md:text-base font-bold tracking-tight text-stone-900 leading-tight flex items-center gap-2">
-              7 Familles des Barrages
-              <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-stone-200/80 text-stone-700 border border-stone-300/80">
-                Continuous 3D Scene
-              </span>
-            </h1>
-            <p className="text-[11px] text-stone-500">
-              CFBR • Centenaire 1926–2026
-            </p>
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setSelectedFamilyId(null);
+                setSelectedCardId(null);
+              }
+            }}
+          >
+            {/* Vignette épurée du logo CFBR */}
+            <div className="h-10 px-2 py-0.5 bg-white/95 border border-stone-200/90 rounded-xl shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md group-hover:border-[#1b5d78]/40 transition">
+              <img
+                src="/cfbr-logo.png"
+                alt="Logo officiel CFBR"
+                className="h-8 w-auto object-contain"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm md:text-base font-bold tracking-tight text-stone-900 leading-tight">
+                  7 Familles des Barrages
+                </h1>
+                <span className="hidden sm:inline-flex items-center text-[10px] font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
+                  1926–2026
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500 hidden sm:block">
+                Comité Français des Barrages et Réservoirs
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Contrôles supérieurs */}
         <div className="flex items-center gap-2">
+          {/* Bouton d'accès au site officiel CFBR avec consultation directe embarquée */}
+          <button
+            onClick={() => setIsCfbrModalOpen(true)}
+            className="min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-[#1b5d78] hover:text-white text-[#1b5d78] border border-[#1b5d78]/30 shadow-xs hover:shadow-md transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            title="Consulter le site officiel CFBR (vue intégrée)"
+            aria-label="Ouvrir le site officiel du CFBR dans une fenêtre intégrée"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Site CFBR</span>
+          </button>
+
           {selectedCardId && (
             <button
               onClick={() => setIsFlipped(!isFlipped)}
-              className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-sm transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+              className="min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs hover:shadow-sm transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
               title="Retourner la carte à 180°"
               aria-label={isFlipped ? "Afficher le recto de la carte" : "Afficher le verso de la carte"}
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">
                 {isFlipped ? "Voir recto" : "Voir verso"}
               </span>
@@ -494,15 +525,15 @@ export default function Experience7Familles() {
 
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
+            className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
               isEditing
                 ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
-                : "bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-sm"
+                : "bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs"
             }`}
             aria-label={isEditing ? "Fermer le mode édition" : "Ouvrir le mode édition"}
           >
-            <Edit3 className="w-4 h-4" />
-            <span className="hidden sm:inline">Mode Édition</span>
+            <Edit3 className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Mode Édition</span>
           </button>
         </div>
       </header>
@@ -983,6 +1014,67 @@ export default function Experience7Familles() {
                   Veuillez d'abord sélectionner une carte dans le jeu pour modifier son texte.
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      {/* 4. MODALE CONSULTATION EMBEDDED DU SITE OFFICIEL CFBR */}
+      {isCfbrModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cfbr-dialog-title"
+          className="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6"
+        >
+          <div className="bg-white border border-stone-300 w-full max-w-6xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden text-stone-900">
+            {/* Barre d'en-tête de la modale CFBR */}
+            <div className="px-4 py-3 border-b border-stone-200 bg-[#FDFBF7] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-9 px-2 py-0.5 bg-white border border-stone-200 rounded-lg flex items-center justify-center shadow-xs">
+                  <img src="/cfbr-logo.png" alt="CFBR" className="h-7 w-auto object-contain" />
+                </div>
+                <div>
+                  <h3 id="cfbr-dialog-title" className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-2">
+                    Comité Français des Barrages et Réservoirs
+                    <span className="text-[10px] text-[#1b5d78] bg-[#1b5d78]/10 font-semibold px-2 py-0.5 rounded-full border border-[#1b5d78]/20 hidden md:inline">
+                      Site officiel embarqué
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-stone-500 hidden sm:block">
+                    https://www.barrages-cfbr.eu
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://www.barrages-cfbr.eu"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-stone-50 text-stone-700 transition flex items-center gap-1.5 border border-stone-300 shadow-xs focus-visible:ring-2 focus-visible:ring-cyan-500"
+                  title="Ouvrir le site CFBR dans un nouvel onglet"
+                >
+                  <span className="hidden sm:inline">Ouvrir dans un onglet</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-stone-500" />
+                </a>
+                <button
+                  onClick={() => setIsCfbrModalOpen(false)}
+                  className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                  aria-label="Fermer la vue intégrée du site CFBR"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Cadre de navigation web intégré (iframe sécurisée) */}
+            <div className="flex-1 w-full h-full relative bg-stone-100">
+              <iframe
+                src="https://www.barrages-cfbr.eu"
+                title="Site officiel du CFBR (Comité Français des Barrages et Réservoirs)"
+                className="w-full h-full border-0"
+                allow="fullscreen"
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
