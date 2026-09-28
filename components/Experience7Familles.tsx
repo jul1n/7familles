@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { FAMILIES, CARDS } from "@/data/cards";
 import {
@@ -39,6 +39,92 @@ export default function Experience7Familles() {
   // État du Deck 3D (pile compacte vs éventail des 7 familles)
   const [isDeckSpread, setIsDeckSpread] = useState<boolean>(true);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [deckScrollOffset, setDeckScrollOffset] = useState<number>(0);
+
+  // Vitesse de défilement continu au survol gauche/droite
+  const hoverVelocityRef = useRef<number>(0);
+  const isDraggingRef = useRef<boolean>(false);
+  const dragStartXRef = useRef<number>(0);
+  const dragStartOffsetRef = useRef<number>(0);
+
+  // Détection du survol gauche et droite pour faire défiler le carrousel 3D
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (selectedFamilyId) {
+      hoverVelocityRef.current = 0;
+      return;
+    }
+    const width = window.innerWidth;
+    const x = e.clientX;
+    const ratio = x / width;
+
+    // Survol vers la droite (ratio > 0.68) : fait défiler pour révéler les familles de droite
+    if (ratio > 0.68) {
+      const factor = (ratio - 0.68) / 0.32; // 0 à 1
+      hoverVelocityRef.current = -factor * 2.4;
+    }
+    // Survol vers la gauche (ratio < 0.32) : fait défiler pour révéler les familles de gauche
+    else if (ratio < 0.32) {
+      const factor = (0.32 - ratio) / 0.32; // 0 à 1
+      hoverVelocityRef.current = factor * 2.4;
+    } else {
+      hoverVelocityRef.current = 0;
+    }
+  };
+
+  const handleMouseLeave = () => {
+    hoverVelocityRef.current = 0;
+    isDraggingRef.current = false;
+  };
+
+  // Boucle de défilement continu au survol
+  useEffect(() => {
+    let animId: number;
+    let lastTime = performance.now();
+
+    const loop = (now: number) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      if (!isDraggingRef.current && Math.abs(hoverVelocityRef.current) > 0.001) {
+        setDeckScrollOffset((prev) => {
+          const next = prev + hoverVelocityRef.current * dt;
+          return Math.max(-3.0, Math.min(3.0, next));
+        });
+      }
+      animId = requestAnimationFrame(loop);
+    };
+
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
+  // Défilement à la molette / touchpad
+  const handleWheel = (e: React.WheelEvent) => {
+    if (selectedFamilyId) return;
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    setDeckScrollOffset((prev) => Math.max(-3.0, Math.min(3.0, prev - delta * 0.0025)));
+  };
+
+  // Glisser-déposer / swipe à la souris ou au doigt
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (selectedFamilyId) return;
+    isDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartOffsetRef.current = deckScrollOffset;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (selectedFamilyId) return;
+    handleMouseMove(e as unknown as React.MouseEvent<HTMLDivElement>);
+    if (isDraggingRef.current) {
+      const diff = (e.clientX - dragStartXRef.current) / (window.innerWidth * 0.35);
+      setDeckScrollOffset(Math.max(-3.0, Math.min(3.0, dragStartOffsetRef.current + diff * 1.5)));
+    }
+  };
+
+  const handlePointerUp = () => {
+    isDraggingRef.current = false;
+  };
 
   // Bottom sheet mobile (collapsed | intermediate | expanded)
   const [sheetState, setSheetState] = useState<"collapsed" | "intermediate" | "expanded">("collapsed");
@@ -208,7 +294,15 @@ export default function Experience7Familles() {
       </header>
 
       {/* 2. SCÈNE 3D UNIQUE ET PERMANENTE (AU CŒUR DU SITE) */}
-      <div className="flex-1 relative flex overflow-hidden">
+      <div
+        className="flex-1 relative flex overflow-hidden"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onWheel={handleWheel}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
         {/* CANVAS WEBGL PLEIN ÉCRAN SOUS LES OVERLAYS */}
         <div
           className={`relative transition-all duration-500 ${
@@ -237,6 +331,7 @@ export default function Experience7Familles() {
             hoveredCardId={hoveredCardId}
             setHoveredCardId={setHoveredCardId}
             isDeckSpread={isDeckSpread}
+            deckScrollOffset={deckScrollOffset}
           />
         </div>
 
@@ -244,14 +339,76 @@ export default function Experience7Familles() {
 
         {/* OVERLAY ÉTAPE 1 : DECK ACCUEIL */}
         {currentStage === "deck" && (
-          <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
-            <div className="text-center pt-2">
-              <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 backdrop-blur-md">
-                Touchez ou cliquez sur un paquet pour déployer sa famille
+          <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6">
+            {/* Guide supérieur */}
+            <div className="text-center pt-1">
+              <span className="inline-block px-3.5 py-1 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 backdrop-blur-md shadow-lg">
+                Survolez les bords gauche/droite pour faire défiler les 7 familles • Cliquez sur un paquet pour l'ouvrir
               </span>
             </div>
 
-            <div className="flex justify-center pb-2 pointer-events-auto">
+            {/* Zones de navigation latérales (flèches de défilement cliquables) */}
+            <div className="flex-1 flex items-center justify-between px-2 pointer-events-none">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeckScrollOffset((prev) => Math.min(3.0, prev + 1.0));
+                }}
+                className={`p-3 rounded-full bg-slate-900/80 border border-white/10 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 backdrop-blur-xl shadow-2xl transition pointer-events-auto ${
+                  deckScrollOffset >= 2.9
+                    ? "opacity-25 pointer-events-none"
+                    : "opacity-80 hover:opacity-100 hover:scale-110"
+                }`}
+                title="Faire défiler vers la gauche"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeckScrollOffset((prev) => Math.max(-3.0, prev - 1.0));
+                }}
+                className={`p-3 rounded-full bg-slate-900/80 border border-white/10 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 backdrop-blur-xl shadow-2xl transition pointer-events-auto ${
+                  deckScrollOffset <= -2.9
+                    ? "opacity-25 pointer-events-none"
+                    : "opacity-80 hover:opacity-100 hover:scale-110"
+                }`}
+                title="Faire défiler vers la droite"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Barre inférieure : sélecteur rapide des 7 familles & bouton éventail */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pb-2 pointer-events-auto">
+              {/* Pastilles directes des 7 familles */}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-900/85 border border-white/10 backdrop-blur-xl shadow-2xl overflow-x-auto max-w-full">
+                {FAMILIES.map((fam, idx) => {
+                  const isCentered = Math.round(3 - deckScrollOffset) === idx;
+                  return (
+                    <button
+                      key={fam.id}
+                      onClick={() => setDeckScrollOffset(3 - idx)}
+                      onDoubleClick={() => setSelectedFamilyId(fam.id)}
+                      className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                        isCentered
+                          ? "bg-white/20 text-white shadow-md border border-white/30 scale-105"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                      }`}
+                      title={`Centrer la famille ${fam.name}`}
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: fam.color }}
+                      />
+                      <span>{fam.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Bouton éventail / paquet */}
               <button
                 onClick={() => setIsDeckSpread(!isDeckSpread)}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900/90 text-cyan-300 border border-cyan-500/30 hover:bg-slate-800 transition flex items-center gap-2 shadow-2xl backdrop-blur-xl"

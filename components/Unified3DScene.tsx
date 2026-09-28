@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useTexture, ContactShadows, Text, Float } from "@react-three/drei";
 import * as THREE from "three";
@@ -15,9 +15,9 @@ interface Unified3DSceneProps {
   hoveredCardId: string | null;
   setHoveredCardId: (id: string | null) => void;
   isDeckSpread: boolean;
+  deckScrollOffset: number; // Défilement horizontal contrôlé par le survol souris/tactile
 }
 
-// Composant d'une carte unique (réutilisée pour les 42 cartes dans une seule scène)
 function PhysicalCard3D({
   card,
   indexInFamily,
@@ -32,6 +32,7 @@ function PhysicalCard3D({
   isHovered,
   setHoveredCardId,
   isDeckSpread,
+  deckScrollOffset,
 }: {
   card: CardData;
   indexInFamily: number;
@@ -46,6 +47,7 @@ function PhysicalCard3D({
   isHovered: boolean;
   setHoveredCardId: (id: string | null) => void;
   isDeckSpread: boolean;
+  deckScrollOffset: number;
 }) {
   const meshRef = useRef<THREE.Group>(null);
 
@@ -59,7 +61,7 @@ function PhysicalCard3D({
   const radius = 0.085;
   const thickness = 0.016;
 
-  // Forme de la carte aux coins arrondis
+  // Forme de carte aux coins arrondis physiques
   const shape = useMemo(() => {
     const s = new THREE.Shape();
     const x = -width / 2;
@@ -93,11 +95,11 @@ function PhysicalCard3D({
 
   // Jitter naturel de chaque carte lorsqu'elle est dans le paquet de 6
   const jitter = useMemo(() => {
-    const seed = familyIndex * 17 + indexInFamily * 23;
+    const seed = familyIndex * 19 + indexInFamily * 31;
     return {
-      rotZ: Math.sin(seed) * 0.04,
-      offsetX: Math.cos(seed * 1.5) * 0.02,
-      offsetY: Math.sin(seed * 2.1) * 0.018,
+      rotZ: Math.sin(seed) * 0.035,
+      offsetX: Math.cos(seed * 1.4) * 0.02,
+      offsetY: Math.sin(seed * 2.2) * 0.018,
     };
   }, [familyIndex, indexInFamily]);
 
@@ -115,11 +117,11 @@ function PhysicalCard3D({
     let targetRotZ = 0;
     let targetScale = 1;
 
-    // --- 1. ÉTAPE DECK (Toutes les 7 familles visibles) ---
+    // --- 1. ÉTAPE DECK (Les 7 familles avec défilement fluide au survol gauche/droite) ---
     if (currentStage === "deck") {
       if (!isDeckSpread) {
         // Paquet unique compact
-        const globalZ = (familyIndex - 3) * (6 * 0.016) + indexInFamily * 0.016;
+        const globalZ = (familyIndex - 3) * (6 * 0.016) + (5 - indexInFamily) * 0.016;
         targetX = jitter.offsetX;
         targetY = jitter.offsetY;
         targetZ = globalZ;
@@ -127,42 +129,47 @@ function PhysicalCard3D({
         targetRotY = 0.45;
         targetRotZ = jitter.rotZ;
       } else {
-        // Éventail des 7 familles
-        const angleStep = 0.34;
-        const angle = (familyIndex - 3) * angleStep;
-        const arcRadius = 5.2;
+        // Défilement horizontal fluide des 7 familles via deckScrollOffset
+        // familyIndex varie de 0 à 6. Avec deckScrollOffset, on fait défiler le carrousel.
+        const effectiveFamilyPos = (familyIndex - 3) + deckScrollOffset;
+        const angleStep = 0.38;
+        const angle = effectiveFamilyPos * angleStep;
+        const arcRadius = 5.6;
 
-        targetX = Math.sin(angle) * arcRadius + jitter.offsetX;
-        targetZ = -Math.cos(angle) * (arcRadius * 0.45) + 1.8 + indexInFamily * 0.016;
-        targetY = Math.cos((familyIndex - 3) * 0.35) * 0.22 + jitter.offsetY;
-
-        targetRotY = -angle * 0.75;
+        targetRotY = -angle * 0.72;
         targetRotX = -0.12;
-        targetRotZ = -angle * 0.15 + jitter.rotZ;
+        targetRotZ = -angle * 0.12 + jitter.rotZ;
+
+        // La carte n°1 (indexInFamily = 0) est au-dessus du paquet de 6, orientée vers le joueur
+        const stackOffset = (5 - indexInFamily) * 0.018;
+
+        // Déplacement perpendiculaire à la face de la carte pour un empilement physique parfait
+        targetX = Math.sin(angle) * arcRadius + Math.sin(targetRotY) * stackOffset + jitter.offsetX;
+        targetZ = -Math.cos(angle) * (arcRadius * 0.42) + 2.0 + Math.cos(targetRotY) * stackOffset;
+        targetY = Math.cos(effectiveFamilyPos * 0.25) * 0.2 + jitter.offsetY;
 
         if (isHovered) {
           targetY += 0.35;
-          targetZ += 0.3;
+          targetZ += 0.35;
           targetScale = 1.06;
         }
       }
     }
-    // --- 2. ÉTAPE FAMILLE (Éventail de joueur complet avec les 6 cartes) ---
+    // --- 2. ÉTAPE FAMILLE (Éventail de joueur complet avec les 6 cartes déployées) ---
     else if (currentStage === "family") {
       if (isCardInSelectedFamily) {
-        // Authentique éventail de joueur de cartes (pivoté en éventail depuis la base)
+        // Authentique éventail de joueur de cartes pivoté depuis le bas
         const centerOffset = indexInFamily - 2.5; // -2.5, -1.5, -0.5, 0.5, 1.5, 2.5
-        const fanAngle = centerOffset * 0.11; // Éventail angulaire naturel (~ -16° à +16°)
+        const fanAngle = centerOffset * 0.11; // ~ -16° à +16°
 
-        // Rayon de l'éventail de cartes tenu en main
         const fanRadius = 5.2;
         targetX = Math.sin(fanAngle) * fanRadius;
         targetY = -Math.cos(fanAngle) * fanRadius + 4.1;
-        targetZ = indexInFamily * 0.05 + 0.8;
+        targetZ = indexInFamily * 0.06 + 0.8;
         targetScale = 0.82;
 
-        targetRotZ = -fanAngle; // Inclinaison angulaire comme tenu en main
-        targetRotY = -fanAngle * 0.35;
+        targetRotZ = -fanAngle; // Orientation naturelle en main
+        targetRotY = -fanAngle * 0.32;
         targetRotX = isHovered ? -0.02 : -0.14;
 
         if (isHovered) {
@@ -181,10 +188,10 @@ function PhysicalCard3D({
         targetRotY = -angle;
       }
     }
-    // --- 3. ÉTAPE CARTE INDIVIDUELLE (Carte active au centre + éventail de joueur complet visible en arrière-plan) ---
+    // --- 3. ÉTAPE CARTE INDIVIDUELLE (Carte active au centre + les 5 cartes soeurs visibles en arrière-plan) ---
     else if (currentStage === "card") {
       if (isTargetSelectedCard) {
-        // La carte choisie se détache vers l'avant, centrée et parfaitement cadrée
+        // La carte choisie se détache vers l'avant, centrée et bien cadrée
         targetX = 0;
         targetY = 0.15;
         targetZ = 2.4;
@@ -193,25 +200,31 @@ function PhysicalCard3D({
         // Retournement à 180°
         targetRotY = isFlipped ? Math.PI : 0;
 
-        // Légère réaction interactive au curseur / gyroscope
+        // Réaction interactive au curseur / gyroscope
         const mouseX = state.pointer.x * 0.15;
         const mouseY = state.pointer.y * 0.15;
         targetRotX = -mouseY;
         targetRotZ = -mouseX * 0.4;
       } else if (isCardInSelectedFamily) {
-        // LES 5 AUTRES CARTES FORMENT UN ÉVENTAIL DE JOUEUR LISIBLE DERRIÈRE LA CARTE
+        // Les 5 autres cartes forment un éventail visible en arrière-plan pour naviguer
         const centerOffset = indexInFamily - 2.5; // -2.5 à +2.5
-        const fanAngle = centerOffset * 0.15; // Éventail plus ouvert pour voir l'index et le coin de chaque carte
+        const fanAngle = centerOffset * 0.22;
 
-        const fanRadius = 6.0;
+        const fanRadius = 5.8;
         targetX = Math.sin(fanAngle) * fanRadius;
-        targetY = -Math.cos(fanAngle) * fanRadius + 4.5;
-        targetZ = -1.2 + indexInFamily * 0.04;
-        targetScale = 0.62;
+        targetY = -Math.cos(fanAngle) * fanRadius + 4.9;
+        targetZ = 0.15 + (5 - Math.abs(centerOffset)) * 0.05;
+        targetScale = 0.68;
 
-        targetRotZ = -fanAngle; // Orientation en éventail de joueur
-        targetRotY = -fanAngle * 0.4;
-        targetRotX = -0.15;
+        targetRotZ = -fanAngle;
+        targetRotY = -fanAngle * 0.35;
+        targetRotX = -0.12;
+
+        if (isHovered) {
+          targetY += 0.32;
+          targetZ += 0.5;
+          targetScale = 0.78;
+        }
       } else {
         // Les autres familles sont repoussées hors champ
         targetZ = -6;
@@ -219,7 +232,7 @@ function PhysicalCard3D({
       }
     }
 
-    // Amortissement Three.js (damp) pour une transition physique continue
+    // Amortissement Three.js pour une transition physique ultra fluide
     meshRef.current.position.x = THREE.MathUtils.damp(meshRef.current.position.x, targetX, 5.5, delta);
     meshRef.current.position.y = THREE.MathUtils.damp(meshRef.current.position.y, targetY, 5.5, delta);
     meshRef.current.position.z = THREE.MathUtils.damp(meshRef.current.position.z, targetZ, 5.5, delta);
@@ -250,12 +263,6 @@ function PhysicalCard3D({
     }
   };
 
-  // Afficher le recto ou le verso selon la carte
-  const showFront =
-    currentStage === "card" ||
-    (currentStage === "family" && isCardInSelectedFamily) ||
-    (currentStage === "deck" && indexInFamily === 5); // carte 1 du dessus en mode deck
-
   return (
     <group
       ref={meshRef}
@@ -267,7 +274,7 @@ function PhysicalCard3D({
       onClick={handleClick}
       cursor="pointer"
     >
-      {/* Tranche de papier / carton de la carte */}
+      {/* Tranche de papier / carton */}
       <mesh position={[0, 0, -thickness / 2]}>
         <extrudeGeometry args={[shape, extrudeSettings]} />
         <meshStandardMaterial
@@ -277,22 +284,22 @@ function PhysicalCard3D({
         />
       </mesh>
 
-      {/* Face Recto (illustration de la carte) */}
+      {/* Face Recto (illustration de la carte - TOUJOURS le recto illustré de la carte) */}
       <mesh position={[0, 0, thickness / 2 + 0.007]}>
         <planeGeometry args={[width * 0.985, height * 0.985]} />
         <meshBasicMaterial
-          map={showFront ? frontTexture : backTexture}
+          map={frontTexture}
           toneMapped={false}
         />
       </mesh>
 
-      {/* Face Verso (dos du jeu ou dos de la carte en mode consultation) */}
+      {/* Face Verso (dos officiel du jeu) */}
       <mesh position={[0, 0, -thickness / 2 - 0.007]} rotation={[0, Math.PI, 0]}>
         <planeGeometry args={[width * 0.985, height * 0.985]} />
         <meshBasicMaterial map={backTexture} toneMapped={false} />
       </mesh>
 
-      {/* Titres flottants en 3D */}
+      {/* Titres flottants en 3D en mode Famille */}
       {currentStage === "family" && isCardInSelectedFamily && (
         <group position={[0, -height / 2 - 0.22, 0.05]}>
           <Text
@@ -308,7 +315,24 @@ function PhysicalCard3D({
         </group>
       )}
 
-      {currentStage === "deck" && isDeckSpread && indexInFamily === 5 && (
+      {/* Titre de carte en arrière-plan en mode Carte pour guider le clic */}
+      {currentStage === "card" && !isTargetSelectedCard && isCardInSelectedFamily && (
+        <group position={[0, -height / 2 - 0.22, 0.05]}>
+          <Text
+            fontSize={0.10}
+            color={isHovered ? "#38bdf8" : "#94a3b8"}
+            anchorX="center"
+            anchorY="top"
+            maxWidth={1.4}
+            textAlign="center"
+          >
+            {card.num}. {card.title}
+          </Text>
+        </group>
+      )}
+
+      {/* Titre de famille en mode Deck */}
+      {currentStage === "deck" && isDeckSpread && indexInFamily === 0 && (
         <group position={[0, -height / 2 - 0.28, 0.05]}>
           <Text
             fontSize={0.14}
@@ -363,6 +387,7 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
                   }
                   setHoveredCardId={props.setHoveredCardId}
                   isDeckSpread={props.isDeckSpread}
+                  deckScrollOffset={props.deckScrollOffset}
                 />
               ));
             })}
