@@ -150,40 +150,41 @@ function PhysicalCard3D({
     // --- 2. ÉTAPE FAMILLE (Déploiement des 6 cartes de la famille choisie) ---
     else if (currentStage === "family") {
       if (isCardInSelectedFamily) {
-        // Les 6 cartes de cette famille s'ouvrent en grand éventail horizontal devant la caméra
+        // Les 6 cartes s'ouvrent avec un espacement harmonieux et sans déborder de l'écran
         const centerOffset = indexInFamily - 2.5; // -2.5 à +2.5
-        targetX = centerOffset * 1.52;
-        targetZ = -Math.abs(centerOffset) * 0.16 + 2.1;
-        targetY = -Math.pow(centerOffset, 2) * 0.038;
+        targetX = centerOffset * 1.35;
+        targetZ = -Math.abs(centerOffset) * 0.15 + 1.2;
+        targetY = -Math.pow(centerOffset, 2) * 0.035;
+        targetScale = 0.88;
 
-        targetRotY = -centerOffset * 0.04;
-        targetRotZ = -centerOffset * 0.06;
-        targetRotX = isHovered ? -0.05 : -0.12;
+        targetRotY = -centerOffset * 0.035;
+        targetRotZ = -centerOffset * 0.055;
+        targetRotX = isHovered ? -0.04 : -0.1;
 
         if (isHovered) {
-          targetY += 0.32;
-          targetZ += 0.3;
-          targetScale = 1.1;
+          targetY += 0.28;
+          targetZ += 0.25;
+          targetScale = 0.98;
         }
       } else {
         // Les autres familles s'estompent doucement vers l'arrière-plan
         const angleStep = 0.5;
         const angle = (familyIndex - 3) * angleStep;
         targetX = Math.sin(angle) * 7.5;
-        targetZ = -3.5;
+        targetZ = -4.5;
         targetY = -0.5;
-        targetScale = 0.6;
+        targetScale = 0.5;
         targetRotY = -angle;
       }
     }
     // --- 3. ÉTAPE CARTE INDIVIDUELLE ---
     else if (currentStage === "card") {
       if (isTargetSelectedCard) {
-        // La carte choisie avance majestueusement au centre pour inspection
+        // La carte choisie reste entièrement visible avec de belles marges
         targetX = 0;
-        targetY = 0.05;
-        targetZ = 3.3;
-        targetScale = 1.25;
+        targetY = 0.08;
+        targetZ = 2.2;
+        targetScale = 0.95;
 
         // Retournement à 180°
         targetRotY = isFlipped ? Math.PI : 0;
@@ -196,15 +197,15 @@ function PhysicalCard3D({
       } else if (isCardInSelectedFamily) {
         // Les cartes soeurs restent discrètement visibles en bas
         const centerOffset = indexInFamily - 2.5;
-        targetX = centerOffset * 1.2;
-        targetY = -2.2;
-        targetZ = 0.8;
-        targetScale = 0.55;
+        targetX = centerOffset * 1.05;
+        targetY = -2.35;
+        targetZ = 0.4;
+        targetScale = 0.45;
         targetRotX = -0.3;
       } else {
         // Les autres familles sont repoussées hors champ
-        targetZ = -5;
-        targetScale = 0.2;
+        targetZ = -6;
+        targetScale = 0.15;
       }
     }
 
@@ -319,7 +320,7 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
   return (
     <div className="w-full h-full relative cursor-grab active:cursor-grabbing select-none">
       <Canvas
-        camera={{ position: [0, 0.2, 5.8], fov: 44 }}
+        camera={{ position: [0, 0.15, 6.8], fov: 42 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
