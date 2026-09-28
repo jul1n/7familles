@@ -237,15 +237,227 @@ export default function Experience7Familles() {
     setIsFlipped(false);
   };
 
+  // Annonce vocale dynamique pour les lecteurs d'écran (WCAG 4.1.3)
+  const [liveAnnouncement, setLiveAnnouncement] = useState<string>("");
+
+  useEffect(() => {
+    if (currentStage === "card" && currentCard) {
+      setLiveAnnouncement(
+        `Carte ${currentCard.num} sur 6 sélectionnée : ${currentCard.title}, famille ${currentCard.familyName}. Flèches gauche et droite pour changer de carte, espace pour retourner.`
+      );
+    } else if (currentStage === "family" && activeFamily) {
+      setLiveAnnouncement(
+        `Famille ${activeFamily.name} ouverte. 6 cartes disponibles. Utilisez les flèches pour prévisualiser.`
+      );
+    } else if (currentStage === "deck") {
+      setLiveAnnouncement(`Accueil : Vue des 7 familles des barrages.`);
+    }
+  }, [currentStage, currentCard, activeFamily]);
+
+  // Support tactile complet : balayage horizontal (swipe) et vertical
+  const touchStartPosRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const touchSheetStartPosRef = useRef<{ y: number; time: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartPosRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now(),
+      };
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartPosRef.current) return;
+    const endX = e.changedTouches[0]?.clientX ?? touchStartPosRef.current.x;
+    const endY = e.changedTouches[0]?.clientY ?? touchStartPosRef.current.y;
+    const deltaX = endX - touchStartPosRef.current.x;
+    const deltaY = endY - touchStartPosRef.current.y;
+    const duration = Date.now() - touchStartPosRef.current.time;
+    touchStartPosRef.current = null;
+
+    // Détection d'un geste de swipe horizontal franc (seuil 38px, ratio horizontal > 1.25)
+    if (Math.abs(deltaX) > 38 && Math.abs(deltaX) > Math.abs(deltaY) * 1.25 && duration < 650) {
+      if (currentStage === "card") {
+        if (deltaX < 0) {
+          handleNextCard();
+        } else {
+          handlePrevCard();
+        }
+      } else if (currentStage === "deck") {
+        if (deltaX < 0) {
+          setDeckScrollOffset((prev) => Math.max(-3.0, prev - 1.0));
+        } else {
+          setDeckScrollOffset((prev) => Math.min(3.0, prev + 1.0));
+        }
+      } else if (currentStage === "family") {
+        if (deltaX < 0) {
+          if (hoveredCardId && familyCards.length > 0) {
+            const idx = familyCards.findIndex((c) => c.id === hoveredCardId);
+            const nextIdx = (idx + 1) % familyCards.length;
+            setHoveredCardId(familyCards[nextIdx].id);
+          } else if (familyCards.length > 0) {
+            setHoveredCardId(familyCards[0].id);
+          }
+        } else {
+          if (hoveredCardId && familyCards.length > 0) {
+            const idx = familyCards.findIndex((c) => c.id === hoveredCardId);
+            const prevIdx = (idx - 1 + familyCards.length) % familyCards.length;
+            setHoveredCardId(familyCards[prevIdx].id);
+          } else if (familyCards.length > 0) {
+            setHoveredCardId(familyCards[familyCards.length - 1].id);
+          }
+        }
+      }
+    }
+  };
+
+  // Glissement vertical sur le volet mobile (Bottom Sheet)
+  const handleSheetTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchSheetStartPosRef.current = {
+        y: e.touches[0].clientY,
+        time: Date.now(),
+      };
+    }
+  };
+
+  const handleSheetTouchEnd = (e: React.TouchEvent) => {
+    if (!touchSheetStartPosRef.current) return;
+    const endY = e.changedTouches[0]?.clientY ?? touchSheetStartPosRef.current.y;
+    const deltaY = endY - touchSheetStartPosRef.current.y;
+    touchSheetStartPosRef.current = null;
+
+    if (Math.abs(deltaY) > 30) {
+      if (deltaY < 0) {
+        // Balayage vers le haut : déployer d'un niveau
+        if (sheetState === "collapsed") setSheetState("intermediate");
+        else if (sheetState === "intermediate") setSheetState("expanded");
+      } else {
+        // Balayage vers le bas : réduire d'un niveau
+        if (sheetState === "expanded") setSheetState("intermediate");
+        else if (sheetState === "intermediate") setSheetState("collapsed");
+      }
+    }
+  };
+
+  // Navigation complète au clavier (WCAG 2.1.1 Clavier)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorer si l'utilisateur saisit dans un champ de formulaire
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      if (e.key === "Escape") {
+        if (isEditing) {
+          setIsEditing(false);
+        } else if (selectedCardId) {
+          setSelectedCardId(null);
+        } else if (selectedFamilyId) {
+          setSelectedFamilyId(null);
+        }
+      } else if (e.key === "ArrowLeft") {
+        if (currentStage === "card") {
+          e.preventDefault();
+          handlePrevCard();
+        } else if (currentStage === "family") {
+          e.preventDefault();
+          if (familyCards.length > 0) {
+            const currentIdx = familyCards.findIndex((c) => c.id === hoveredCardId);
+            const nextIdx = (currentIdx - 1 + familyCards.length) % familyCards.length;
+            setHoveredCardId(familyCards[nextIdx].id);
+          }
+        } else if (currentStage === "deck") {
+          e.preventDefault();
+          setDeckScrollOffset((prev) => Math.min(3.0, prev + 1.0));
+        }
+      } else if (e.key === "ArrowRight") {
+        if (currentStage === "card") {
+          e.preventDefault();
+          handleNextCard();
+        } else if (currentStage === "family") {
+          e.preventDefault();
+          if (familyCards.length > 0) {
+            const currentIdx = familyCards.findIndex((c) => c.id === hoveredCardId);
+            const nextIdx = (currentIdx + 1) % familyCards.length;
+            setHoveredCardId(familyCards[nextIdx].id);
+          }
+        } else if (currentStage === "deck") {
+          e.preventDefault();
+          setDeckScrollOffset((prev) => Math.max(-3.0, prev - 1.0));
+        }
+      } else if (e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        if (currentStage === "card") {
+          setIsFlipped((prev) => !prev);
+        } else if (currentStage === "deck") {
+          setIsDeckSpread((prev) => !prev);
+        }
+      } else if (e.key === "Enter") {
+        if (currentStage === "deck") {
+          e.preventDefault();
+          const activeIdx = Math.round(3 - deckScrollOffset);
+          const fam = FAMILIES[Math.max(0, Math.min(FAMILIES.length - 1, activeIdx))];
+          if (fam) setSelectedFamilyId(fam.id);
+        } else if (currentStage === "family") {
+          e.preventDefault();
+          if (hoveredCardId) {
+            setSelectedCardId(hoveredCardId);
+            setIsFlipped(false);
+            setSheetState("collapsed");
+          } else if (familyCards.length > 0) {
+            setSelectedCardId(familyCards[0].id);
+            setIsFlipped(false);
+            setSheetState("collapsed");
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    currentStage,
+    selectedFamilyId,
+    selectedCardId,
+    isEditing,
+    hoveredCardId,
+    deckScrollOffset,
+    familyCards,
+    currentCard,
+  ]);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#F7F5F0] text-stone-900 flex flex-col font-sans select-none">
+      {/* Annonceur vocal accessible invisible */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {liveAnnouncement}
+      </div>
+
       {/* 1. BARRE SUPÉRIEURE ÉPURÉE */}
-      <header className="h-16 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#F7F5F0]/85 z-40">
+      <header
+        role="banner"
+        className="h-16 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#F7F5F0]/85 z-40"
+      >
         <div
-          className="flex items-center gap-3 cursor-pointer group"
+          role="button"
+          tabIndex={0}
+          aria-label="Retour à l'accueil des 7 familles"
+          className="flex items-center gap-3 cursor-pointer group focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none rounded-xl p-1 -m-1"
           onClick={() => {
             setSelectedFamilyId(null);
             setSelectedCardId(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              setSelectedFamilyId(null);
+              setSelectedCardId(null);
+            }
           }}
         >
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-700 flex items-center justify-center shadow-md shadow-cyan-600/20 group-hover:scale-105 transition-transform">
@@ -269,10 +481,11 @@ export default function Experience7Familles() {
           {selectedCardId && (
             <button
               onClick={() => setIsFlipped(!isFlipped)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-sm transition flex items-center gap-1.5"
+              className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-sm transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
               title="Retourner la carte à 180°"
+              aria-label={isFlipped ? "Afficher le recto de la carte" : "Afficher le verso de la carte"}
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-4 h-4" />
               <span className="hidden sm:inline">
                 {isFlipped ? "Voir recto" : "Voir verso"}
               </span>
@@ -281,27 +494,32 @@ export default function Experience7Familles() {
 
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
               isEditing
                 ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
                 : "bg-white/90 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-sm"
             }`}
+            aria-label={isEditing ? "Fermer le mode édition" : "Ouvrir le mode édition"}
           >
-            <Edit3 className="w-3.5 h-3.5" />
+            <Edit3 className="w-4 h-4" />
             <span className="hidden sm:inline">Mode Édition</span>
           </button>
         </div>
       </header>
 
       {/* 2. SCÈNE 3D UNIQUE ET PERMANENTE (AU CŒUR DU SITE) */}
-      <div
-        className="flex-1 relative flex overflow-hidden"
+      <main
+        role="main"
+        aria-label="Espace de jeu interactif 3D"
+        className="flex-1 relative flex overflow-hidden touch-pan-y"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {/* CANVAS WEBGL PLEIN ÉCRAN SOUS LES OVERLAYS */}
         <div
@@ -342,8 +560,8 @@ export default function Experience7Familles() {
           <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6">
             {/* Guide supérieur */}
             <div className="text-center pt-1">
-              <span className="inline-block px-3.5 py-1 text-xs font-semibold rounded-full bg-white/85 text-stone-700 border border-stone-200/90 backdrop-blur-md shadow-sm">
-                Survolez les bords gauche/droite pour faire défiler les 7 familles • Cliquez sur un paquet pour l'ouvrir
+              <span className="inline-block px-3.5 py-1.5 text-xs font-semibold rounded-full bg-white/90 text-stone-700 border border-stone-200/90 backdrop-blur-md shadow-sm">
+                Glissez ou survolez pour faire défiler les 7 familles • Cliquez sur un paquet pour l'ouvrir
               </span>
             </div>
 
@@ -354,12 +572,13 @@ export default function Experience7Familles() {
                   e.stopPropagation();
                   setDeckScrollOffset((prev) => Math.min(3.0, prev + 1.0));
                 }}
-                className={`p-3 rounded-full bg-white/95 border border-stone-200/90 text-stone-600 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto ${
+                className={`w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-white/95 border border-stone-200/90 text-stone-700 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                   deckScrollOffset >= 2.9
                     ? "opacity-25 pointer-events-none"
-                    : "opacity-85 hover:opacity-100 hover:scale-110"
+                    : "opacity-90 hover:opacity-100 hover:scale-105 active:scale-95"
                 }`}
                 title="Faire défiler vers la gauche"
+                aria-label="Faire défiler vers la gauche"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -369,12 +588,13 @@ export default function Experience7Familles() {
                   e.stopPropagation();
                   setDeckScrollOffset((prev) => Math.max(-3.0, prev - 1.0));
                 }}
-                className={`p-3 rounded-full bg-white/95 border border-stone-200/90 text-stone-600 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto ${
+                className={`w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-white/95 border border-stone-200/90 text-stone-700 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                   deckScrollOffset <= -2.9
                     ? "opacity-25 pointer-events-none"
-                    : "opacity-85 hover:opacity-100 hover:scale-110"
+                    : "opacity-90 hover:opacity-100 hover:scale-105 active:scale-95"
                 }`}
                 title="Faire défiler vers la droite"
+                aria-label="Faire défiler vers la droite"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -383,7 +603,11 @@ export default function Experience7Familles() {
             {/* Barre inférieure : sélecteur rapide des 7 familles & bouton éventail */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pb-2 pointer-events-auto">
               {/* Pastilles directes des 7 familles */}
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/95 border border-stone-200/90 backdrop-blur-xl shadow-lg overflow-x-auto max-w-full">
+              <div
+                role="tablist"
+                aria-label="Sélection rapide des familles de barrages"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/95 border border-stone-200/90 backdrop-blur-xl shadow-lg overflow-x-auto max-w-full"
+              >
                 {FAMILIES.map((fam, idx) => {
                   const isCentered = Math.round(3 - deckScrollOffset) === idx;
                   return (
@@ -391,12 +615,14 @@ export default function Experience7Familles() {
                       key={fam.id}
                       onClick={() => setDeckScrollOffset(3 - idx)}
                       onDoubleClick={() => setSelectedFamilyId(fam.id)}
-                      className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                         isCentered
                           ? "bg-stone-900 text-white shadow-sm border border-stone-900 scale-105"
                           : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
                       }`}
                       title={`Centrer la famille ${fam.name}`}
+                      aria-label={`Centrer la famille ${fam.name}`}
+                      aria-selected={isCentered}
                     >
                       <span
                         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -411,10 +637,11 @@ export default function Experience7Familles() {
               {/* Bouton éventail / paquet */}
               <button
                 onClick={() => setIsDeckSpread(!isDeckSpread)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-white/95 text-stone-800 border border-stone-300 hover:bg-stone-50 transition flex items-center gap-2 shadow-lg backdrop-blur-xl"
+                className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-white/95 text-stone-800 border border-stone-300 hover:bg-stone-50 transition flex items-center gap-2 shadow-lg backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                aria-label={isDeckSpread ? "Rassembler le paquet en une pile" : "Déployer les 7 familles en éventail"}
               >
                 <Compass className="w-4 h-4 text-cyan-600" />
-                {isDeckSpread ? "Rassembler le paquet" : "Déployer en éventail"}
+                <span>{isDeckSpread ? "Rassembler le paquet" : "Déployer en éventail"}</span>
               </button>
             </div>
           </div>
@@ -422,17 +649,18 @@ export default function Experience7Familles() {
 
         {/* OVERLAY ÉTAPE 2 : FAMILLE DÉPLOYÉE */}
         {currentStage === "family" && activeFamily && (
-          <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-5 md:p-6">
+          <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6">
             {/* Barre de retour et d'identification de famille */}
             <div className="flex items-center justify-between w-full max-w-6xl mx-auto pointer-events-auto">
               <button
                 onClick={() => setSelectedFamilyId(null)}
-                className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-stone-700 hover:text-stone-900 transition px-3.5 py-1.5 rounded-xl bg-white/95 hover:bg-white border border-stone-200/90 backdrop-blur-md shadow-md"
+                className="flex items-center gap-2 text-xs md:text-sm font-semibold text-stone-700 hover:text-stone-900 transition min-h-[44px] px-4 py-2 rounded-xl bg-white/95 hover:bg-white border border-stone-200/90 backdrop-blur-md shadow-md focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                aria-label="Revenir à la vue des 7 familles"
               >
                 <ChevronLeft className="w-4 h-4" /> Revenir aux 7 familles
               </button>
 
-              <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-white/95 border border-stone-200/90 backdrop-blur-md shadow-md">
+              <div className="flex items-center gap-2.5 min-h-[44px] px-4 py-2 rounded-xl bg-white/95 border border-stone-200/90 backdrop-blur-md shadow-md">
                 <span
                   className="w-3.5 h-3.5 rounded-full shadow-sm"
                   style={{ backgroundColor: activeFamily.color }}
@@ -445,7 +673,11 @@ export default function Experience7Familles() {
             </div>
 
             {/* Sélecteur miniature rapide en bas */}
-            <div className="flex items-center justify-center gap-2 max-w-full overflow-x-auto pb-2 pointer-events-auto">
+            <div
+              role="group"
+              aria-label="Sélection des cartes de la famille"
+              className="flex items-center justify-center gap-2 max-w-full overflow-x-auto pb-2 pointer-events-auto"
+            >
               {familyCards.map((card) => (
                 <button
                   key={card.id}
@@ -454,9 +686,10 @@ export default function Experience7Familles() {
                     setIsFlipped(false);
                     setSheetState("collapsed");
                   }}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition shadow-md flex items-center gap-1.5 whitespace-nowrap"
+                  className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition shadow-md flex items-center gap-2 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                  aria-label={`Ouvrir la carte numéro ${card.num} : ${card.title}`}
                 >
-                  <span className="w-4 h-4 rounded-full bg-stone-100 flex items-center justify-center text-[10px] font-bold text-stone-700">
+                  <span className="w-5 h-5 rounded-full bg-stone-100 flex items-center justify-center text-[10px] font-bold text-stone-700">
                     {card.num}
                   </span>
                   <span>{card.title}</span>
@@ -473,28 +706,34 @@ export default function Experience7Familles() {
             <div className="absolute top-4 left-4 z-30 flex items-center gap-2">
               <button
                 onClick={() => setSelectedCardId(null)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition flex items-center gap-1 shadow-md"
+                className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition flex items-center gap-2 shadow-md focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                aria-label={`Revenir à la famille ${activeFamily?.name}`}
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                {activeFamily?.name}
+                <ChevronLeft className="w-4 h-4" />
+                <span>{activeFamily?.name}</span>
               </button>
             </div>
 
-            <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
+            <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
               <button
                 onClick={handlePrevCard}
-                className="p-1.5 rounded-lg bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition shadow-md"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition shadow-md flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
                 title="Carte précédente"
+                aria-label="Carte précédente"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-xs font-semibold px-2.5 py-1 bg-white/95 border border-stone-200/90 rounded-lg text-stone-800 backdrop-blur-md shadow-sm">
+              <span
+                aria-label={`Carte numéro ${currentCard.num} sur 6`}
+                className="min-h-[44px] px-3.5 text-xs font-semibold bg-white/95 border border-stone-200/90 rounded-xl text-stone-800 backdrop-blur-md shadow-sm flex items-center justify-center"
+              >
                 {currentCard.num} / 6
               </span>
               <button
                 onClick={handleNextCard}
-                className="p-1.5 rounded-lg bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition shadow-md"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition shadow-md flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
                 title="Carte suivante"
+                aria-label="Carte suivante"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -506,7 +745,7 @@ export default function Experience7Familles() {
                 <div className="max-w-2xl mx-auto space-y-6">
                   <div className="flex items-center justify-between">
                     <span
-                      className="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm"
+                      className="px-3.5 py-1 rounded-full text-xs font-bold text-white shadow-sm"
                       style={{ backgroundColor: currentCard.familyColor }}
                     >
                       {currentCard.familyName} • Carte n°{currentCard.num}
@@ -539,8 +778,11 @@ export default function Experience7Familles() {
               </div>
             </div>
 
-            {/* Expérience Mobile : Bottom Sheet à 3 états */}
+            {/* Expérience Mobile : Bottom Sheet à 3 états avec glissement tactile */}
             <div
+              role="region"
+              aria-label="Fiche pédagogique de la carte"
+              id="card-pedagogic-sheet"
               className={`md:hidden absolute bottom-0 left-0 right-0 z-30 bg-[#FDFBF7]/98 border-t border-stone-200/90 backdrop-blur-2xl rounded-t-3xl transition-all duration-300 ease-out flex flex-col shadow-2xl text-stone-900 ${
                 sheetState === "collapsed"
                   ? "h-36"
@@ -550,12 +792,31 @@ export default function Experience7Familles() {
               }`}
             >
               <div
-                className="w-full pt-3 pb-2 flex flex-col items-center cursor-pointer select-none"
+                role="button"
+                tabIndex={0}
+                aria-expanded={sheetState !== "collapsed"}
+                aria-controls="card-pedagogic-content"
+                aria-label={
+                  sheetState === "expanded"
+                    ? "Réduire la fiche pédagogique"
+                    : "Développer la fiche pédagogique"
+                }
+                className="w-full pt-3.5 pb-2.5 min-h-[48px] flex flex-col items-center justify-center cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none rounded-t-3xl"
                 onClick={() => {
                   if (sheetState === "collapsed") setSheetState("intermediate");
                   else if (sheetState === "intermediate") setSheetState("expanded");
                   else setSheetState("collapsed");
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    if (sheetState === "collapsed") setSheetState("intermediate");
+                    else if (sheetState === "intermediate") setSheetState("expanded");
+                    else setSheetState("collapsed");
+                  }
+                }}
+                onTouchStart={handleSheetTouchStart}
+                onTouchEnd={handleSheetTouchEnd}
               >
                 <div className="w-12 h-1.5 rounded-full bg-stone-300 mb-2" />
                 <div className="flex items-center gap-1 text-[11px] font-semibold text-stone-500">
@@ -570,7 +831,7 @@ export default function Experience7Familles() {
                 </div>
               </div>
 
-              <div className="px-5 pb-6 overflow-y-auto flex-1">
+              <div id="card-pedagogic-content" className="px-5 pb-6 overflow-y-auto flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <span
                     className="text-[10px] font-bold px-2.5 py-0.5 rounded-full text-white shadow-sm"
@@ -606,16 +867,21 @@ export default function Experience7Familles() {
             </div>
           </>
         )}
-      </div>
+      </main>
 
       {/* 3. MODALE DU MODE ÉDITION DE DÉVELOPPEMENT */}
       {isEditing && (
-        <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center p-3 md:p-6">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-dialog-title"
+          className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center p-3 md:p-6"
+        >
           <div className="bg-white border border-stone-300 w-full max-w-4xl h-[88vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden text-stone-900">
             <div className="px-5 py-3.5 border-b border-stone-200 bg-stone-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Edit3 className="w-4 h-4 text-amber-600" />
-                <h3 className="text-sm font-bold text-stone-900">
+                <h3 id="edit-dialog-title" className="text-sm font-bold text-stone-900">
                   Éditeur Markdown • {currentCard ? currentCard.title : "Sélectionnez une carte"}
                 </h3>
                 <span className="text-xs text-emerald-600 font-medium ml-3 hidden sm:inline">
@@ -624,17 +890,20 @@ export default function Experience7Familles() {
               </div>
               <button
                 onClick={() => setIsEditing(false)}
-                className="p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                aria-label="Fermer la boîte de dialogue d'édition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="px-5 py-2.5 bg-stone-50/80 border-b border-stone-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2">
+              <div role="tablist" aria-label="Modes de rédaction" className="flex items-center gap-2">
                 <button
+                  role="tab"
+                  aria-selected={editTab === "write"}
                   onClick={() => setEditTab("write")}
-                  className={`px-3 py-1 rounded-md font-semibold transition ${
+                  className={`min-h-[40px] px-3.5 py-1.5 rounded-lg font-semibold transition focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                     editTab === "write"
                       ? "bg-amber-600 text-white shadow-sm"
                       : "text-stone-600 hover:text-stone-950"
@@ -643,8 +912,10 @@ export default function Experience7Familles() {
                   Édition
                 </button>
                 <button
+                  role="tab"
+                  aria-selected={editTab === "preview"}
                   onClick={() => setEditTab("preview")}
-                  className={`px-3 py-1 rounded-md font-semibold transition ${
+                  className={`min-h-[40px] px-3.5 py-1.5 rounded-lg font-semibold transition focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                     editTab === "preview"
                       ? "bg-amber-600 text-white shadow-sm"
                       : "text-stone-600 hover:text-stone-950"
@@ -657,32 +928,37 @@ export default function Experience7Familles() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCopyMarkdown}
-                  className="px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1 transition border border-stone-200"
+                  className="min-h-[40px] px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1.5 transition border border-stone-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
                   title="Copier le Markdown de cette carte"
+                  aria-label="Copier le Markdown de la carte"
                 >
                   {copiedNotice ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <Check className="w-4 h-4 text-emerald-600" />
                   ) : (
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-4 h-4" />
                   )}
-                  {copiedNotice ? "Copié !" : "Copier"}
+                  <span>{copiedNotice ? "Copié !" : "Copier"}</span>
                 </button>
 
                 <button
                   onClick={handleExportAll}
-                  className="px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1 transition border border-stone-200"
+                  className="min-h-[40px] px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1.5 transition border border-stone-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
                   title="Exporter les 42 cartes en JSON"
+                  aria-label="Exporter les 42 cartes en format JSON"
                 >
-                  <Download className="w-3.5 h-3.5" /> Exporter tout (JSON)
+                  <Download className="w-4 h-4" />
+                  <span>Exporter tout (JSON)</span>
                 </button>
 
-                <label className="px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1 cursor-pointer transition border border-stone-200">
-                  <Upload className="w-3.5 h-3.5" /> Importer
+                <label className="min-h-[40px] px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1.5 cursor-pointer transition border border-stone-200 focus-within:ring-2 focus-within:ring-amber-500">
+                  <Upload className="w-4 h-4" />
+                  <span>Importer</span>
                   <input
                     type="file"
                     accept=".json"
                     onChange={handleImportJson}
                     className="hidden"
+                    aria-label="Importer un fichier JSON de contenus"
                   />
                 </label>
               </div>

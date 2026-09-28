@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useTexture, ContactShadows, Text, Float } from "@react-three/drei";
 import * as THREE from "three";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
@@ -16,6 +16,37 @@ interface Unified3DSceneProps {
   setHoveredCardId: (id: string | null) => void;
   isDeckSpread: boolean;
   deckScrollOffset: number; // Défilement horizontal contrôlé par le survol souris/tactile
+}
+
+function ResponsiveController({ currentStage }: { currentStage: "deck" | "family" | "card" }) {
+  const { camera, size } = useThree();
+  const isPortrait = size.width < size.height;
+
+  useFrame((_, delta) => {
+    let targetZ = 6.8;
+    let targetY = 0.15;
+
+    if (isPortrait) {
+      if (currentStage === "family") {
+        targetZ = 9.2;
+        targetY = 0.35;
+      } else if (currentStage === "deck") {
+        targetZ = 8.6;
+        targetY = 0.20;
+      } else if (currentStage === "card") {
+        targetZ = 7.2;
+        targetY = 0.68; // Élève la carte au-dessus de la zone du bottom sheet mobile
+      }
+    } else {
+      targetZ = 6.8;
+      targetY = 0.15;
+    }
+
+    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetZ, 4.5, delta);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetY, 4.5, delta);
+  });
+
+  return null;
 }
 
 function PhysicalCard3D({
@@ -109,6 +140,8 @@ function PhysicalCard3D({
     };
   }, [familyIndex, indexInFamily]);
 
+  const { size } = useThree();
+  const isPortrait = size.width < size.height;
   const isCardInSelectedFamily = card.familyId === selectedFamilyId;
   const isTargetSelectedCard = card.id === selectedCardId;
 
@@ -163,7 +196,7 @@ function PhysicalCard3D({
         let baseX = Math.sin(angle) * arcRadius + Math.sin(targetRotY) * stackOffset + jitter.offsetX;
         let baseZ = -Math.cos(angle) * (arcRadius * 0.42) + 2.0 + Math.cos(targetRotY) * stackOffset;
         let baseY = Math.cos(effectiveFamilyPos * 0.25) * 0.2 + jitter.offsetY;
-        let baseScale = 1.0;
+        let baseScale = isPortrait ? 0.88 : 1.0;
 
         // Évitement horizontal entre familles voisines au survol d'un paquet
         if (hoveredFamilyIndex >= 0 && hoveredFamilyIndex !== familyIndex) {
@@ -199,16 +232,16 @@ function PhysicalCard3D({
       if (isCardInSelectedFamily) {
         // Base naturelle de l'éventail de cartes en main
         const centerOffset = indexInFamily - 2.5; // -2.5, -1.5, -0.5, 0.5, 1.5, 2.5
-        const fanAngle = centerOffset * 0.11; // ~ -16° à +16°
-        const fanRadius = 5.2;
+        const fanAngle = centerOffset * (isPortrait ? 0.095 : 0.11);
+        const fanRadius = isPortrait ? 4.2 : 5.2;
 
         const baseX = Math.sin(fanAngle) * fanRadius;
-        const baseY = -Math.cos(fanAngle) * fanRadius + 4.1;
+        const baseY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 3.4 : 4.1);
         const baseZ = indexInFamily * 0.06 + 0.8;
         const baseRotZ = -fanAngle;
         const baseRotY = -fanAngle * 0.32;
         const baseRotX = -0.14;
-        const baseScale = 0.82;
+        const baseScale = isPortrait ? 0.64 : 0.82;
 
         if (hp > 0.001) {
           // --- 1. DÉPLACEMENT DE LA CARTE SURVOLÉE (SORTIE DU DECK PUIS ZOOM) ---
@@ -221,7 +254,7 @@ function PhysicalCard3D({
           const s2 = THREE.MathUtils.smoothstep(stage2, 0, 1);
 
           // Phase 1 : Sortie de la fente le long du rayon + décalage latéral vers l'extérieur
-          const radialSlide = 0.52 * s1;
+          const radialSlide = (isPortrait ? 0.44 : 0.52) * s1;
           const sideSlideDir = centerOffset >= 0 ? 1 : -1;
           const lateralSlide = sideSlideDir * 0.18 * s1;
           const liftOutZ = 0.32 * s1;
@@ -229,7 +262,7 @@ function PhysicalCard3D({
           // Phase 2 : Zoom, avancée vers le joueur et redressement
           const zoomZ = 0.48 * s2;
           const zoomY = 0.16 * s2;
-          const zoomScale = 0.22 * s2;
+          const zoomScale = (isPortrait ? 0.18 : 0.22) * s2;
 
           targetX = baseX + Math.sin(fanAngle) * radialSlide + Math.cos(fanAngle) * lateralSlide;
           targetY = baseY + Math.cos(fanAngle) * radialSlide + zoomY;
@@ -253,7 +286,7 @@ function PhysicalCard3D({
 
           // Force d'écartement : maximale pour les voisins immédiats (|d| = 1), décroît avec la distance
           const weight = Math.exp(-(dist - 1) * 0.7);
-          const pushX = pushDir * (0.36 * weight) * ep;
+          const pushX = pushDir * (0.34 * weight) * ep;
           const pushAngle = pushDir * (0.055 * weight) * ep;
           const pushZ = -(0.08 * weight) * ep; // Recul en profondeur
           const pushY = -(0.05 * weight) * ep;
@@ -291,9 +324,9 @@ function PhysicalCard3D({
       if (isTargetSelectedCard) {
         // La carte choisie se détache vers l'avant, centrée et bien cadrée
         targetX = 0;
-        targetY = 0.15;
+        targetY = isPortrait ? 0.65 : 0.15; // Élevée en portrait pour flotter au-dessus du bottom sheet
         targetZ = 2.4;
-        targetScale = 0.86;
+        targetScale = isPortrait ? 0.76 : 0.86;
 
         // Retournement à 180°
         targetRotY = isFlipped ? Math.PI : 0;
@@ -305,17 +338,16 @@ function PhysicalCard3D({
         targetRotZ = -mouseX * 0.4;
       } else if (isCardInSelectedFamily) {
         // Les 5 autres cartes forment un éventail visible en arrière-plan pour naviguer
-        const centerOffset = indexInFamily - 2.5; // -2.5 à +2.5
-        const fanAngle = centerOffset * 0.22;
-        const fanRadius = 5.8;
+        const fanAngle = centerOffset * (isPortrait ? 0.16 : 0.22);
+        const fanRadius = isPortrait ? 5.0 : 5.8;
 
         const baseX = Math.sin(fanAngle) * fanRadius;
-        const baseY = -Math.cos(fanAngle) * fanRadius + 4.9;
+        const baseY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 5.4 : 4.9);
         const baseZ = 0.15 + (5 - Math.abs(centerOffset)) * 0.05;
         const baseRotZ = -fanAngle;
         const baseRotY = -fanAngle * 0.35;
         const baseRotX = -0.12;
-        const baseScale = 0.68;
+        const baseScale = isPortrait ? 0.48 : 0.68;
 
         if (hp > 0.001) {
           // Sortie et zoom de la carte soeur survolée
@@ -385,7 +417,13 @@ function PhysicalCard3D({
       onSelectFamily(card.familyId);
     } else if (currentStage === "family") {
       if (isCardInSelectedFamily) {
-        onSelectCard(card.id);
+        // Sur mobile tactile : 1er tap sort la carte en prévisualisation, 2e tap ouvre la carte
+        const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+        if (isTouch && hoveredIndexInFamily !== indexInFamily) {
+          setHoveredCardId(card.id);
+        } else {
+          onSelectCard(card.id);
+        }
       }
     } else if (currentStage === "card") {
       if (isTargetSelectedCard) {
@@ -488,12 +526,17 @@ function PhysicalCard3D({
 
 export default function Unified3DScene(props: Unified3DSceneProps) {
   return (
-    <div className="w-full h-full relative cursor-grab active:cursor-grabbing select-none">
+    <div
+      className="w-full h-full relative cursor-grab active:cursor-grabbing select-none touch-pan-y"
+      role="region"
+      aria-label="Scène 3D interactive des cartes et des familles de barrages"
+    >
       <Canvas
         camera={{ position: [0, 0.15, 6.8], fov: 42 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
+        <ResponsiveController currentStage={props.currentStage} />
         <ambientLight intensity={1.7} color="#fffcf5" />
         <directionalLight position={[5, 10, 6]} intensity={1.8} color="#fffbf5" />
         <directionalLight position={[-5, -2, -3]} intensity={0.5} color="#e2e8f0" />
