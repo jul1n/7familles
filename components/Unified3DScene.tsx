@@ -338,6 +338,7 @@ function PhysicalCard3D({
         targetRotZ = -mouseX * 0.4;
       } else if (isCardInSelectedFamily) {
         // Les 5 autres cartes forment un éventail visible en arrière-plan pour naviguer
+        const centerOffset = indexInFamily - 2.5;
         const fanAngle = centerOffset * (isPortrait ? 0.16 : 0.22);
         const fanRadius = isPortrait ? 5.0 : 5.8;
 
