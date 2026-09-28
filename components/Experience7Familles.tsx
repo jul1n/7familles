@@ -1017,6 +1017,8 @@ export default function Experience7Familles() {
             </div>
           </div>
         </div>
+      )}
+
       {/* 4. MODALE CONSULTATION EMBEDDED DU SITE OFFICIEL CFBR */}
       {isCfbrModalOpen && (
         <div
