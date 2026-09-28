@@ -15,36 +15,17 @@ import {
   Check,
   ChevronUp,
   X,
-  Sparkles,
   Compass,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
-// Chargement dynamique des scènes 3D Three.js
-const Deck3DScene = dynamic(() => import("@/components/Deck3D"), {
+// Import de la scène 3D unifiée continue
+const Unified3DScene = dynamic(() => import("@/components/Unified3DScene"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full flex flex-col items-center justify-center gap-3">
       <div className="w-12 h-12 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin" />
-      <span className="text-xs text-slate-400 font-medium">Chargement du deck 3D...</span>
-    </div>
-  ),
-});
-
-const Card3DViewer = dynamic(() => import("@/components/Card3D"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="w-12 h-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin" />
-    </div>
-  ),
-});
-
-const FamilyFan3D = dynamic(() => import("@/components/FamilyFan3D"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="w-12 h-12 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin" />
+      <span className="text-xs text-slate-400 font-medium">Initialisation de la scène 3D continue...</span>
     </div>
   ),
 });
@@ -57,7 +38,7 @@ export default function Experience7Familles() {
 
   // État du Deck 3D (pile compacte vs éventail des 7 familles)
   const [isDeckSpread, setIsDeckSpread] = useState<boolean>(true);
-  const [hoveredFamily, setHoveredFamily] = useState<string | null>(null);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
 
   // Bottom sheet mobile (collapsed | intermediate | expanded)
   const [sheetState, setSheetState] = useState<"collapsed" | "intermediate" | "expanded">("collapsed");
@@ -68,6 +49,13 @@ export default function Experience7Familles() {
   const [customMarkdownMap, setCustomMarkdownMap] = useState<Record<string, string>>({});
   const [copiedNotice, setCopiedNotice] = useState<boolean>(false);
   const [saveStatus, setSaveStatus] = useState<string>("Enregistré automatiquement");
+
+  // Détermination de l'étape courante pour la transition 3D continue
+  const currentStage: "deck" | "family" | "card" = selectedCardId
+    ? "card"
+    : selectedFamilyId
+    ? "family"
+    : "deck";
 
   // Chargement des modifications locales (localStorage)
   useEffect(() => {
@@ -163,11 +151,9 @@ export default function Experience7Familles() {
     setIsFlipped(false);
   };
 
-  const activeHoveredFamilyObj = FAMILIES.find((f) => f.id === hoveredFamily) || null;
-
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans select-none">
-      {/* 1. BARRE SUPÉRIEURE ÉPURÉE ET MODERNE */}
+      {/* 1. BARRE SUPÉRIEURE ÉPURÉE */}
       <header className="h-16 px-4 md:px-8 border-b border-white/10 flex items-center justify-between backdrop-blur-md bg-slate-950/80 z-40">
         <div
           className="flex items-center gap-3 cursor-pointer group"
@@ -183,7 +169,7 @@ export default function Experience7Familles() {
             <h1 className="text-sm md:text-base font-bold tracking-tight text-white leading-tight flex items-center gap-2">
               7 Familles des Barrages
               <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                3D Experience
+                Continuous 3D Scene
               </span>
             </h1>
             <p className="text-[11px] text-slate-400">
@@ -221,101 +207,72 @@ export default function Experience7Familles() {
         </div>
       </header>
 
-      {/* 2. ZONE PRINCIPALE DE L'EXPÉRIENCE CONTINUE */}
-      <div className="flex-1 relative flex flex-col md:flex-row overflow-hidden">
-        {/* VUE 1 : LE DECK DE CARTES 3D SPECTACULAIRE */}
-        {!selectedFamilyId && (
-          <div className="w-full h-full relative flex flex-col items-center justify-between">
-            {/* Overlay d'information haut */}
-            <div className="z-10 pt-6 px-4 text-center pointer-events-none">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mb-2 backdrop-blur-md">
-                <Sparkles className="w-3 h-3" /> Deck interactif de 42 cartes
+      {/* 2. SCÈNE 3D UNIQUE ET PERMANENTE (AU CŒUR DU SITE) */}
+      <div className="flex-1 relative flex overflow-hidden">
+        {/* CANVAS WEBGL PLEIN ÉCRAN SOUS LES OVERLAYS */}
+        <div
+          className={`relative transition-all duration-500 ${
+            currentStage === "card"
+              ? sheetState === "expanded"
+                ? "hidden md:flex md:w-[45%] h-full"
+                : "w-full md:w-[45%] lg:w-[42%] h-full"
+              : "w-full h-full"
+          }`}
+        >
+          <Unified3DScene
+            currentStage={currentStage}
+            selectedFamilyId={selectedFamilyId}
+            selectedCardId={selectedCardId}
+            isFlipped={isFlipped}
+            onSelectFamily={(fId) => {
+              setSelectedFamilyId(fId);
+              setSelectedCardId(null);
+            }}
+            onSelectCard={(cId) => {
+              setSelectedCardId(cId);
+              setIsFlipped(false);
+              setSheetState("collapsed");
+            }}
+            onFlipToggle={() => setIsFlipped(!isFlipped)}
+            hoveredCardId={hoveredCardId}
+            setHoveredCardId={setHoveredCardId}
+            isDeckSpread={isDeckSpread}
+          />
+        </div>
+
+        {/* --- OVERLAYS FLUIDES SELON L'ÉTAPE --- */}
+
+        {/* OVERLAY ÉTAPE 1 : DECK ACCUEIL */}
+        {currentStage === "deck" && (
+          <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
+            <div className="text-center pt-2">
+              <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 backdrop-blur-md">
+                Touchez ou cliquez sur un paquet pour déployer sa famille
               </span>
-              <h2 className="text-xl md:text-3xl font-extrabold text-white tracking-tight">
-                Touchez ou cliquez sur une famille pour l'ouvrir
-              </h2>
             </div>
 
-            {/* SCÈNE 3D DU DECK COMPLET */}
-            <div className="absolute inset-0 w-full h-full">
-              <Deck3DScene
-                onSelectFamily={(fId) => {
-                  setSelectedFamilyId(fId);
-                  setSelectedCardId(null);
-                }}
-                hoveredFamily={hoveredFamily}
-                setHoveredFamily={setHoveredFamily}
-                isSpread={isDeckSpread}
-              />
-            </div>
-
-            {/* Barre de contrôle du Deck & sélecteur rapide bas */}
-            <div className="z-10 pb-6 px-4 w-full max-w-4xl flex flex-col items-center gap-3">
-              {/* Info bulle dynamique au survol d'une famille */}
-              {activeHoveredFamilyObj && (
-                <div className="px-4 py-2 rounded-xl bg-slate-900/90 border border-cyan-500/40 backdrop-blur-xl shadow-2xl flex items-center gap-3 animate-fade-in">
-                  <span
-                    className="w-3.5 h-3.5 rounded-full shadow-md"
-                    style={{ backgroundColor: activeHoveredFamilyObj.color }}
-                  />
-                  <span className="text-sm font-bold text-white">
-                    Famille {activeHoveredFamilyObj.name}
-                  </span>
-                  <span className="text-xs text-slate-400 hidden sm:inline">
-                    — {activeHoveredFamilyObj.description}
-                  </span>
-                </div>
-              )}
-
-              {/* Sélecteur de mode 3D & onglets des 7 familles */}
-              <div className="flex flex-wrap items-center justify-center gap-2 bg-slate-950/80 p-2 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl max-w-full overflow-x-auto">
-                <button
-                  onClick={() => setIsDeckSpread(!isDeckSpread)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition flex items-center gap-1.5"
-                >
-                  <Compass className="w-3.5 h-3.5" />
-                  {isDeckSpread ? "Rassembler le paquet" : "Déployer en éventail"}
-                </button>
-
-                <div className="h-4 w-[1px] bg-white/10 mx-1 hidden sm:block" />
-
-                {FAMILIES.map((fam) => (
-                  <button
-                    key={fam.id}
-                    onMouseEnter={() => setHoveredFamily(fam.id)}
-                    onMouseLeave={() => setHoveredFamily(null)}
-                    onClick={() => {
-                      setSelectedFamilyId(fam.id);
-                      setSelectedCardId(null);
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
-                      hoveredFamily === fam.id
-                        ? "bg-white/20 text-white scale-105"
-                        : "bg-white/5 hover:bg-white/10 text-slate-300"
-                    }`}
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: fam.color }}
-                    />
-                    {fam.name}
-                  </button>
-                ))}
-              </div>
+            <div className="flex justify-center pb-2 pointer-events-auto">
+              <button
+                onClick={() => setIsDeckSpread(!isDeckSpread)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900/90 text-cyan-300 border border-cyan-500/30 hover:bg-slate-800 transition flex items-center gap-2 shadow-2xl backdrop-blur-xl"
+              >
+                <Compass className="w-4 h-4" />
+                {isDeckSpread ? "Rassembler le paquet" : "Déployer en éventail"}
+              </button>
             </div>
           </div>
         )}
 
-        {/* VUE 2 : SÉLECTION DES 6 CARTES DE LA FAMILLE (DÉPLOIEMENT 3D EN ÉVENTAIL) */}
-        {selectedFamilyId && !selectedCardId && activeFamily && (
-          <div className="w-full h-full relative flex flex-col items-center justify-between">
-            {/* Fil d'Ariane & titre haut */}
-            <div className="z-10 pt-5 px-4 w-full max-w-6xl flex items-center justify-between pointer-events-auto">
+        {/* OVERLAY ÉTAPE 2 : FAMILLE DÉPLOYÉE */}
+        {currentStage === "family" && activeFamily && (
+          <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-5 md:p-6">
+            {/* Barre de retour et d'identification de famille */}
+            <div className="flex items-center justify-between w-full max-w-6xl mx-auto pointer-events-auto">
               <button
                 onClick={() => setSelectedFamilyId(null)}
                 className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-slate-300 hover:text-white transition px-3.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/10 backdrop-blur-md shadow-lg"
               >
-                <ChevronLeft className="w-4 h-4" /> Revenir au deck 3D
+                <ChevronLeft className="w-4 h-4" /> Revenir aux 7 familles
               </button>
 
               <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-white/10 backdrop-blur-md shadow-lg">
@@ -330,28 +287,8 @@ export default function Experience7Familles() {
               </div>
             </div>
 
-            {/* Instruction discrète */}
-            <div className="z-10 text-center px-4 pointer-events-none mt-2">
-              <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 backdrop-blur-md">
-                Cliquez ou touchez une carte pour l'examiner en 3D
-              </span>
-            </div>
-
-            {/* SCÈNE 3D DU DÉPLOIEMENT EN ÉVENTAIL DES 6 CARTES */}
-            <div className="absolute inset-0 w-full h-full">
-              <FamilyFan3D
-                cards={familyCards}
-                family={activeFamily}
-                onSelectCard={(cId) => {
-                  setSelectedCardId(cId);
-                  setIsFlipped(false);
-                  setSheetState("collapsed");
-                }}
-              />
-            </div>
-
             {/* Sélecteur miniature rapide en bas */}
-            <div className="z-10 pb-5 px-4 flex items-center justify-center gap-2 max-w-full overflow-x-auto">
+            <div className="flex items-center justify-center gap-2 max-w-full overflow-x-auto pb-2 pointer-events-auto">
               {familyCards.map((card) => (
                 <button
                   key={card.id}
@@ -372,70 +309,44 @@ export default function Experience7Familles() {
           </div>
         )}
 
-        {/* VUE 3 : CARTE SÉLECTIONNÉE (SCÈNE 3D + SAVOIR PÉDAGOGIQUE) */}
-        {currentCard && (
-          <div className="w-full h-full flex flex-col md:flex-row relative">
-            {/* Zone 3D Mobile & Desktop */}
-            <div
-              className={`relative transition-all duration-300 ${
-                sheetState === "expanded"
-                  ? "hidden md:flex md:w-[40%] h-full"
-                  : "w-full md:w-[45%] lg:w-[40%] flex-1 md:h-full flex flex-col"
-              }`}
-            >
-              {/* Retour rapide à la famille */}
-              <div className="absolute top-3 left-4 z-20 flex items-center gap-2">
-                <button
-                  onClick={() => setSelectedCardId(null)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 backdrop-blur-md transition flex items-center gap-1 shadow-lg"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  {activeFamily?.name}
-                </button>
-              </div>
-
-              {/* Navigation Précédent / Suivant */}
-              <div className="absolute top-3 right-4 z-20 flex items-center gap-1.5">
-                <button
-                  onClick={handlePrevCard}
-                  className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 backdrop-blur-md transition shadow-lg"
-                  title="Carte précédente"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <span className="text-xs font-semibold px-2 py-1 bg-slate-900/80 border border-white/10 rounded-lg text-slate-300 backdrop-blur-md">
-                  {currentCard.num} / 6
-                </span>
-                <button
-                  onClick={handleNextCard}
-                  className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 backdrop-blur-md transition shadow-lg"
-                  title="Carte suivante"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Canvas WebGL 3D Carte individuelle */}
-              <div className="flex-1 w-full h-full relative">
-                <Card3DViewer
-                  frontUrl={currentCard.frontImage}
-                  backUrl={currentCard.backImage}
-                  isFlipped={isFlipped}
-                  onFlipToggle={() => setIsFlipped(!isFlipped)}
-                />
-
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-slate-950/70 border border-white/10 backdrop-blur-md text-[11px] text-slate-400 pointer-events-none flex items-center gap-1.5 shadow-md">
-                  <RotateCcw className="w-3 h-3 text-cyan-400" />
-                  Touchez ou cliquez pour retourner
-                </div>
-              </div>
+        {/* OVERLAY ÉTAPE 3 : CARTE INDIVIDUELLE SÉLECTIONNÉE */}
+        {currentStage === "card" && currentCard && (
+          <>
+            {/* Contrôles carte (Haut) */}
+            <div className="absolute top-4 left-4 z-30 flex items-center gap-2">
+              <button
+                onClick={() => setSelectedCardId(null)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 backdrop-blur-md transition flex items-center gap-1 shadow-lg"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                {activeFamily?.name}
+              </button>
             </div>
 
-            {/* Expérience Desktop (Panneau Pédagogique droit sticky) */}
-            <div className="hidden md:flex flex-col flex-1 h-full border-l border-white/10 bg-slate-900/40 backdrop-blur-md overflow-hidden">
+            <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5">
+              <button
+                onClick={handlePrevCard}
+                className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 backdrop-blur-md transition shadow-lg"
+                title="Carte précédente"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-semibold px-2 py-1 bg-slate-900/80 border border-white/10 rounded-lg text-slate-300 backdrop-blur-md">
+                {currentCard.num} / 6
+              </span>
+              <button
+                onClick={handleNextCard}
+                className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 backdrop-blur-md transition shadow-lg"
+                title="Carte suivante"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Expérience Desktop : Panneau Pédagogique droit sticky */}
+            <div className="hidden md:flex flex-col flex-1 h-full border-l border-white/10 bg-slate-900/60 backdrop-blur-xl overflow-hidden z-20">
               <div className="p-6 md:p-8 flex-1 overflow-y-auto">
                 <div className="max-w-2xl mx-auto space-y-6">
-                  {/* Badge & Titre */}
                   <div className="flex items-center justify-between">
                     <span
                       className="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm"
@@ -458,21 +369,20 @@ export default function Experience7Familles() {
                     {currentCard.shortDescription}
                   </p>
 
-                  {/* Rendu Markdown HTML classique */}
                   <div className="prose prose-invert prose-slate max-w-none text-slate-300 leading-relaxed">
                     <ReactMarkdown>{currentMarkdown}</ReactMarkdown>
                   </div>
 
                   {currentCard.credits && (
                     <div className="pt-6 border-t border-white/10 text-xs text-slate-500 italic">
-                      Crédits photo / illustrations : {currentCard.credits}
+                      Crédits : {currentCard.credits}
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Expérience Mobile (Bottom Sheet à 3 états) */}
+            {/* Expérience Mobile : Bottom Sheet à 3 états */}
             <div
               className={`md:hidden absolute bottom-0 left-0 right-0 z-30 bg-slate-900/95 border-t border-white/15 backdrop-blur-2xl rounded-t-3xl transition-all duration-300 ease-out flex flex-col shadow-2xl ${
                 sheetState === "collapsed"
@@ -493,9 +403,7 @@ export default function Experience7Familles() {
                 <div className="w-12 h-1.5 rounded-full bg-white/20 mb-2" />
                 <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
                   <span>
-                    {sheetState === "expanded"
-                      ? "Réduire"
-                      : "En savoir plus"}
+                    {sheetState === "expanded" ? "Réduire" : "En savoir plus"}
                   </span>
                   <ChevronUp
                     className={`w-3.5 h-3.5 transition-transform duration-200 ${
@@ -539,7 +447,7 @@ export default function Experience7Familles() {
                 )}
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
