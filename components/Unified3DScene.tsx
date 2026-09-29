@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from "react";
+import React, { useRef, useMemo, useState, Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useTexture, ContactShadows, Text, Float } from "@react-three/drei";
 import * as THREE from "three";
@@ -15,8 +15,12 @@ interface Unified3DSceneProps {
   hoveredCardId: string | null;
   setHoveredCardId: (id: string | null) => void;
   isDeckSpread: boolean;
-  deckScrollOffset: number; // Défilement horizontal contrôlé par le survol souris/tactile
+  deckScrollRef: React.MutableRefObject<number>; // Défilement horizontal (survol souris / tactile), lu à chaque frame
 }
+
+// Réglage global de la vitesse des animations : 1 = réglage par défaut, 0.7 = environ 40 % plus lent,
+// 1.3 = plus nerveux. Agit sur le survol, l'ouverture / retour des cartes et le déploiement des éventails.
+const ANIM_SPEED = 1;
 
 function ResponsiveController({ currentStage }: { currentStage: "deck" | "family" | "card" }) {
   const { camera, size } = useThree();
@@ -28,7 +32,7 @@ function ResponsiveController({ currentStage }: { currentStage: "deck" | "family
 
     if (isPortrait) {
       if (currentStage === "family") {
-        targetZ = 9.2;
+        targetZ = 9.6;
         targetY = 0.35;
       } else if (currentStage === "deck") {
         targetZ = 8.6;
@@ -49,6 +53,134 @@ function ResponsiveController({ currentStage }: { currentStage: "deck" | "family
   return null;
 }
 
+// Paquet rassemblé : 42 cartes de ~0,3 mm sur une carte de 100 mm de haut (échelle 2.428), soit ~13 mm réels
+const PILE_COUNT = 42;
+const PILE_SPACING = 0.0075;
+const PILE_THICKNESS = PILE_COUNT * PILE_SPACING;
+const PILE_EULER = new THREE.Euler(-0.55, 0.45, 0);
+
+function DeckBlock({ visible }: { visible: boolean }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const capMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const sideMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const opacityRef = useRef(0);
+
+  // Même contour arrondi que les cartes, légèrement réduit pour rester caché derrière leurs bords
+  const geometry = useMemo(() => {
+    const w = 1.7 - 0.012;
+    const h = 2.428 - 0.012;
+    const r = 0.08;
+    const x = -w / 2;
+    const y = -h / 2;
+    const sh = new THREE.Shape();
+    sh.moveTo(x + r, y);
+    sh.lineTo(x + w - r, y);
+    sh.quadraticCurveTo(x + w, y, x + w, y + r);
+    sh.lineTo(x + w, y + h - r);
+    sh.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    sh.lineTo(x + r, y + h);
+    sh.quadraticCurveTo(x, y + h, x, y + h - r);
+    sh.lineTo(x, y + r);
+    sh.quadraticCurveTo(x, y, x + r, y);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: PILE_THICKNESS, bevelEnabled: false, steps: 1 });
+    g.translate(0, 0, -PILE_THICKNESS / 2);
+    return g;
+  }, []);
+
+  // Tranche du paquet : une fine ligne d'ombre entre chaque carte (une bande = une carte)
+  const sideTexture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 8;
+    canvas.height = 32;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#f7f3ea";
+    ctx.fillRect(0, 0, 8, 32);
+    ctx.fillStyle = "#b9b09c";
+    ctx.fillRect(0, 29, 8, 3);
+    ctx.fillStyle = "#e6dfcf";
+    ctx.fillRect(0, 26, 8, 3);
+    const t = new THREE.CanvasTexture(canvas);
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(1, 1 / PILE_SPACING); // les UV des parois sont en unités monde : une bande par carte
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    return t;
+  }, []);
+
+  useFrame((_, delta) => {
+    opacityRef.current = THREE.MathUtils.damp(opacityRef.current, visible ? 1 : 0, 8, delta);
+    const op = opacityRef.current;
+    if (groupRef.current) groupRef.current.visible = op > 0.01;
+    if (capMatRef.current) capMatRef.current.opacity = op;
+    if (sideMatRef.current) sideMatRef.current.opacity = op;
+  });
+
+  return (
+    <group ref={groupRef} rotation={PILE_EULER} visible={false}>
+      <mesh geometry={geometry}>
+        <meshStandardMaterial ref={capMatRef} attach="material-0" color="#f7f3ea" roughness={0.7} transparent />
+        <meshStandardMaterial
+          ref={sideMatRef}
+          attach="material-1"
+          map={sideTexture}
+          roughness={0.8}
+          transparent
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function CardFaces({
+  frontUrl,
+  width,
+  height,
+  thickness,
+  frontMatRef,
+  backMatRef,
+}: {
+  frontUrl: string;
+  width: number;
+  height: number;
+  thickness: number;
+  frontMatRef: React.RefObject<THREE.MeshBasicMaterial | null>;
+  backMatRef: React.RefObject<THREE.MeshBasicMaterial | null>;
+}) {
+  // useTexture suspend : isolé ici, il ne bloque plus toute la scène (les cartes apparaissent au fil du chargement)
+  const [frontTexture, backTexture] = useTexture([frontUrl, "/cards/card-back.webp"]);
+  frontTexture.colorSpace = THREE.SRGBColorSpace;
+  backTexture.colorSpace = THREE.SRGBColorSpace;
+
+  return (
+    <>
+      {/* Face Recto (illustration originale plein format sans double bordure) */}
+      <mesh position={[0, 0, thickness / 2 + 0.001]}>
+        <planeGeometry args={[width, height]} />
+        <meshBasicMaterial
+          ref={frontMatRef}
+          map={frontTexture}
+          toneMapped={false}
+          transparent={true}
+          alphaTest={0.01}
+        />
+      </mesh>
+
+      {/* Face Verso (dos officiel du jeu) */}
+      <mesh position={[0, 0, -thickness / 2 - 0.001]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[width, height]} />
+        <meshBasicMaterial
+          ref={backMatRef}
+          map={backTexture}
+          toneMapped={false}
+          transparent={true}
+          alphaTest={0.01}
+        />
+      </mesh>
+    </>
+  );
+}
+
 function PhysicalCard3D({
   card,
   indexInFamily,
@@ -65,7 +197,7 @@ function PhysicalCard3D({
   hoveredFamilyIndex,
   setHoveredCardId,
   isDeckSpread,
-  deckScrollOffset,
+  deckScrollRef,
 }: {
   card: CardData;
   indexInFamily: number;
@@ -82,17 +214,38 @@ function PhysicalCard3D({
   hoveredFamilyIndex: number;
   setHoveredCardId: (id: string | null) => void;
   isDeckSpread: boolean;
-  deckScrollOffset: number;
+  deckScrollRef: React.MutableRefObject<number>;
 }) {
   const meshRef = useRef<THREE.Group>(null);
   const hoverProgressRef = useRef<number>(0);
   const evadeProgressRef = useRef<number>(0);
   const selectProgressRef = useRef<number>(0);
-
-  // Textures Recto et Verso
-  const [frontTexture, backTexture] = useTexture([card.frontImage, "/cards/card-back.webp"]);
-  frontTexture.colorSpace = THREE.SRGBColorSpace;
-  backTexture.colorSpace = THREE.SRGBColorSpace;
+  const selectVelRef = useRef<number>(0);
+  const lambdaRef = useRef<number>(6.8);
+  const flipTargetRef = useRef<number>(0);
+  const flipAngleRef = useRef<number>(0);
+  const opacityRef = useRef<number>(1);
+  const edgeMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const edgeMeshRef = useRef<THREE.Mesh>(null);
+  const frontMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const backMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const tmp = useMemo(
+    () => ({
+      euler: new THREE.Euler(),
+      q: new THREE.Quaternion(),
+      qFlip: new THREE.Quaternion(),
+      yAxis: new THREE.Vector3(0, 1, 0),
+      pileEuler: new THREE.Euler(),
+      pileNormal: new THREE.Vector3(),
+    }),
+    []
+  );
+  // Accessibilité : transitions quasi instantanées si l'utilisateur réduit les animations
+  const motionScale = useMemo(
+    () =>
+      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 3 * ANIM_SPEED : ANIM_SPEED,
+    []
+  );
 
   const width = 1.7;
   const height = 2.428;
@@ -115,7 +268,7 @@ function PhysicalCard3D({
     s.lineTo(x + r, y + h);
     s.quadraticCurveTo(x, y + h, x, y + h - r);
     s.lineTo(x, y + r);
-    s.quadraticCurveTo(x, y + r);
+    s.quadraticCurveTo(x, y, x + r, y);
     return s;
   }, [width, height, radius]);
 
@@ -149,13 +302,31 @@ function PhysicalCard3D({
     // 1. Progression fluide de sélection de la carte (sortie vers le premier plan 0 -> 1, retour 1 -> 0)
     const isCurrentlySelected = currentStage === "card" && isTargetSelectedCard;
     const targetSelect = isCurrentlySelected ? 1 : 0;
-    selectProgressRef.current = THREE.MathUtils.damp(selectProgressRef.current, targetSelect, 5.2, delta);
+    // Ressort amorti : départ doux (contrairement à un lissage exponentiel) et arrivée avec un léger
+    // dépassement à l'ouverture. Le retour est critique (sans rebond) et plus lent : on voit la carte
+    // se glisser dans l'éventail.
+    const opening = targetSelect > selectProgressRef.current;
+    const omega = (opening ? 5.5 : 4.2) * motionScale; // pulsation : ~0.9 s à l'ouverture, ~1.2 s au retour
+    const zeta = opening ? 0.72 : 1;
+    const steps = 2;
+    const h = Math.min(delta, 1 / 30) / steps;
+    for (let i = 0; i < steps; i++) {
+      const acc =
+        omega * omega * (targetSelect - selectProgressRef.current) - 2 * zeta * omega * selectVelRef.current;
+      selectVelRef.current += acc * h;
+      selectProgressRef.current += selectVelRef.current * h;
+    }
+    if (targetSelect === 0 && selectProgressRef.current < 0) {
+      selectProgressRef.current = 0;
+      selectVelRef.current = 0;
+    }
     const sp = selectProgressRef.current;
+    const settleOvershoot = Math.max(0, sp - 1); // dépassement à l'arrivée, utilisé pour un léger effet de pose
 
     // 2. Progression fluide du survol de la carte (0 -> 1)
     // Si la carte est en cours de sélection (sp > 0.05), le survol s'efface au profit de la sélection
     const targetHover = (isHovered && sp < 0.05) ? 1 : 0;
-    hoverProgressRef.current = THREE.MathUtils.damp(hoverProgressRef.current, targetHover, 8.5, delta);
+    hoverProgressRef.current = THREE.MathUtils.damp(hoverProgressRef.current, targetHover, 6 * motionScale, delta);
     const hp = hoverProgressRef.current;
 
     // 3. Progression d'évitement physique pour les cartes soeurs du même deck (0 -> 1)
@@ -163,7 +334,7 @@ function PhysicalCard3D({
       (currentStage === "family" && isCardInSelectedFamily && hoveredIndexInFamily >= 0 && hoveredIndexInFamily !== indexInFamily && sp < 0.05) ||
       (currentStage === "card" && isCardInSelectedFamily && !isTargetSelectedCard && hoveredIndexInFamily >= 0 && hoveredIndexInFamily !== indexInFamily);
     const targetEvade = isSisterEvading ? 1 : 0;
-    evadeProgressRef.current = THREE.MathUtils.damp(evadeProgressRef.current, targetEvade, 7.5, delta);
+    evadeProgressRef.current = THREE.MathUtils.damp(evadeProgressRef.current, targetEvade, 5.5 * motionScale, delta);
     const ep = evadeProgressRef.current;
 
     let targetX = 0;
@@ -177,16 +348,21 @@ function PhysicalCard3D({
     // --- 1. ÉTAPE DECK (Les 7 familles avec défilement horizontal fluide) ---
     if (currentStage === "deck") {
       if (!isDeckSpread) {
-        // Paquet unique compact
-        const globalZ = (familyIndex - 3) * (6 * 0.016) + (5 - indexInFamily) * 0.016;
-        targetX = jitter.offsetX;
-        targetY = jitter.offsetY;
-        targetZ = globalZ;
-        targetRotX = -0.55;
-        targetRotY = 0.45;
-        targetRotZ = jitter.rotZ;
+        // Paquet unique compact : 42 cartes empilées le long de leur normale (épaisseur réaliste),
+        // à peine désalignées comme un jeu bien rangé. La tranche est dessinée par <DeckBlock />.
+        const stackK = familyIndex * 6 + (5 - indexInFamily); // 0 = dessous, 41 = dessus
+        const off = (stackK - (PILE_COUNT - 1) / 2) * PILE_SPACING;
+        const pileRotZ = jitter.rotZ * 0.2;
+        tmp.pileEuler.set(PILE_EULER.x, PILE_EULER.y, pileRotZ);
+        tmp.pileNormal.set(0, 0, 1).applyEuler(tmp.pileEuler);
+        targetX = jitter.offsetX * 0.25 + tmp.pileNormal.x * off;
+        targetY = jitter.offsetY * 0.25 + tmp.pileNormal.y * off;
+        targetZ = tmp.pileNormal.z * off;
+        targetRotX = PILE_EULER.x;
+        targetRotY = PILE_EULER.y;
+        targetRotZ = pileRotZ;
       } else {
-        const effectiveFamilyPos = (familyIndex - 3) + deckScrollOffset;
+        const effectiveFamilyPos = (familyIndex - 3) + deckScrollRef.current;
         const angleStep = 0.38;
         const angle = effectiveFamilyPos * angleStep;
         const arcRadius = 5.6;
@@ -247,30 +423,27 @@ function PhysicalCard3D({
         const fanRadius = isPortrait ? 4.2 : 5.2;
 
         const restX = Math.sin(fanAngle) * fanRadius;
-        const restY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 3.4 : 4.1);
-        const restZ = indexInFamily * 0.06 + 0.8;
+        const restY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 4.4 : 4.1);
+        const restZ = indexInFamily * 0.09 + 0.8;
         const restRotZ = -fanAngle;
         const restRotY = -fanAngle * 0.32;
         const restRotX = -0.14;
-        const restScale = isPortrait ? 0.64 : 0.82;
+        const restScale = isPortrait ? 0.70 : 0.82;
 
-        // Waypoint extérieur de contournement latéral (dégagement physique complet du paquet)
-        const sideDir = centerOffset >= 0 ? 1 : -1;
-        const radX = Math.sin(fanAngle);
-        const radY = Math.cos(fanAngle);
-        const latX = Math.cos(fanAngle) * sideDir;
-        const latY = -Math.sin(fanAngle) * sideDir;
+        // Waypoint d'insertion : la carte se place légèrement à GAUCHE de la carte précédente (i-1),
+        // en superposition (dans sa propre couche, donc au-dessus de i-1 et sous i+1), puis se glisse
+        // de gauche à droite dans sa fente. Elle suit l'arc de l'éventail avec l'inclinaison locale.
+        const fanStep = isPortrait ? 0.095 : 0.11;
+        const leftSlots = isPortrait ? 2.8 : 3.0; // nombre de fentes de décalage vers la gauche
+        const clearAngle = fanAngle - leftSlots * fanStep;
 
-        const radDist = isPortrait ? 0.95 : 1.15;
-        const latDist = (isPortrait ? 0.52 : 0.68) + Math.abs(centerOffset) * 0.08;
-
-        const clearX = restX + radX * radDist + latX * latDist;
-        const clearY = restY + radY * radDist + latY * latDist;
-        const clearZ = restZ + 0.08; // Reste strictement dans sa couche de profondeur pour ne percuter aucune carte
-        const clearRotZ = restRotZ - sideDir * 0.12;
-        const clearRotY = restRotY * 0.5;
-        const clearRotX = -0.06;
-        const clearScale = restScale * 1.05;
+        const clearX = Math.sin(clearAngle) * fanRadius;
+        const clearY = -Math.cos(clearAngle) * fanRadius + (isPortrait ? 4.4 : 4.1);
+        const clearZ = restZ; // Glisse exactement dans sa couche : couches espacées de 0.09 (> épaisseur)
+        const clearRotZ = -clearAngle;
+        const clearRotY = -clearAngle * 0.32; // plan parallèle aux cartes voisines à cet endroit
+        const clearRotX = restRotX;
+        const clearScale = restScale * 1.03;
 
         // Position d'inspection au premier plan
         const mouseX = state.pointer.x * 0.15;
@@ -280,14 +453,18 @@ function PhysicalCard3D({
         const frontZ = 2.4;
         const frontScale = isPortrait ? 0.76 : 0.86;
         const frontRotX = -mouseY;
-        const frontRotY = isFlipped ? Math.PI : 0;
+        const frontRotY = 0; // le retournement est géré à part (rotation cumulative)
         const frontRotZ = -mouseX * 0.4;
 
         if (p2 > 0) {
           // Trajectoire Phase 2 : entre le waypoint dégagé P_clear et le premier plan P_front (aller ou retour)
-          targetX = THREE.MathUtils.lerp(clearX, frontX, p2);
-          targetY = THREE.MathUtils.lerp(clearY, frontY, p2);
-          targetZ = THREE.MathUtils.lerp(clearZ, frontZ, p2);
+          // Z monte vite (ease-out) et XY suit (ease-in) : la carte passe au-dessus des voisines,
+          // jamais à travers. Symétrique au retour : XY d'abord, Z ensuite.
+          const zP = 1 - (1 - p2) * (1 - p2);
+          const xyP = p2 * p2;
+          targetX = THREE.MathUtils.lerp(clearX, frontX, xyP);
+          targetY = THREE.MathUtils.lerp(clearY, frontY, xyP);
+          targetZ = THREE.MathUtils.lerp(clearZ, frontZ, zP);
           targetRotX = THREE.MathUtils.lerp(clearRotX, frontRotX, p2);
           targetRotY = THREE.MathUtils.lerp(clearRotY, frontRotY, p2);
           targetRotZ = THREE.MathUtils.lerp(clearRotZ, frontRotZ, p2);
@@ -310,7 +487,7 @@ function PhysicalCard3D({
 
         const baseX = Math.sin(fanAngle) * fanRadius;
         const baseY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 5.4 : 4.9);
-        const baseZ = 0.15 + (5 - Math.abs(centerOffset)) * 0.05;
+        const baseZ = 0.3 + indexInFamily * 0.09; // même ordre de profondeur qu'en mode famille
         const baseRotZ = -fanAngle;
         const baseRotY = -fanAngle * 0.35;
         const baseRotX = -0.12;
@@ -370,12 +547,12 @@ function PhysicalCard3D({
         const fanRadius = isPortrait ? 4.2 : 5.2;
 
         const baseX = Math.sin(fanAngle) * fanRadius;
-        const baseY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 3.4 : 4.1);
-        const baseZ = indexInFamily * 0.06 + 0.8;
+        const baseY = -Math.cos(fanAngle) * fanRadius + (isPortrait ? 4.4 : 4.1);
+        const baseZ = indexInFamily * 0.09 + 0.8;
         const baseRotZ = -fanAngle;
         const baseRotY = -fanAngle * 0.32;
         const baseRotX = -0.14;
-        const baseScale = isPortrait ? 0.64 : 0.82;
+        const baseScale = isPortrait ? 0.70 : 0.82;
 
         const sideDir = centerOffset >= 0 ? 1 : -1;
         const radX = Math.sin(fanAngle);
@@ -450,18 +627,61 @@ function PhysicalCard3D({
       }
     }
 
-    // Amortissement Three.js pour une transition physique ultra fluide
-    meshRef.current.position.x = THREE.MathUtils.damp(meshRef.current.position.x, targetX, 6.8, delta);
-    meshRef.current.position.y = THREE.MathUtils.damp(meshRef.current.position.y, targetY, 6.8, delta);
-    meshRef.current.position.z = THREE.MathUtils.damp(meshRef.current.position.z, targetZ, 6.8, delta);
+    // Retournement : rotation cumulative, toujours dans le même sens (jamais par le grand côté)
+    const isSelectedNow = currentStage === "card" && isTargetSelectedCard;
+    if (isSelectedNow) {
+      const parity = Math.abs(Math.round(flipTargetRef.current / Math.PI)) % 2;
+      if ((parity === 1) !== isFlipped) flipTargetRef.current += Math.PI;
+    } else {
+      // Carte reposée : on revient au multiple de 2π le plus proche (face recto)
+      flipTargetRef.current = Math.round(flipTargetRef.current / (2 * Math.PI)) * 2 * Math.PI;
+    }
+    flipAngleRef.current = THREE.MathUtils.damp(
+      flipAngleRef.current,
+      flipTargetRef.current,
+      (isSelectedNow ? 5 : 14) * motionScale,
+      delta
+    );
+    // Arc du retournement : la carte se soulève et grossit à mi-course
+    const flipArc = Math.abs(Math.sin(flipAngleRef.current));
+    targetZ += flipArc * 0.6 * sp;
+    targetScale += flipArc * 0.06 * sp;
+    targetZ += settleOvershoot * 3;
+    targetScale += settleOvershoot * 0.5;
 
-    meshRef.current.rotation.x = THREE.MathUtils.damp(meshRef.current.rotation.x, targetRotX, 6.8, delta);
-    meshRef.current.rotation.y = THREE.MathUtils.damp(meshRef.current.rotation.y, targetRotY, 6.8, delta);
-    meshRef.current.rotation.z = THREE.MathUtils.damp(meshRef.current.rotation.z, targetRotZ, 6.8, delta);
+    // Vitesse de suivi : un seul niveau de lissage visible.
+    // Trajectoire pilotée par une progression -> suivi serré ; sinon -> décalage (stagger) par carte,
+    // la carte du dessus part en premier et les suivantes la rattrapent (effet d'éventail qui se déploie).
+    const baseLambda = (5 - indexInFamily * 0.4 - familyIndex * 0.05) * motionScale;
+    const lambdaTarget = sp > 0.001 || hp > 0.001 || ep > 0.001 ? 12 * motionScale : baseLambda;
+    lambdaRef.current = THREE.MathUtils.damp(lambdaRef.current, lambdaTarget, 8, delta);
+    const lam = lambdaRef.current;
+
+    meshRef.current.position.x = THREE.MathUtils.damp(meshRef.current.position.x, targetX, lam, delta);
+    meshRef.current.position.y = THREE.MathUtils.damp(meshRef.current.position.y, targetY, lam, delta);
+    meshRef.current.position.z = THREE.MathUtils.damp(meshRef.current.position.z, targetZ, lam, delta);
+
+    // Rotation par quaternions (slerp) : trajet direct, sans torsion d'Euler
+    tmp.euler.set(targetRotX, targetRotY, targetRotZ);
+    tmp.q.setFromEuler(tmp.euler);
+    tmp.qFlip.setFromAxisAngle(tmp.yAxis, flipAngleRef.current);
+    tmp.q.multiply(tmp.qFlip);
+    meshRef.current.quaternion.slerp(tmp.q, 1 - Math.exp(-lam * delta));
 
     meshRef.current.scale.setScalar(
-      THREE.MathUtils.damp(meshRef.current.scale.x, targetScale, 7.0, delta)
+      THREE.MathUtils.damp(meshRef.current.scale.x, targetScale, lam + 0.2, delta)
     );
+
+    // Fondu des familles non sélectionnées (au lieu d'un simple éloignement brutal)
+    const targetOpacity =
+      currentStage !== "deck" && !isCardInSelectedFamily ? (currentStage === "family" ? 0.3 : 0) : 1;
+    opacityRef.current = THREE.MathUtils.damp(opacityRef.current, targetOpacity, 5 * motionScale, delta);
+    const op = opacityRef.current;
+    meshRef.current.visible = op > 0.01; // ne rend plus les cartes invisibles
+    if (edgeMeshRef.current) edgeMeshRef.current.visible = !(currentStage === "deck" && !isDeckSpread);
+    if (edgeMatRef.current) edgeMatRef.current.opacity = op;
+    if (frontMatRef.current) frontMatRef.current.opacity = op;
+    if (backMatRef.current) backMatRef.current.opacity = op;
   });
 
   const handleClick = (e: any) => {
@@ -493,45 +713,39 @@ function PhysicalCard3D({
       onPointerOver={(e) => {
         e.stopPropagation();
         setHoveredCardId(card.id);
+        document.body.style.cursor = "pointer";
       }}
-      onPointerOut={() => setHoveredCardId(null)}
+      onPointerOut={() => {
+        setHoveredCardId(null);
+        document.body.style.cursor = "";
+      }}
       onClick={handleClick}
-      cursor="pointer"
     >
       {/* Tranche de papier / carton physique */}
-      <mesh position={[0, 0, -thickness / 2]}>
+      <mesh ref={edgeMeshRef} position={[0, 0, -thickness / 2]}>
         <extrudeGeometry args={[shape, extrudeSettings]} />
         <meshStandardMaterial
+          ref={edgeMatRef}
+          transparent={true}
           color="#fdfbf7"
           roughness={0.42}
           metalness={0.04}
         />
       </mesh>
 
-      {/* Face Recto (illustration originale plein format sans double bordure) */}
-      <mesh position={[0, 0, thickness / 2 + 0.001]}>
-        <planeGeometry args={[width, height]} />
-        <meshBasicMaterial
-          map={frontTexture}
-          toneMapped={false}
-          transparent={true}
-          alphaTest={0.01}
+      <Suspense fallback={null}>
+        <CardFaces
+          frontUrl={card.frontImage}
+          width={width}
+          height={height}
+          thickness={thickness}
+          frontMatRef={frontMatRef}
+          backMatRef={backMatRef}
         />
-      </mesh>
-
-      {/* Face Verso (dos officiel du jeu) */}
-      <mesh position={[0, 0, -thickness / 2 - 0.001]} rotation={[0, Math.PI, 0]}>
-        <planeGeometry args={[width, height]} />
-        <meshBasicMaterial
-          map={backTexture}
-          toneMapped={false}
-          transparent={true}
-          alphaTest={0.01}
-        />
-      </mesh>
+      </Suspense>
 
       {/* Titres flottants en 3D en mode Famille */}
-      {currentStage === "family" && isCardInSelectedFamily && (
+      {currentStage === "family" && isCardInSelectedFamily && (isHovered || !isPortrait) && (
         <group position={[0, -height / 2 - 0.22, 0.05]}>
           <Text
             fontSize={0.11}
@@ -548,7 +762,7 @@ function PhysicalCard3D({
       )}
 
       {/* Titre de carte en arrière-plan en mode Carte pour guider le clic */}
-      {currentStage === "card" && !isTargetSelectedCard && isCardInSelectedFamily && (
+      {currentStage === "card" && !isTargetSelectedCard && isCardInSelectedFamily && (isHovered || !isPortrait) && (
         <group position={[0, -height / 2 - 0.22, 0.05]}>
           <Text
             fontSize={0.10}
@@ -584,7 +798,33 @@ function PhysicalCard3D({
   );
 }
 
-export default function Unified3DScene(props: Unified3DSceneProps) {
+export default function Unified3DScene(rawProps: Unified3DSceneProps) {
+  const maxDpr = useMemo(
+    () => (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches ? 1.5 : 2),
+    []
+  );
+  // Survol avec délai de sortie : évite le clignotement quand la carte survolée s'écarte du curseur
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { setHoveredCardId: setHoveredRaw } = rawProps;
+  const setHoveredCardId = React.useCallback(
+    (id: string | null) => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
+      if (id) setHoveredRaw(id);
+      else hoverTimerRef.current = setTimeout(() => setHoveredRaw(null), 90);
+    },
+    [setHoveredRaw]
+  );
+  React.useEffect(
+    () => () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    },
+    []
+  );
+  const props = { ...rawProps, setHoveredCardId };
+
   return (
     <div
       className="w-full h-full relative cursor-grab active:cursor-grabbing select-none touch-pan-y"
@@ -593,7 +833,7 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
     >
       <Canvas
         camera={{ position: [0, 0.15, 6.8], fov: 42 }}
-        dpr={[1, 2]}
+        dpr={[1, maxDpr]}
         gl={{ antialias: true, alpha: true }}
       >
         <ResponsiveController currentStage={props.currentStage} />
@@ -604,6 +844,7 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
 
         <Float speed={1.1} rotationIntensity={0.06} floatIntensity={0.12}>
           <group position={[0, 0, 0]}>
+            <DeckBlock visible={props.currentStage === "deck" && !props.isDeckSpread} />
             {FAMILIES.map((family, fIdx) => {
               const famCards = CARDS.filter((c) => c.familyId === family.id);
               const hoveredFamilyCard = props.hoveredCardId
@@ -632,14 +873,14 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
                   isHovered={
                     props.hoveredCardId === card.id ||
                     (props.currentStage === "deck" &&
-                      props.hoveredCardId?.startsWith(family.id) &&
+                      !!props.hoveredCardId?.startsWith(family.id) &&
                       cIdx === 0)
                   }
                   hoveredIndexInFamily={hoveredIndexInFamily}
                   hoveredFamilyIndex={hoveredFamilyIndex}
                   setHoveredCardId={props.setHoveredCardId}
                   isDeckSpread={props.isDeckSpread}
-                  deckScrollOffset={props.deckScrollOffset}
+                  deckScrollRef={props.deckScrollRef}
                 />
               ));
             })}
@@ -648,7 +889,7 @@ export default function Unified3DScene(props: Unified3DSceneProps) {
 
         <ContactShadows
           position={[0, -1.9, 0]}
-          opacity={0.22}
+          opacity={0.3}
           scale={10}
           blur={2.4}
           far={4}

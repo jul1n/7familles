@@ -42,7 +42,19 @@ export default function Experience7Familles() {
   // État du Deck 3D (pile compacte vs éventail des 7 familles)
   const [isDeckSpread, setIsDeckSpread] = useState<boolean>(true);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
-  const [deckScrollOffset, setDeckScrollOffset] = useState<number>(0);
+  // Position du carrousel dans une ref (lue par la scène 3D à chaque frame) : pas de re-rendu React
+  // à chaque pixel de défilement. Seuls l'index actif et les bords déclenchent un rendu.
+  const deckScrollRef = useRef<number>(0);
+  const [deckIdx, setDeckIdx] = useState<number>(3);
+  const [deckEdge, setDeckEdge] = useState<"left" | "right" | null>(null);
+  const setDeckScrollOffset = (next: number | ((prev: number) => number)) => {
+    const v = typeof next === "function" ? next(deckScrollRef.current) : next;
+    deckScrollRef.current = v;
+    const idx = Math.round(3 - v);
+    setDeckIdx((prev) => (prev === idx ? prev : idx));
+    const edge = v >= 2.9 ? "left" : v <= -2.9 ? "right" : null;
+    setDeckEdge((prev) => (prev === edge ? prev : edge));
+  };
 
   // Vitesse de défilement continu au survol gauche/droite
   const hoverVelocityRef = useRef<number>(0);
@@ -113,7 +125,7 @@ export default function Experience7Familles() {
     if (selectedFamilyId) return;
     isDraggingRef.current = true;
     dragStartXRef.current = e.clientX;
-    dragStartOffsetRef.current = deckScrollOffset;
+    dragStartOffsetRef.current = deckScrollRef.current;
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -158,9 +170,32 @@ export default function Experience7Familles() {
     }
   }, []);
 
+  // Recentre la puce active dans sa barre défilante (sans faire défiler la page)
+  const centerInParent = (el: Element | null) => {
+    const child = el as HTMLElement | null;
+    const box = child?.parentElement;
+    if (!child || !box) return;
+    box.scrollTo({
+      left: child.offsetLeft - (box.clientWidth - child.clientWidth) / 2,
+      behavior: "smooth",
+    });
+  };
+
+  useEffect(() => {
+    if (currentStage === "deck") centerInParent(document.querySelector(`[data-deck-idx="${deckIdx}"]`));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckIdx, currentStage]);
+
   const activeFamily = FAMILIES.find((f) => f.id === selectedFamilyId) || null;
   const currentCard = CARDS.find((c) => c.id === selectedCardId) || null;
   const familyCards = selectedFamilyId ? CARDS.filter((c) => c.familyId === selectedFamilyId) : [];
+
+  useEffect(() => {
+    if (currentStage !== "family") return;
+    const idx = familyCards.findIndex((c) => c.id === hoveredCardId);
+    centerInParent(document.querySelector(`[data-card-idx="${idx < 0 ? 0 : idx}"]`));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoveredCardId, currentStage, selectedFamilyId]);
 
   // Contenu markdown actif (édité ou original)
   const currentMarkdown = currentCard
@@ -280,9 +315,24 @@ export default function Experience7Familles() {
     const duration = Date.now() - touchStartPosRef.current.time;
     touchStartPosRef.current = null;
 
+    const inSheet = !!(e.target as HTMLElement | null)?.closest?.("#card-pedagogic-sheet");
+
+    // Glisser franchement vers le bas sur la scène : retour à la famille
+    if (
+      currentStage === "card" &&
+      !inSheet &&
+      deltaY > 90 &&
+      deltaY > Math.abs(deltaX) * 1.5 &&
+      duration < 700
+    ) {
+      setSelectedCardId(null);
+      return;
+    }
+
     // Détection d'un geste de swipe horizontal franc (seuil 38px, ratio horizontal > 1.25)
     if (Math.abs(deltaX) > 38 && Math.abs(deltaX) > Math.abs(deltaY) * 1.25 && duration < 650) {
       if (currentStage === "card") {
+        if (inSheet) return; // ne change pas de carte quand on lit la fiche
         if (deltaX < 0) {
           handleNextCard();
         } else {
@@ -406,7 +456,7 @@ export default function Experience7Familles() {
       } else if (e.key === "Enter") {
         if (currentStage === "deck") {
           e.preventDefault();
-          const activeIdx = Math.round(3 - deckScrollOffset);
+          const activeIdx = Math.round(3 - deckScrollRef.current);
           const fam = FAMILIES[Math.max(0, Math.min(FAMILIES.length - 1, activeIdx))];
           if (fam) setSelectedFamilyId(fam.id);
         } else if (currentStage === "family") {
@@ -433,13 +483,12 @@ export default function Experience7Familles() {
     isEditing,
     isCfbrModalOpen,
     hoveredCardId,
-    deckScrollOffset,
     familyCards,
     currentCard,
   ]);
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#F7F5F0] text-stone-900 flex flex-col font-sans select-none">
+    <div className="relative w-full h-dvh overflow-hidden bg-[radial-gradient(ellipse_at_50%_38%,#FFFEFB_0%,#F7F5F0_52%,#EAE4D6_100%)] text-stone-900 flex flex-col font-sans select-none">
       {/* Annonceur vocal accessible invisible */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {liveAnnouncement}
@@ -482,8 +531,9 @@ export default function Experience7Familles() {
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm md:text-base font-bold tracking-tight text-stone-900 leading-tight">
-                  7 Familles des Barrages
+                <h1 className="text-sm md:text-base font-bold tracking-tight text-stone-900 leading-tight whitespace-nowrap">
+                  <span className="sm:hidden">7 Familles</span>
+                  <span className="hidden sm:inline">7 Familles des Barrages</span>
                 </h1>
                 <span className="hidden sm:inline-flex items-center text-[10px] font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
                   1926–2026
@@ -580,7 +630,7 @@ export default function Experience7Familles() {
             hoveredCardId={hoveredCardId}
             setHoveredCardId={setHoveredCardId}
             isDeckSpread={isDeckSpread}
-            deckScrollOffset={deckScrollOffset}
+            deckScrollRef={deckScrollRef}
           />
         </div>
 
@@ -592,7 +642,12 @@ export default function Experience7Familles() {
             {/* Guide supérieur */}
             <div className="text-center pt-1">
               <span className="inline-block px-3.5 py-1.5 text-xs font-semibold rounded-full bg-white/90 text-stone-700 border border-stone-200/90 backdrop-blur-md shadow-sm">
-                Glissez ou survolez pour faire défiler les 7 familles • Cliquez sur un paquet pour l'ouvrir
+                <span className="hidden pointer-coarse:inline">
+                  Faites glisser • Touchez un paquet pour l&apos;ouvrir
+                </span>
+                <span className="pointer-coarse:hidden">
+                  Glissez ou survolez pour faire défiler les 7 familles • Cliquez sur un paquet pour l&apos;ouvrir
+                </span>
               </span>
             </div>
 
@@ -603,8 +658,8 @@ export default function Experience7Familles() {
                   e.stopPropagation();
                   setDeckScrollOffset((prev) => Math.min(3.0, prev + 1.0));
                 }}
-                className={`w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-white/95 border border-stone-200/90 text-stone-700 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
-                  deckScrollOffset >= 2.9
+                className={`pointer-coarse:hidden w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-white/95 border border-stone-200/90 text-stone-700 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
+                  deckEdge === "left"
                     ? "opacity-25 pointer-events-none"
                     : "opacity-90 hover:opacity-100 hover:scale-105 active:scale-95"
                 }`}
@@ -619,8 +674,8 @@ export default function Experience7Familles() {
                   e.stopPropagation();
                   setDeckScrollOffset((prev) => Math.max(-3.0, prev - 1.0));
                 }}
-                className={`w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-white/95 border border-stone-200/90 text-stone-700 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
-                  deckScrollOffset <= -2.9
+                className={`pointer-coarse:hidden w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-white/95 border border-stone-200/90 text-stone-700 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
+                  deckEdge === "right"
                     ? "opacity-25 pointer-events-none"
                     : "opacity-90 hover:opacity-100 hover:scale-105 active:scale-95"
                 }`}
@@ -637,13 +692,14 @@ export default function Experience7Familles() {
               <div
                 role="tablist"
                 aria-label="Sélection rapide des familles de barrages"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/95 border border-stone-200/90 backdrop-blur-xl shadow-lg overflow-x-auto max-w-full"
+                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/95 border border-stone-200/90 backdrop-blur-xl shadow-lg overflow-x-auto max-w-full"
               >
                 {FAMILIES.map((fam, idx) => {
-                  const isCentered = Math.round(3 - deckScrollOffset) === idx;
+                  const isCentered = deckIdx === idx;
                   return (
                     <button
                       key={fam.id}
+                      data-deck-idx={idx}
                       onClick={() => setDeckScrollOffset(3 - idx)}
                       onDoubleClick={() => setSelectedFamilyId(fam.id)}
                       className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
@@ -704,14 +760,19 @@ export default function Experience7Familles() {
             </div>
 
             {/* Sélecteur miniature rapide en bas */}
+            <div className="flex flex-col items-center gap-2 min-w-0">
+            <p className="hidden pointer-coarse:block text-center text-[11px] font-medium text-stone-600 px-3 py-1 rounded-full bg-white/80 backdrop-blur-md border border-stone-200/80">
+              Touchez une carte pour l&apos;aperçu, encore une fois pour l&apos;ouvrir
+            </p>
             <div
               role="group"
               aria-label="Sélection des cartes de la famille"
-              className="flex items-center justify-center gap-2 max-w-full overflow-x-auto pb-2 pointer-events-auto"
+              className="relative flex items-center justify-start md:justify-center gap-2 w-full max-w-full overflow-x-auto pb-2 pointer-events-auto"
             >
-              {familyCards.map((card) => (
+              {familyCards.map((card, cardIdx) => (
                 <button
                   key={card.id}
+                  data-card-idx={cardIdx}
                   onClick={() => {
                     setSelectedCardId(card.id);
                     setIsFlipped(false);
@@ -726,6 +787,7 @@ export default function Experience7Familles() {
                   <span>{card.title}</span>
                 </button>
               ))}
+            </div>
             </div>
           </div>
         )}
@@ -770,6 +832,18 @@ export default function Experience7Familles() {
               </button>
             </div>
 
+            {/* Mobile : indice explicite pour retourner la carte (volet replié) */}
+            {sheetState === "collapsed" && (
+              <button
+                onClick={() => setIsFlipped(!isFlipped)}
+                className="md:hidden absolute left-1/2 -translate-x-1/2 bottom-[8.75rem] z-30 min-h-[40px] px-4 py-2 rounded-full text-xs font-semibold bg-white/95 text-stone-800 border border-stone-200/90 shadow-lg backdrop-blur-md flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                aria-label={isFlipped ? "Afficher le recto de la carte" : "Afficher le verso de la carte"}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                {isFlipped ? "Voir le recto" : "Retourner la carte"}
+              </button>
+            )}
+
             {/* Expérience Desktop : Panneau Pédagogique droit sticky */}
             <div className="hidden md:flex flex-col flex-1 h-full border-l border-stone-200/80 bg-white/80 backdrop-blur-xl overflow-hidden z-20 shadow-xl">
               <div className="p-6 md:p-8 flex-1 overflow-y-auto">
@@ -796,7 +870,7 @@ export default function Experience7Familles() {
                     {currentCard.shortDescription}
                   </p>
 
-                  <div className="prose prose-stone max-w-none text-stone-700 leading-relaxed">
+                  <div className="card-prose">
                     <ReactMarkdown>{currentMarkdown}</ReactMarkdown>
                   </div>
 
@@ -816,7 +890,7 @@ export default function Experience7Familles() {
               id="card-pedagogic-sheet"
               className={`md:hidden absolute bottom-0 left-0 right-0 z-30 bg-[#FDFBF7]/98 border-t border-stone-200/90 backdrop-blur-2xl rounded-t-3xl transition-all duration-300 ease-out flex flex-col shadow-2xl text-stone-900 ${
                 sheetState === "collapsed"
-                  ? "h-36"
+                  ? "h-32"
                   : sheetState === "intermediate"
                   ? "h-[55%]"
                   : "h-[92%]"
@@ -885,7 +959,7 @@ export default function Experience7Familles() {
                 </p>
 
                 {sheetState !== "collapsed" && (
-                  <div className="mt-5 pt-4 border-t border-stone-200 prose prose-stone prose-xs max-w-none text-stone-700">
+                  <div className="mt-5 pt-4 border-t border-stone-200 card-prose card-prose-sm">
                     <ReactMarkdown>{currentMarkdown}</ReactMarkdown>
                     {currentCard.credits && (
                       <div className="mt-4 pt-4 border-t border-stone-200 text-[10px] text-stone-500 italic">
