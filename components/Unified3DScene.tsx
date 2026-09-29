@@ -95,7 +95,7 @@ function PhysicalCard3D({
   backTexture.colorSpace = THREE.SRGBColorSpace;
 
   const width = 1.7;
-  const height = 2.42;
+  const height = 2.428;
   const radius = 0.085;
   const thickness = 0.016;
 
@@ -122,11 +122,8 @@ function PhysicalCard3D({
   const extrudeSettings = useMemo(
     () => ({
       depth: thickness,
-      bevelEnabled: true,
-      bevelSegments: 2,
+      bevelEnabled: false,
       steps: 1,
-      bevelSize: 0.007,
-      bevelThickness: 0.005,
     }),
     [thickness]
   );
@@ -501,29 +498,36 @@ function PhysicalCard3D({
       onClick={handleClick}
       cursor="pointer"
     >
-      {/* Tranche de papier / carton */}
+      {/* Tranche de papier / carton physique */}
       <mesh position={[0, 0, -thickness / 2]}>
         <extrudeGeometry args={[shape, extrudeSettings]} />
         <meshStandardMaterial
-          color={isHovered ? card.familyColor : "#f8fafc"}
-          roughness={0.35}
-          metalness={0.08}
+          color="#fdfbf7"
+          roughness={0.42}
+          metalness={0.04}
         />
       </mesh>
 
-      {/* Face Recto (illustration de la carte - TOUJOURS le recto illustré de la carte) */}
-      <mesh position={[0, 0, thickness / 2 + 0.007]}>
-        <planeGeometry args={[width * 0.985, height * 0.985]} />
+      {/* Face Recto (illustration originale plein format sans double bordure) */}
+      <mesh position={[0, 0, thickness / 2 + 0.001]}>
+        <planeGeometry args={[width, height]} />
         <meshBasicMaterial
           map={frontTexture}
           toneMapped={false}
+          transparent={true}
+          alphaTest={0.01}
         />
       </mesh>
 
       {/* Face Verso (dos officiel du jeu) */}
-      <mesh position={[0, 0, -thickness / 2 - 0.007]} rotation={[0, Math.PI, 0]}>
-        <planeGeometry args={[width * 0.985, height * 0.985]} />
-        <meshBasicMaterial map={backTexture} toneMapped={false} />
+      <mesh position={[0, 0, -thickness / 2 - 0.001]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[width, height]} />
+        <meshBasicMaterial
+          map={backTexture}
+          toneMapped={false}
+          transparent={true}
+          alphaTest={0.01}
+        />
       </mesh>
 
       {/* Titres flottants en 3D en mode Famille */}
