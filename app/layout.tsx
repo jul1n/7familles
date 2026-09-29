@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { asset } from "@/lib/asset";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   title: "7 Familles des Barrages • CFBR",
   description:
     "Jeu des 7 familles des barrages du Comité Français des Barrages et Réservoirs (1926–2026) : explorez 42 cartes illustrées et leurs fiches pédagogiques.",
-  icons: { icon: "/cfbr-logo.png" },
+  icons: { icon: asset("/cfbr-logo.png") },
 };
 
 export const viewport: Viewport = {

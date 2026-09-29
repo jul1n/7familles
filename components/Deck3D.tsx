@@ -161,7 +161,6 @@ function FamilyStack3D({
         e.stopPropagation();
         onSelectFamily(family.id);
       }}
-      cursor="pointer"
     >
       {/* Empilement des 6 cartes de la famille */}
       {[0, 1, 2, 3, 4, 5].map((cardIdx) => {

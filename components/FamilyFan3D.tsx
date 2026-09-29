@@ -112,7 +112,6 @@ function FanCardItem({
         e.stopPropagation();
         onSelectCard(card.id);
       }}
-      cursor="pointer"
     >
       {/* Bordure / Tranche de carte */}
       <mesh position={[0, 0, -thickness / 2]}>

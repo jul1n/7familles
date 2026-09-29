@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useTexture, ContactShadows, Text, Float } from "@react-three/drei";
 import * as THREE from "three";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
+import { asset } from "@/lib/asset";
 
 interface Unified3DSceneProps {
   currentStage: "deck" | "family" | "card";
@@ -148,7 +149,7 @@ function CardFaces({
   backMatRef: React.RefObject<THREE.MeshBasicMaterial | null>;
 }) {
   // useTexture suspend : isolé ici, il ne bloque plus toute la scène (les cartes apparaissent au fil du chargement)
-  const [frontTexture, backTexture] = useTexture([frontUrl, "/cards/card-back.webp"]);
+  const [frontTexture, backTexture] = useTexture([asset(frontUrl), asset("/cards/card-back.webp")]);
   frontTexture.colorSpace = THREE.SRGBColorSpace;
   backTexture.colorSpace = THREE.SRGBColorSpace;
 

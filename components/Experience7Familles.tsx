@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { asset } from "@/lib/asset";
 import dynamic from "next/dynamic";
-import { FAMILIES, CARDS } from "@/data/cards";
+import { FAMILIES, CARDS, CardData } from "@/data/cards";
+import MosaicView from "@/components/MosaicView";
 import {
   Layers,
   RotateCcw,
@@ -16,8 +18,8 @@ import {
   ChevronUp,
   X,
   Compass,
-  Globe,
-  ExternalLink,
+  Box,
+  LayoutGrid,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -37,23 +39,23 @@ export default function Experience7Familles() {
   const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
-  const [isCfbrModalOpen, setIsCfbrModalOpen] = useState<boolean>(false);
+
+  // Mode d'affichage : scène 3D ou mosaïque des 42 cartes côte à côte
+  const [viewMode, setViewMode] = useState<"3d" | "mosaic">("3d");
+  const [fromMosaic, setFromMosaic] = useState<boolean>(false);
 
   // État du Deck 3D (pile compacte vs éventail des 7 familles)
   const [isDeckSpread, setIsDeckSpread] = useState<boolean>(true);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   // Position du carrousel dans une ref (lue par la scène 3D à chaque frame) : pas de re-rendu React
-  // à chaque pixel de défilement. Seuls l'index actif et les bords déclenchent un rendu.
+  // à chaque pixel de défilement. Seul l'index actif déclenche un rendu.
   const deckScrollRef = useRef<number>(0);
   const [deckIdx, setDeckIdx] = useState<number>(3);
-  const [deckEdge, setDeckEdge] = useState<"left" | "right" | null>(null);
   const setDeckScrollOffset = (next: number | ((prev: number) => number)) => {
     const v = typeof next === "function" ? next(deckScrollRef.current) : next;
     deckScrollRef.current = v;
     const idx = Math.round(3 - v);
     setDeckIdx((prev) => (prev === idx ? prev : idx));
-    const edge = v >= 2.9 ? "left" : v <= -2.9 ? "right" : null;
-    setDeckEdge((prev) => (prev === edge ? prev : edge));
   };
 
   // Vitesse de défilement continu au survol gauche/droite
@@ -64,7 +66,7 @@ export default function Experience7Familles() {
 
   // Détection du survol gauche et droite pour faire défiler le carrousel 3D
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (selectedFamilyId) {
+    if (selectedFamilyId || viewMode === "mosaic") {
       hoverVelocityRef.current = 0;
       return;
     }
@@ -115,21 +117,21 @@ export default function Experience7Familles() {
 
   // Défilement à la molette / touchpad
   const handleWheel = (e: React.WheelEvent) => {
-    if (selectedFamilyId) return;
+    if (selectedFamilyId || viewMode === "mosaic") return;
     const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
     setDeckScrollOffset((prev) => Math.max(-3.0, Math.min(3.0, prev - delta * 0.0025)));
   };
 
   // Glisser-déposer / swipe à la souris ou au doigt
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (selectedFamilyId) return;
+    if (selectedFamilyId || viewMode === "mosaic") return;
     isDraggingRef.current = true;
     dragStartXRef.current = e.clientX;
     dragStartOffsetRef.current = deckScrollRef.current;
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (selectedFamilyId) return;
+    if (selectedFamilyId || viewMode === "mosaic") return;
     handleMouseMove(e as unknown as React.MouseEvent<HTMLDivElement>);
     if (isDraggingRef.current) {
       const diff = (e.clientX - dragStartXRef.current) / (window.innerWidth * 0.35);
@@ -259,6 +261,40 @@ export default function Experience7Familles() {
     reader.readAsText(file);
   };
 
+  // Clic sur une carte de la mosaïque : on l'ouvre dans la fiche 3D, avec retour possible vers la mosaïque
+  const openCardFromMosaic = (card: CardData) => {
+    setSelectedFamilyId(card.familyId);
+    setSelectedCardId(card.id);
+    setIsFlipped(false);
+    setSheetState("collapsed");
+    setFromMosaic(true);
+    setViewMode("3d");
+  };
+
+  // Fermer la carte : retour à la mosaïque si on en vient, sinon à la famille
+  const closeCard = () => {
+    if (fromMosaic) {
+      setSelectedCardId(null);
+      setSelectedFamilyId(null);
+      setViewMode("mosaic");
+    } else {
+      setSelectedCardId(null);
+    }
+  };
+
+  const switchViewMode = (mode: "3d" | "mosaic") => {
+    if (mode === viewMode) return;
+    setSelectedCardId(null);
+    setSelectedFamilyId(null);
+    setHoveredCardId(null);
+    setIsFlipped(false);
+    setViewMode(mode);
+  };
+
+  useEffect(() => {
+    if (!selectedCardId) setFromMosaic(false);
+  }, [selectedCardId]);
+
   const handlePrevCard = () => {
     if (!currentCard || familyCards.length === 0) return;
     const idx = familyCards.findIndex((c) => c.id === currentCard.id);
@@ -325,7 +361,7 @@ export default function Experience7Familles() {
       deltaY > Math.abs(deltaX) * 1.5 &&
       duration < 700
     ) {
-      setSelectedCardId(null);
+      closeCard();
       return;
     }
 
@@ -406,13 +442,13 @@ export default function Experience7Familles() {
         return;
       }
 
+      if (viewMode === "mosaic" && e.key !== "Escape") return;
+
       if (e.key === "Escape") {
-        if (isCfbrModalOpen) {
-          setIsCfbrModalOpen(false);
-        } else if (isEditing) {
+        if (isEditing) {
           setIsEditing(false);
         } else if (selectedCardId) {
-          setSelectedCardId(null);
+          closeCard();
         } else if (selectedFamilyId) {
           setSelectedFamilyId(null);
         }
@@ -481,10 +517,11 @@ export default function Experience7Familles() {
     selectedFamilyId,
     selectedCardId,
     isEditing,
-    isCfbrModalOpen,
     hoveredCardId,
     familyCards,
     currentCard,
+    viewMode,
+    fromMosaic,
   ]);
 
   return (
@@ -523,7 +560,7 @@ export default function Experience7Familles() {
             {/* Vignette épurée du logo CFBR */}
             <div className="h-10 px-2 py-0.5 bg-white/95 border border-stone-200/90 rounded-xl shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md group-hover:border-[#1b5d78]/40 transition">
               <img
-                src="/cfbr-logo.png"
+                src={asset("/cfbr-logo.png")}
                 alt="Logo officiel CFBR"
                 className="h-8 w-auto object-contain"
               />
@@ -535,11 +572,11 @@ export default function Experience7Familles() {
                   <span className="sm:hidden">7 Familles</span>
                   <span className="hidden sm:inline">7 Familles des Barrages</span>
                 </h1>
-                <span className="hidden sm:inline-flex items-center text-[10px] font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
+                <span className="hidden lg:inline-flex whitespace-nowrap items-center text-[10px] font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
                   1926–2026
                 </span>
               </div>
-              <p className="text-[11px] text-stone-500 hidden sm:block">
+              <p className="text-[11px] text-stone-500 hidden md:block">
                 Comité Français des Barrages et Réservoirs
               </p>
             </div>
@@ -547,32 +584,32 @@ export default function Experience7Familles() {
         </div>
 
         {/* Contrôles supérieurs */}
-        <div className="flex items-center gap-2">
-          {/* Bouton d'accès au site officiel CFBR avec consultation directe embarquée */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Switch de vue : scène 3D / mosaïque des cartes */}
           <button
-            onClick={() => setIsCfbrModalOpen(true)}
-            className="min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-[#1b5d78] hover:text-white text-[#1b5d78] border border-[#1b5d78]/30 shadow-xs hover:shadow-md transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
-            title="Consulter le site officiel CFBR (vue intégrée)"
-            aria-label="Ouvrir le site officiel du CFBR dans une fenêtre intégrée"
+            role="switch"
+            aria-checked={viewMode === "mosaic"}
+            aria-label={viewMode === "mosaic" ? "Passer à la vue 3D" : "Passer à la vue mosaïque"}
+            title={viewMode === "mosaic" ? "Vue 3D" : "Vue mosaïque"}
+            onClick={() => switchViewMode(viewMode === "mosaic" ? "3d" : "mosaic")}
+            className="relative h-10 w-[76px] flex-shrink-0 rounded-xl bg-white/95 border border-stone-200/90 shadow-xs hover:shadow-md transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
           >
-            <Globe className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Site CFBR</span>
+            <span
+              aria-hidden="true"
+              className={`absolute top-1 left-1 h-8 w-8 rounded-lg bg-[#1b5d78] shadow-sm transition-transform duration-300 ease-out ${
+                viewMode === "mosaic" ? "translate-x-9" : "translate-x-0"
+              }`}
+            />
+            <span className="relative flex h-full items-center justify-between px-[9px]">
+              <Box className={`w-4 h-4 transition-colors ${viewMode === "3d" ? "text-white" : "text-stone-500"}`} />
+              <LayoutGrid
+                className={`w-4 h-4 transition-colors ${viewMode === "mosaic" ? "text-white" : "text-stone-500"}`}
+              />
+            </span>
           </button>
 
-          {selectedCardId && (
-            <button
-              onClick={() => setIsFlipped(!isFlipped)}
-              className="min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs hover:shadow-sm transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
-              title="Retourner la carte à 180°"
-              aria-label={isFlipped ? "Afficher le recto de la carte" : "Afficher le verso de la carte"}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">
-                {isFlipped ? "Voir recto" : "Voir verso"}
-              </span>
-            </button>
-          )}
-
+          {/* Outil d'édition des contenus : réservé au développement (absent du site publié) */}
+          {process.env.NODE_ENV === "development" && (
           <button
             onClick={() => setIsEditing(!isEditing)}
             className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
@@ -585,6 +622,7 @@ export default function Experience7Familles() {
             <Edit3 className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Mode Édition</span>
           </button>
+          )}
         </div>
       </header>
 
@@ -602,6 +640,10 @@ export default function Experience7Familles() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        {viewMode === "mosaic" && <MosaicView onOpenCard={openCardFromMosaic} />}
+
+        {viewMode === "3d" && (
+        <>
         {/* CANVAS WEBGL PLEIN ÉCRAN SOUS LES OVERLAYS */}
         <div
           className={`relative transition-all duration-500 ${
@@ -649,41 +691,6 @@ export default function Experience7Familles() {
                   Glissez ou survolez pour faire défiler les 7 familles • Cliquez sur un paquet pour l&apos;ouvrir
                 </span>
               </span>
-            </div>
-
-            {/* Zones de navigation latérales (flèches de défilement cliquables) */}
-            <div className="flex-1 flex items-center justify-between px-2 pointer-events-none">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDeckScrollOffset((prev) => Math.min(3.0, prev + 1.0));
-                }}
-                className={`pointer-coarse:hidden w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-white/95 border border-stone-200/90 text-stone-700 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
-                  deckEdge === "left"
-                    ? "opacity-25 pointer-events-none"
-                    : "opacity-90 hover:opacity-100 hover:scale-105 active:scale-95"
-                }`}
-                title="Faire défiler vers la gauche"
-                aria-label="Faire défiler vers la gauche"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDeckScrollOffset((prev) => Math.max(-3.0, prev - 1.0));
-                }}
-                className={`pointer-coarse:hidden w-12 h-12 min-w-[44px] min-h-[44px] rounded-full bg-white/95 border border-stone-200/90 text-stone-700 hover:text-stone-900 hover:border-stone-400 backdrop-blur-xl shadow-lg transition pointer-events-auto flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
-                  deckEdge === "right"
-                    ? "opacity-25 pointer-events-none"
-                    : "opacity-90 hover:opacity-100 hover:scale-105 active:scale-95"
-                }`}
-                title="Faire défiler vers la droite"
-                aria-label="Faire défiler vers la droite"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
             </div>
 
             {/* Barre inférieure : sélecteur rapide des 7 familles & bouton éventail */}
@@ -798,12 +805,12 @@ export default function Experience7Familles() {
             {/* Contrôles carte (Haut) */}
             <div className="absolute top-4 left-4 z-30 flex items-center gap-2">
               <button
-                onClick={() => setSelectedCardId(null)}
+                onClick={closeCard}
                 className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition flex items-center gap-2 shadow-md focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
-                aria-label={`Revenir à la famille ${activeFamily?.name}`}
+                aria-label={fromMosaic ? "Revenir à la mosaïque" : `Revenir à la famille ${activeFamily?.name}`}
               >
                 <ChevronLeft className="w-4 h-4" />
-                <span>{activeFamily?.name}</span>
+                <span>{fromMosaic ? "Mosaïque" : activeFamily?.name}</span>
               </button>
             </div>
 
@@ -832,11 +839,11 @@ export default function Experience7Familles() {
               </button>
             </div>
 
-            {/* Mobile : indice explicite pour retourner la carte (volet replié) */}
+            {/* Retourner la carte : unique bouton, près de la carte (mobile : au-dessus du volet replié) */}
             {sheetState === "collapsed" && (
               <button
                 onClick={() => setIsFlipped(!isFlipped)}
-                className="md:hidden absolute left-1/2 -translate-x-1/2 bottom-[8.75rem] z-30 min-h-[40px] px-4 py-2 rounded-full text-xs font-semibold bg-white/95 text-stone-800 border border-stone-200/90 shadow-lg backdrop-blur-md flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                className="absolute left-1/2 md:left-[22.5%] lg:left-[21%] -translate-x-1/2 bottom-[8.75rem] md:bottom-8 z-30 min-h-[40px] px-4 py-2 rounded-full text-xs font-semibold bg-white/95 text-stone-800 border border-stone-200/90 shadow-lg backdrop-blur-md flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
                 aria-label={isFlipped ? "Afficher le recto de la carte" : "Afficher le verso de la carte"}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -972,6 +979,8 @@ export default function Experience7Familles() {
             </div>
           </>
         )}
+        </>
+        )}
       </main>
 
       {/* 3. MODALE DU MODE ÉDITION DE DÉVELOPPEMENT */}
@@ -1088,69 +1097,6 @@ export default function Experience7Familles() {
                   Veuillez d'abord sélectionner une carte dans le jeu pour modifier son texte.
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 4. MODALE CONSULTATION EMBEDDED DU SITE OFFICIEL CFBR */}
-      {isCfbrModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cfbr-dialog-title"
-          className="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6"
-        >
-          <div className="bg-white border border-stone-300 w-full max-w-6xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden text-stone-900">
-            {/* Barre d'en-tête de la modale CFBR */}
-            <div className="px-4 py-3 border-b border-stone-200 bg-[#FDFBF7] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-9 px-2 py-0.5 bg-white border border-stone-200 rounded-lg flex items-center justify-center shadow-xs">
-                  <img src="/cfbr-logo.png" alt="CFBR" className="h-7 w-auto object-contain" />
-                </div>
-                <div>
-                  <h3 id="cfbr-dialog-title" className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-2">
-                    Comité Français des Barrages et Réservoirs
-                    <span className="text-[10px] text-[#1b5d78] bg-[#1b5d78]/10 font-semibold px-2 py-0.5 rounded-full border border-[#1b5d78]/20 hidden md:inline">
-                      Site officiel embarqué
-                    </span>
-                  </h3>
-                  <p className="text-[11px] text-stone-500 hidden sm:block">
-                    https://www.barrages-cfbr.eu
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <a
-                  href="https://www.barrages-cfbr.eu"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-stone-50 text-stone-700 transition flex items-center gap-1.5 border border-stone-300 shadow-xs focus-visible:ring-2 focus-visible:ring-cyan-500"
-                  title="Ouvrir le site CFBR dans un nouvel onglet"
-                >
-                  <span className="hidden sm:inline">Ouvrir dans un onglet</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-stone-500" />
-                </a>
-                <button
-                  onClick={() => setIsCfbrModalOpen(false)}
-                  className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
-                  aria-label="Fermer la vue intégrée du site CFBR"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Cadre de navigation web intégré (iframe sécurisée) */}
-            <div className="flex-1 w-full h-full relative bg-stone-100">
-              <iframe
-                src="https://www.barrages-cfbr.eu"
-                title="Site officiel du CFBR (Comité Français des Barrages et Réservoirs)"
-                className="w-full h-full border-0"
-                allow="fullscreen"
-                loading="lazy"
-              />
             </div>
           </div>
         </div>
