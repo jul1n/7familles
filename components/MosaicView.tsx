@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
-import { asset } from "@/lib/asset";
+import { thumb } from "@/lib/asset";
 
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
@@ -77,7 +77,7 @@ export default function MosaicView({ onOpenCard }: MosaicViewProps) {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={asset(card.frontImage)}
+                      src={thumb(card.frontImage)}
                       alt={`Carte n°${card.num} : ${card.title}`}
                       loading="lazy"
                       decoding="async"

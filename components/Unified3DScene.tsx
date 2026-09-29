@@ -1,9 +1,12 @@
 import React, { useRef, useMemo, useState, Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useTexture, ContactShadows, Text, Float } from "@react-three/drei";
+import { useTexture, ContactShadows, Text, Float, useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
-import { asset } from "@/lib/asset";
+import { asset, thumb } from "@/lib/asset";
+
+// Police locale pour les étiquettes 3D (évite la police récupérée sur un CDN par défaut)
+const FONT_URL = asset("/fonts/Geist-Regular.ttf");
 
 interface Unified3DSceneProps {
   currentStage: "deck" | "family" | "card";
@@ -133,29 +136,26 @@ function DeckBlock({ visible }: { visible: boolean }) {
   );
 }
 
-function CardFaces({
-  frontUrl,
-  width,
-  height,
-  thickness,
-  frontMatRef,
-  backMatRef,
-}: {
+type MatRef<T> = React.RefObject<T | null>;
+
+interface FacesProps {
   frontUrl: string;
   width: number;
   height: number;
   thickness: number;
-  frontMatRef: React.RefObject<THREE.MeshBasicMaterial | null>;
-  backMatRef: React.RefObject<THREE.MeshBasicMaterial | null>;
-}) {
-  // useTexture suspend : isolé ici, il ne bloque plus toute la scène (les cartes apparaissent au fil du chargement)
-  const [frontTexture, backTexture] = useTexture([asset(frontUrl), asset("/cards/card-back.webp")]);
+  frontMatRef: MatRef<THREE.MeshBasicMaterial>;
+  backMatRef: MatRef<THREE.MeshBasicMaterial>;
+}
+
+// Faces en miniature (360 px) : légères, suffisantes pour le deck, l'éventail et les cartes d'arrière-plan.
+// useTexture suspend : isolé ici, il ne bloque pas la scène (les cartes apparaissent au fil du chargement).
+function CardFaces({ frontUrl, width, height, thickness, frontMatRef, backMatRef }: FacesProps) {
+  const [frontTexture, backTexture] = useTexture([thumb(frontUrl), thumb("/cards/card-back.webp")]);
   frontTexture.colorSpace = THREE.SRGBColorSpace;
   backTexture.colorSpace = THREE.SRGBColorSpace;
 
   return (
     <>
-      {/* Face Recto (illustration originale plein format sans double bordure) */}
       <mesh position={[0, 0, thickness / 2 + 0.001]}>
         <planeGeometry args={[width, height]} />
         <meshBasicMaterial
@@ -166,8 +166,6 @@ function CardFaces({
           alphaTest={0.01}
         />
       </mesh>
-
-      {/* Face Verso (dos officiel du jeu) */}
       <mesh position={[0, 0, -thickness / 2 - 0.001]} rotation={[0, Math.PI, 0]}>
         <planeGeometry args={[width, height]} />
         <meshBasicMaterial
@@ -179,6 +177,47 @@ function CardFaces({
         />
       </mesh>
     </>
+  );
+}
+
+// Pleine résolution, uniquement pour la carte ouverte : se superpose à la miniature dès qu'elle est chargée.
+function FullFront({ frontUrl, width, height, thickness, frontMatRef }: Omit<FacesProps, "backMatRef">) {
+  const frontTexture = useTexture(asset(frontUrl));
+  frontTexture.colorSpace = THREE.SRGBColorSpace;
+
+  // Libère la mémoire graphique de l'image pleine résolution quand la carte est refermée
+  React.useEffect(() => () => frontTexture.dispose(), [frontTexture]);
+
+  return (
+    <mesh position={[0, 0, thickness / 2 + 0.002]}>
+      <planeGeometry args={[width, height]} />
+      <meshBasicMaterial
+        ref={frontMatRef}
+        map={frontTexture}
+        toneMapped={false}
+        transparent={true}
+        alphaTest={0.01}
+      />
+    </mesh>
+  );
+}
+
+// Dos pleine résolution (388 Ko) : chargé seulement au premier retournement de la carte.
+function FullBack({ width, height, thickness, backMatRef }: Omit<FacesProps, "frontUrl" | "frontMatRef">) {
+  const backTexture = useTexture(asset("/cards/card-back.webp"));
+  backTexture.colorSpace = THREE.SRGBColorSpace;
+
+  return (
+    <mesh position={[0, 0, -thickness / 2 - 0.002]} rotation={[0, Math.PI, 0]}>
+      <planeGeometry args={[width, height]} />
+      <meshBasicMaterial
+        ref={backMatRef}
+        map={backTexture}
+        toneMapped={false}
+        transparent={true}
+        alphaTest={0.01}
+      />
+    </mesh>
   );
 }
 
@@ -199,6 +238,7 @@ function PhysicalCard3D({
   setHoveredCardId,
   isDeckSpread,
   deckScrollRef,
+  loadAll,
 }: {
   card: CardData;
   indexInFamily: number;
@@ -216,6 +256,7 @@ function PhysicalCard3D({
   setHoveredCardId: (id: string | null) => void;
   isDeckSpread: boolean;
   deckScrollRef: React.MutableRefObject<number>;
+  loadAll: boolean;
 }) {
   const meshRef = useRef<THREE.Group>(null);
   const hoverProgressRef = useRef<number>(0);
@@ -230,6 +271,8 @@ function PhysicalCard3D({
   const edgeMeshRef = useRef<THREE.Mesh>(null);
   const frontMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const backMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const fullFrontMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const fullBackMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const tmp = useMemo(
     () => ({
       euler: new THREE.Euler(),
@@ -296,6 +339,27 @@ function PhysicalCard3D({
   const isPortrait = size.width < size.height;
   const isCardInSelectedFamily = card.familyId === selectedFamilyId;
   const isTargetSelectedCard = card.id === selectedCardId;
+
+  // Chargement à la demande : couvertures d'abord, puis la famille ouverte, puis le reste en temps libre
+  const shouldLoad = indexInFamily === 0 || loadAll || card.familyId === selectedFamilyId;
+  // Pleine résolution : carte ouverte, conservée pendant l'animation de retour pour éviter un effet de flou
+  const isOpenNow = currentStage === "card" && isTargetSelectedCard;
+  const [keepFull, setKeepFull] = useState(false);
+  React.useEffect(() => {
+    if (isOpenNow) {
+      setKeepFull(true);
+      return;
+    }
+    const t = setTimeout(() => setKeepFull(false), 1800);
+    return () => clearTimeout(t);
+  }, [isOpenNow]);
+  const wantFull = isOpenNow || keepFull;
+  // Le dos en pleine résolution n'est demandé qu'au premier retournement
+  const [backRequested, setBackRequested] = useState(false);
+  React.useEffect(() => {
+    if (isOpenNow && isFlipped) setBackRequested(true);
+    else if (!wantFull) setBackRequested(false);
+  }, [isOpenNow, isFlipped, wantFull]);
 
   useFrame((state, delta) => {
     if (!meshRef.current) return;
@@ -683,6 +747,8 @@ function PhysicalCard3D({
     if (edgeMatRef.current) edgeMatRef.current.opacity = op;
     if (frontMatRef.current) frontMatRef.current.opacity = op;
     if (backMatRef.current) backMatRef.current.opacity = op;
+    if (fullFrontMatRef.current) fullFrontMatRef.current.opacity = op;
+    if (fullBackMatRef.current) fullBackMatRef.current.opacity = op;
   });
 
   const handleClick = (e: any) => {
@@ -734,21 +800,40 @@ function PhysicalCard3D({
         />
       </mesh>
 
-      <Suspense fallback={null}>
-        <CardFaces
-          frontUrl={card.frontImage}
-          width={width}
-          height={height}
-          thickness={thickness}
-          frontMatRef={frontMatRef}
-          backMatRef={backMatRef}
-        />
-      </Suspense>
+      {shouldLoad && (
+        <Suspense fallback={null}>
+          <CardFaces
+            frontUrl={card.frontImage}
+            width={width}
+            height={height}
+            thickness={thickness}
+            frontMatRef={frontMatRef}
+            backMatRef={backMatRef}
+          />
+        </Suspense>
+      )}
+      {wantFull && (
+        <Suspense fallback={null}>
+          <FullFront
+            frontUrl={card.frontImage}
+            width={width}
+            height={height}
+            thickness={thickness}
+            frontMatRef={fullFrontMatRef}
+          />
+        </Suspense>
+      )}
+      {wantFull && backRequested && (
+        <Suspense fallback={null}>
+          <FullBack width={width} height={height} thickness={thickness} backMatRef={fullBackMatRef} />
+        </Suspense>
+      )}
 
       {/* Titres flottants en 3D en mode Famille */}
       {currentStage === "family" && isCardInSelectedFamily && (isHovered || !isPortrait) && (
         <group position={[0, -height / 2 - 0.22, 0.05]}>
           <Text
+            font={FONT_URL}
             fontSize={0.11}
             color={isHovered ? "#0284c7" : "#1e293b"}
             anchorX="center"
@@ -766,6 +851,7 @@ function PhysicalCard3D({
       {currentStage === "card" && !isTargetSelectedCard && isCardInSelectedFamily && (isHovered || !isPortrait) && (
         <group position={[0, -height / 2 - 0.22, 0.05]}>
           <Text
+            font={FONT_URL}
             fontSize={0.10}
             color={isHovered ? "#0284c7" : "#64748b"}
             anchorX="center"
@@ -783,6 +869,7 @@ function PhysicalCard3D({
       {currentStage === "deck" && isDeckSpread && indexInFamily === 0 && (
         <group position={[0, -height / 2 - 0.28, 0.05]}>
           <Text
+            font={FONT_URL}
             fontSize={0.14}
             color={isHovered ? "#0284c7" : "#0f172a"}
             anchorX="center"
@@ -799,7 +886,57 @@ function PhysicalCard3D({
   );
 }
 
+// Barre de progression du chargement initial (affichée une seule fois)
+function LoadingBar() {
+  const { progress } = useProgress();
+  const [done, setDone] = useState(false);
+  React.useEffect(() => {
+    if (progress < 100) return;
+    const t = setTimeout(() => setDone(true), 500);
+    return () => clearTimeout(t);
+  }, [progress]);
+  if (done) return null;
+  return (
+    <div
+      role="progressbar"
+      aria-label="Chargement des cartes"
+      aria-valuenow={Math.round(progress)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-56 pointer-events-none flex flex-col items-center gap-2 transition-opacity duration-500 ${
+        progress >= 100 ? "opacity-0" : "opacity-100"
+      }`}
+    >
+      <div className="h-1.5 w-full rounded-full bg-stone-200/80 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-[#1b5d78] transition-[width] duration-300 ease-out"
+          style={{ width: `${Math.max(6, progress)}%` }}
+        />
+      </div>
+      <span className="text-[11px] font-medium text-stone-500">Chargement des cartes… {Math.round(progress)} %</span>
+    </div>
+  );
+}
+
 export default function Unified3DScene(rawProps: Unified3DSceneProps) {
+  // Préchargement en temps libre des cartes qui ne sont pas encore nécessaires (après les couvertures)
+  const [loadAll, setLoadAll] = useState(false);
+  React.useEffect(() => {
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    let idleId: number | undefined;
+    const t = setTimeout(() => {
+      if (w.requestIdleCallback) idleId = w.requestIdleCallback(() => setLoadAll(true), { timeout: 6000 });
+      else setLoadAll(true);
+    }, 2000);
+    return () => {
+      clearTimeout(t);
+      if (idleId !== undefined) w.cancelIdleCallback?.(idleId);
+    };
+  }, []);
+
   const maxDpr = useMemo(
     () => (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches ? 1.5 : 2),
     []
@@ -882,6 +1019,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
                   setHoveredCardId={props.setHoveredCardId}
                   isDeckSpread={props.isDeckSpread}
                   deckScrollRef={props.deckScrollRef}
+                  loadAll={loadAll}
                 />
               ));
             })}
@@ -896,6 +1034,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
           far={4}
         />
       </Canvas>
+      <LoadingBar />
     </div>
   );
 }
