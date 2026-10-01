@@ -7,10 +7,11 @@ import { GLOBAL_LINKS } from "@/lib/links";
 
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
+  onPrintAll: () => void;
 }
 
 // Vue « mosaïque » : les 42 cartes côte à côte, regroupées par famille, cliquables.
-export default function MosaicView({ onOpenCard }: MosaicViewProps) {
+export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) {
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
   const families = activeFamilyId ? FAMILIES.filter((f) => f.id === activeFamilyId) : FAMILIES;
 
@@ -105,6 +106,9 @@ export default function MosaicView({ onOpenCard }: MosaicViewProps) {
               {l.label}
             </a>
           ))}
+          <button onClick={onPrintAll} className="underline underline-offset-2">
+            Imprimer les 42 fiches
+          </button>
         </nav>
       </div>
     </div>

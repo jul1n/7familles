@@ -5,10 +5,15 @@ import { asset } from "@/lib/asset";
 import dynamic from "next/dynamic";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import MosaicView from "@/components/MosaicView";
+import PrintSheets from "@/components/PrintSheets";
+import { markdownToSpeech, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import { GLOBAL_LINKS, cardLinks, englishTerm } from "@/lib/links";
 import {
   Layers,
   ExternalLink,
+  Volume2,
+  Square,
+  Printer,
   Edit3,
   ChevronLeft,
   ChevronRight,
@@ -56,6 +61,44 @@ function MoreLinks({ links }: { links: { label: string; url: string }[] }) {
         ))}
       </ul>
     </nav>
+  );
+}
+
+// Actions de la fiche : écouter le texte à voix haute, imprimer la fiche
+function CardActions({
+  isSpeaking,
+  canSpeak,
+  onToggleSpeak,
+  onPrint,
+}: {
+  isSpeaking: boolean;
+  canSpeak: boolean;
+  onToggleSpeak: () => void;
+  onPrint: () => void;
+}) {
+  const btn =
+    "inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-xl text-xs font-semibold border transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none";
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {canSpeak && (
+        <button
+          onClick={onToggleSpeak}
+          aria-pressed={isSpeaking}
+          className={`${btn} ${
+            isSpeaking
+              ? "bg-[#1b5d78] text-white border-[#1b5d78]"
+              : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+          }`}
+        >
+          {isSpeaking ? <Square className="w-3.5 h-3.5" /> : <Volume2 className="w-4 h-4" />}
+          {isSpeaking ? "Arrêter" : "Écouter"}
+        </button>
+      )}
+      <button onClick={onPrint} className={`${btn} bg-white text-stone-700 border-stone-200 hover:bg-stone-50`}>
+        <Printer className="w-4 h-4" />
+        Imprimer
+      </button>
+    </div>
   );
 }
 
@@ -180,6 +223,28 @@ export default function Experience7Familles() {
     isDraggingRef.current = false;
   };
 
+  // Écoute de la fiche à voix haute
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [canSpeak, setCanSpeak] = useState<boolean>(false);
+  useEffect(() => setCanSpeak(speechSupported()), []);
+
+  // Impression : une page par carte (la carte ouverte, ou les 42 depuis la mosaïque)
+  const [printCards, setPrintCards] = useState<CardData[] | null>(null);
+  useEffect(() => {
+    if (!printCards) return;
+    let cancelled = false;
+    const finish = () => setPrintCards(null);
+    window.addEventListener("afterprint", finish, { once: true });
+    const imgs = Array.from(document.querySelectorAll<HTMLImageElement>("#print-root img"));
+    Promise.all(imgs.map((img) => img.decode().catch(() => undefined))).then(() => {
+      if (!cancelled) window.print();
+    });
+    return () => {
+      cancelled = true;
+      window.removeEventListener("afterprint", finish);
+    };
+  }, [printCards]);
+
   // Bottom sheet mobile (collapsed | intermediate | expanded)
   const [sheetState, setSheetState] = useState<"collapsed" | "intermediate" | "expanded">("collapsed");
 
@@ -245,6 +310,18 @@ export default function Experience7Familles() {
       // ignore
     }
   };
+
+  const toggleSpeak = () => {
+    if (isSpeaking) {
+      stopSpeaking();
+      setIsSpeaking(false);
+    } else if (currentCard) {
+      setIsSpeaking(true);
+      speak(markdownToSpeech(currentCard.title, currentCard.shortDescription, currentMarkdown), () => setIsSpeaking(false));
+    }
+  };
+
+  const markdownFor = (card: CardData) => customMarkdownMap[card.id] ?? card.contentMarkdown;
 
   const handleCopyMarkdown = () => {
     navigator.clipboard.writeText(currentMarkdown);
@@ -326,6 +403,8 @@ export default function Experience7Familles() {
   };
 
   useEffect(() => {
+    stopSpeaking();
+    setIsSpeaking(false);
     setIsFlipped(false);
     if (!selectedCardId) setFromMosaic(false);
   }, [selectedCardId]);
@@ -556,7 +635,8 @@ export default function Experience7Familles() {
   ]);
 
   return (
-    <div className="relative w-full h-dvh overflow-hidden bg-[radial-gradient(ellipse_at_50%_38%,#FFFEFB_0%,#F7F5F0_52%,#EAE4D6_100%)] text-stone-900 flex flex-col font-sans select-none">
+    <>
+    <div className="relative w-full h-dvh overflow-hidden print:hidden bg-[radial-gradient(ellipse_at_50%_38%,#FFFEFB_0%,#F7F5F0_52%,#EAE4D6_100%)] text-stone-900 flex flex-col font-sans select-none">
       {/* Annonceur vocal accessible invisible */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {liveAnnouncement}
@@ -682,7 +762,7 @@ export default function Experience7Familles() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {viewMode === "mosaic" && <MosaicView onOpenCard={openCardFromMosaic} />}
+        {viewMode === "mosaic" && <MosaicView onOpenCard={openCardFromMosaic} onPrintAll={() => setPrintCards(CARDS)} />}
 
         {viewMode === "3d" && (
         <>
@@ -894,6 +974,13 @@ export default function Experience7Familles() {
                     {currentCard.title}
                   </h2>
 
+                  <CardActions
+                    isSpeaking={isSpeaking}
+                    canSpeak={canSpeak}
+                    onToggleSpeak={toggleSpeak}
+                    onPrint={() => setPrintCards([currentCard])}
+                  />
+
                   <p className="text-base text-stone-800 leading-relaxed font-medium bg-[#F5F2EB] p-4 rounded-xl border border-stone-200/90">
                     {currentCard.shortDescription}
                   </p>
@@ -988,6 +1075,17 @@ export default function Experience7Familles() {
                 <p className="text-xs text-stone-600 mt-1 line-clamp-2">
                   {currentCard.shortDescription}
                 </p>
+
+                {sheetState !== "collapsed" && (
+                  <div className="mt-4">
+                    <CardActions
+                      isSpeaking={isSpeaking}
+                      canSpeak={canSpeak}
+                      onToggleSpeak={toggleSpeak}
+                      onPrint={() => setPrintCards([currentCard])}
+                    />
+                  </div>
+                )}
 
                 {sheetState !== "collapsed" && (
                   <div className="mt-5 pt-4 border-t border-stone-200 card-prose card-prose-sm">
@@ -1128,5 +1226,7 @@ export default function Experience7Familles() {
         </div>
       )}
     </div>
+    {printCards && <PrintSheets cards={printCards} markdownFor={markdownFor} />}
+    </>
   );
 }
