@@ -31,8 +31,8 @@ function domainOf(url: string): string {
 // Numérotation des pages et marges. Les pages « bare » (couverture et 4e de couverture) n'ont ni logo ni numéro.
 function RunningStyle() {
   const css = `
-@page { size: A4; margin: 14mm 14mm 16mm;
-  @bottom-center { content: counter(page); font: 9pt sans-serif; color: #57534e; } }
+@page { size: A4; margin: 14mm 14mm 6mm;
+  @bottom-center { content: counter(page); font: 8pt sans-serif; color: #57534e; } }
 @page bare { margin: 14mm; @bottom-center { content: none; } }
 .print-bare { page: bare; }
 `;
@@ -55,7 +55,7 @@ function CoverPage() {
     <section className="print-sheet print-bare flex flex-col items-center justify-center text-center" style={{ minHeight: "265mm" }}>
       <div className="h-1.5 w-40 rounded-full bg-gradient-to-r from-[#1b5d78] via-[#247c9e] to-[#22c55e] mb-10" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={asset("/cfbr-logo.png")} alt="Logo du CFBR" className="h-28 w-auto mb-10" />
+      <img src={asset("/logos/cfbr-hd.png")} alt="Logo du CFBR" className="w-[14cm] h-auto mb-10" />
       <h1 className="text-5xl font-extrabold tracking-tight text-[#1b5d78]">7 Familles des Barrages</h1>
       <p className="mt-3 text-2xl font-semibold text-stone-700">1926 – 2026</p>
       <p className="mt-10 text-lg font-medium text-stone-800">Comité Français des Barrages et Réservoirs</p>
@@ -79,7 +79,7 @@ function TocPage() {
       <div className="space-y-4">
         {FAMILIES.map((fam, i) => (
           <div key={fam.id} className="break-inside-avoid">
-            <p className="flex items-center gap-2 text-base font-extrabold" style={{ color: fam.color }}>
+            <a href={`#print-fam-${fam.id}`} className="flex items-center gap-2 text-base font-extrabold" style={{ color: fam.color }}>
               <span
                 className="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-white"
                 style={{ backgroundColor: fam.color }}
@@ -87,12 +87,14 @@ function TocPage() {
                 {i + 1}
               </span>
               {fam.name}
-            </p>
+            </a>
             <p className="ml-8 text-xs text-stone-600 mb-1">{fam.description}</p>
             <ol className="ml-8 grid grid-cols-2 gap-x-6 gap-y-0.5 text-sm text-stone-800">
               {CARDS.filter((c) => c.familyId === fam.id).map((c) => (
                 <li key={c.id}>
-                  <span className="font-semibold text-stone-500">{c.num}.</span> {c.title}
+                  <a href={`#print-card-${c.id}`}>
+                    <span className="font-semibold text-stone-500">{c.num}.</span> {c.title}
+                  </a>
                 </li>
               ))}
             </ol>
@@ -120,13 +122,15 @@ function OverviewPages() {
                 </p>
                 <div className="grid grid-cols-6 gap-1.5">
                   {CARDS.filter((c) => c.familyId === fam.id).map((c) => (
-                    <figure key={c.id} className="text-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={printImg(c.frontImage)} alt="" className="w-full h-auto" />
-                      <figcaption className="mt-0.5 text-[7pt] leading-tight font-medium">
-                        {c.num}. {c.title}
-                      </figcaption>
-                    </figure>
+                    <a key={c.id} href={`#print-card-${c.id}`} className="block">
+                      <figure className="text-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={printImg(c.frontImage)} alt="" className="w-full h-auto" />
+                        <figcaption className="mt-0.5 text-[7pt] leading-tight font-medium">
+                          {c.num}. {c.title}
+                        </figcaption>
+                      </figure>
+                    </a>
                   ))}
                 </div>
               </div>
@@ -199,13 +203,12 @@ function BackCover() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={asset("/logos/cfbr-hd.png")} alt="Logo du CFBR" className="w-[12cm] h-auto" />
       </a>
-      <p className="mt-6 text-base font-medium text-stone-800">Comité Français des Barrages et Réservoirs</p>
-      <div className="mt-20 flex items-center justify-center gap-16">
+      <div className="mt-24 flex items-center justify-center gap-16">
         <a href={ARCHITECTES_URL} className="flex flex-col items-center gap-2">
-          <PartnerLogo file="architectes-de-leau.png" name="Les Architectes de l’Eau" className="h-[13mm] w-auto" />
+          <PartnerLogo file="architectes-de-leau.png" name="Les Architectes de l’Eau" className="h-[16.5mm] w-auto" />
         </a>
         <a href={BIMBAMBOUM.instagram} className="flex flex-col items-center gap-2">
-          <PartnerLogo file="hello-bim-bam-boum.png" name="Hello Bim Bam Boum" className="h-[22mm] w-auto" />
+          <PartnerLogo file="hello-bim-bam-boum.png" name="Hello Bim Bam Boum" className="h-[27.5mm] w-auto" />
         </a>
       </div>
     </section>
@@ -225,9 +228,13 @@ export default function PrintSheets({ cards, booklet, markdownFor }: PrintSheets
       )}
 
       {cards.map((card) => (
-        <article key={card.id} className="print-sheet">
+        <article key={card.id} id={`print-card-${card.id}`} className="print-sheet">
           <header className="flex items-center justify-between border-b-2 pb-2 mb-4" style={{ borderColor: card.familyColor }}>
-            <span className="text-sm font-bold" style={{ color: card.familyColor }}>
+            <span
+              id={card.num === 1 ? `print-fam-${card.familyId}` : undefined}
+              className="text-sm font-bold"
+              style={{ color: card.familyColor }}
+            >
               Famille {card.familyName} • Carte n°{card.num}
             </span>
           </header>
@@ -249,20 +256,21 @@ export default function PrintSheets({ cards, booklet, markdownFor }: PrintSheets
                 <strong>En anglais :</strong> {englishTerm(card)}
               </p>
             )}
-            <p>
-              <strong>En savoir plus :</strong>{" "}
-              {cardLinks(card)
-                .filter((l) => l.url !== CFBR_URL)
-                .map((l, i) => (
-                  <React.Fragment key={l.url}>
-                    {i > 0 && " • "}
-                    <a href={l.url} className="text-[#1b5d78] underline">
-                      {l.label}
-                    </a>{" "}
-                    <span className="text-stone-400">({domainOf(l.url)})</span>
-                  </React.Fragment>
-                ))}
-            </p>
+            <div>
+              <strong>En savoir plus :</strong>
+              <ul className="ml-3">
+                {cardLinks(card)
+                  .filter((l) => l.url !== CFBR_URL && l.url !== ARCHITECTES_URL)
+                  .map((l) => (
+                    <li key={l.url}>
+                      <a href={l.url} className="text-[#1b5d78] underline">
+                        {l.label}
+                      </a>{" "}
+                      <span className="text-stone-400">({domainOf(l.url)})</span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
             {card.credits && <p className="italic">Crédit photo : {card.credits}</p>}
           </footer>
           <SheetFooter />

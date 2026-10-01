@@ -9,7 +9,7 @@ import PrintSheets from "@/components/PrintSheets";
 import AgencyCredit from "@/components/AgencyCredit";
 import { markdownToSpeech, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import audioManifest from "@/data/audio-manifest.json";
-import { GLOBAL_LINKS, cardLinks, englishTerm } from "@/lib/links";
+import { ARCHITECTES_URL, cardLinks, englishTerm } from "@/lib/links";
 import {
   Layers,
   ExternalLink,
@@ -741,6 +741,28 @@ export default function Experience7Familles() {
 
         {/* Contrôles supérieurs */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Partenaires : le logo renvoie directement vers leur site ou leur compte */}
+          <div className="hidden md:flex items-center gap-3 mr-1">
+            <a
+              href={ARCHITECTES_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Les Architectes de l’Eau"
+              className="block rounded-lg focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={asset("/logos/architectes-de-leau.png")} alt="Les Architectes de l’Eau" className="h-8 w-auto" />
+            </a>
+            <AgencyCredit placement="bottom" align="right">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={asset("/logos/hello-bim-bam-boum-small.png")}
+                alt="Hello Bim Bam Boum"
+                className="h-9 w-9 rounded-full"
+              />
+            </AgencyCredit>
+          </div>
+
           {/* Choix du mode d'affichage : carrousel 3D ou toutes les cartes */}
           <div
             role="group"
@@ -859,25 +881,6 @@ export default function Experience7Familles() {
                   Glissez ou survolez pour faire défiler les 7 familles • Cliquez sur un paquet pour l&apos;ouvrir
                 </span>
               </span>
-              <nav
-                aria-label="En savoir plus"
-                className="pointer-events-auto mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-semibold text-[#1b5d78]"
-              >
-                <span className="text-stone-500 font-medium">En savoir plus :</span>
-                {GLOBAL_LINKS.map((l) => (
-                  <a
-                    key={l.url}
-                    href={l.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 underline decoration-[#1b5d78]/30 underline-offset-2 hover:decoration-[#1b5d78] focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none rounded"
-                  >
-                    {l.label}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                ))}
-                <AgencyCredit className="text-stone-600 font-medium" placement="bottom" />
-              </nav>
             </div>
 
             {/* Barre inférieure : sélecteur rapide des 7 familles & bouton éventail */}

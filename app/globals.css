@@ -70,7 +70,8 @@ body {
 /* Impression des fiches : une page A4 par carte, sans l'interface */
 @media print {
   html, body { background: #fff !important; height: auto !important; overflow: visible !important; }
-  .print-sheet { break-after: page; page-break-after: always; display: flex; flex-direction: column; min-height: 262mm; }
+  .print-sheet { break-after: page; page-break-after: always; display: flex; flex-direction: column; }
+  .print-sheet:not(.print-bare) { min-height: 276mm; }
   .print-sheet:last-child { break-after: auto; page-break-after: auto; }
   .print-sheet .card-prose { font-size: 0.72rem; line-height: 1.35; }
   .print-sheet img { break-inside: avoid; }
