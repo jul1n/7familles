@@ -113,7 +113,7 @@ export default function PrintSheets({ cards, booklet, markdownFor }: PrintSheets
               <strong>En savoir plus :</strong>{" "}
               {cardLinks(card).map((l) => `${l.label} (${l.url})`).join(" • ")}
             </p>
-            {card.credits && <p className="italic">Crédits : {card.credits}</p>}
+            {card.credits && <p className="italic">Crédit photo : {card.credits}</p>}
           </footer>
         </article>
       ))}

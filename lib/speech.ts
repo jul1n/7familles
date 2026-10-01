@@ -52,10 +52,32 @@ export function bestFrenchVoice(): SpeechSynthesisVoice | undefined {
 
 let utterances: SpeechSynthesisUtterance[] = [];
 
+let audio: HTMLAudioElement | null = null;
+
 export function stopSpeaking() {
+  if (audio) {
+    audio.onended = null;
+    audio.onerror = null;
+    audio.pause();
+    audio = null;
+  }
   if (!speechSupported()) return;
   utterances = [];
   window.speechSynthesis.cancel();
+}
+
+// Lit un fichier audio pré-enregistré (voix neuronale générée à l'avance).
+// Si le fichier est introuvable ou illisible, onFail permet de se rabattre sur la synthèse du navigateur.
+export function playAudio(url: string, onEnd: () => void, onFail: () => void) {
+  stopSpeaking();
+  const el = new Audio(url);
+  audio = el;
+  el.onended = onEnd;
+  el.onerror = onFail;
+  // Si la lecture a été arrêtée entre-temps, l'échec de play() est normal : on ne se rabat pas sur la synthèse
+  el.play().catch(() => {
+    if (audio === el) onFail();
+  });
 }
 
 // Lit le texte phrase par phrase (évite l'arrêt des longs textes sur certains navigateurs)

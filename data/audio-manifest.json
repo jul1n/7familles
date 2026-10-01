@@ -1,0 +1,170 @@
+{
+  "metiers-proprietaire": {
+    "hash": "a9f1e28a1816d214",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "metiers-conceptrice": {
+    "hash": "d78aca63d1aed181",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "metiers-constructeur": {
+    "hash": "5618756fa94b840a",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "metiers-expert-securite": {
+    "hash": "0ae03de4d31a3a94",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "metiers-hydrologue": {
+    "hash": "2d9b675459fd0f08",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "metiers-geologue": {
+    "hash": "0d43b74778508b36",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "usages-eau-potable": {
+    "hash": "46d9e36eed75b116",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "usages-hydroelectricite": {
+    "hash": "9976e63083e1cdb7",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "usages-irrigation": {
+    "hash": "83cf8d92f96c2a79",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "usages-regulation-debit": {
+    "hash": "f7ce6c2f4b0973f3",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "usages-transport": {
+    "hash": "1f01a713f4f9069a",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "usages-tourisme": {
+    "hash": "c87b28ff071b429c",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "composants-corps": {
+    "hash": "8740da1372176436",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "composants-evacuateur": {
+    "hash": "b1c2e5394f2701c8",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "composants-fondation": {
+    "hash": "35c6e582b0e6c159",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "composants-prise-deau": {
+    "hash": "357ff69cc2beaaba",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "composants-capteurs": {
+    "hash": "a7712e5bf51dae85",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "composants-riviere": {
+    "hash": "e96b50ac1ae2b064",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "types-barrage-remblai": {
+    "hash": "22ddfef1261223ad",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "types-barrage-poids": {
+    "hash": "4bf41075e596255a",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "types-barrage-voute": {
+    "hash": "e5ae7c5fb8ce3c8d",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "types-canaux": {
+    "hash": "c3188a081db8fb93",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "types-digue-protection": {
+    "hash": "af666ef240d00c44",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "types-step": {
+    "hash": "8e86a9a4e9a983b9",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "monde-itaipu": {
+    "hash": "eca9b8c6f16201e8",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "monde-canal-suez": {
+    "hash": "932b162af21b1d64",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "monde-grande-dixence": {
+    "hash": "12937f2360358aec",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "monde-kariba": {
+    "hash": "04df557f92bda7c3",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "monde-trois-gorges": {
+    "hash": "f6dab4636b7e5e8f",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "monde-hoover-dam": {
+    "hash": "add4c5671a78880b",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "france-serre-poncon": {
+    "hash": "4a46e46c797743c0",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "france-migouelou": {
+    "hash": "c144087dc4e0f1e4",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "france-rance": {
+    "hash": "c888df23db0fff3e",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "france-canal-alsace": {
+    "hash": "750800ea8f237f06",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "france-levees-loire": {
+    "hash": "e38c84dbdc35a2a7",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "france-takamaka": {
+    "hash": "627bc424e600e834",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "temps-pont-du-gard": {
+    "hash": "09bb07cf92e14bee",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "temps-canal-du-midi": {
+    "hash": "7df5203b14994230",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "temps-barrage-zola": {
+    "hash": "4a013dcf032a9de5",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "temps-barrage-dardennes": {
+    "hash": "7b92a16184084881",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "temps-barrage-rizzanese": {
+    "hash": "5203d9c414d41a06",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  },
+  "temps-canal-seine-nord": {
+    "hash": "18b19d9ac454f6b9",
+    "voice": "fr-FR-VivienneMultilingualNeural"
+  }
+}

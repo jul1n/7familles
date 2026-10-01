@@ -6,7 +6,8 @@ import dynamic from "next/dynamic";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import MosaicView from "@/components/MosaicView";
 import PrintSheets from "@/components/PrintSheets";
-import { markdownToSpeech, speak, speechSupported, stopSpeaking } from "@/lib/speech";
+import { markdownToSpeech, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
+import audioManifest from "@/data/audio-manifest.json";
 import { GLOBAL_LINKS, cardLinks, englishTerm } from "@/lib/links";
 import {
   Layers,
@@ -102,11 +103,30 @@ function CardActions({
   );
 }
 
+// Drapeau du Royaume-Uni (SVG : les emojis de drapeaux ne s'affichent pas sous Windows)
+function UKFlag({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 60 40" className={className} role="img" aria-label="Drapeau du Royaume-Uni">
+      <clipPath id="uk-clip">
+        <rect width="60" height="40" />
+      </clipPath>
+      <g clipPath="url(#uk-clip)">
+        <rect width="60" height="40" fill="#012169" />
+        <path d="M0 0L60 40M60 0L0 40" stroke="#fff" strokeWidth="8" />
+        <path d="M0 0L60 40M60 0L0 40" stroke="#C8102E" strokeWidth="3" />
+        <path d="M30 0V40M0 20H60" stroke="#fff" strokeWidth="13" />
+        <path d="M30 0V40M0 20H60" stroke="#C8102E" strokeWidth="7" />
+      </g>
+    </svg>
+  );
+}
+
 // Terme anglais de la carte, en fin de fiche
 function EnglishTerm({ term }: { term?: string }) {
   if (!term) return null;
   return (
     <p className="pt-4 border-t border-stone-200 text-sm text-stone-700">
+      <UKFlag className="inline-block w-5 h-[14px] rounded-[2px] shadow-sm mr-2 align-[-2px]" />
       <span className="text-xs font-bold uppercase tracking-wide text-stone-500 mr-2">En anglais</span>
       <span lang="en" className="font-semibold">{term}</span>
     </p>
@@ -226,7 +246,7 @@ export default function Experience7Familles() {
   // Écoute de la fiche à voix haute
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [canSpeak, setCanSpeak] = useState<boolean>(false);
-  useEffect(() => setCanSpeak(speechSupported()), []);
+  useEffect(() => setCanSpeak(speechSupported() || Object.keys(audioManifest).length > 0), []);
 
   // Impression : une page par carte (la carte ouverte, ou les 42 depuis la mosaïque)
   const [printCards, setPrintCards] = useState<{ cards: CardData[]; booklet: boolean } | null>(null);
@@ -317,7 +337,15 @@ export default function Experience7Familles() {
       setIsSpeaking(false);
     } else if (currentCard) {
       setIsSpeaking(true);
-      speak(markdownToSpeech(currentCard.title, currentCard.shortDescription, currentMarkdown), () => setIsSpeaking(false));
+      const readWithBrowserVoice = () =>
+        speak(markdownToSpeech(currentCard.title, currentCard.shortDescription, currentMarkdown), () => setIsSpeaking(false));
+      // Voix pré-enregistrée si la fiche n'a pas été modifiée dans l'éditeur, sinon voix du navigateur
+      const hasAudio = currentCard.id in audioManifest && customMarkdownMap[currentCard.id] === undefined;
+      if (hasAudio) {
+        playAudio(asset(`/audio/${currentCard.id}.mp3`), () => setIsSpeaking(false), readWithBrowserVoice);
+      } else {
+        readWithBrowserVoice();
+      }
     }
   };
 
@@ -965,8 +993,8 @@ export default function Experience7Familles() {
 
             {/* Expérience Desktop : Panneau Pédagogique droit sticky */}
             <div className="hidden md:flex flex-col flex-1 h-full border-l border-stone-200/80 bg-white/80 backdrop-blur-xl overflow-hidden z-20 shadow-xl">
-              <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-                <div className="max-w-2xl mx-auto space-y-6">
+              <div className="p-4 md:p-5 flex-1 overflow-y-auto">
+                <div className="max-w-3xl mx-auto space-y-4">
                   <div className="flex items-center justify-between">
                     <span
                       className="px-3.5 py-1 rounded-full text-xs font-bold text-white shadow-sm"
@@ -1005,7 +1033,7 @@ export default function Experience7Familles() {
 
                   {currentCard.credits && (
                     <div className="pt-6 border-t border-stone-200 text-xs text-stone-500 italic">
-                      Crédits : {currentCard.credits}
+                      Crédit photo : {currentCard.credits}
                     </div>
                   )}
                 </div>
@@ -1105,7 +1133,7 @@ export default function Experience7Familles() {
                     <div className="mt-4"><EnglishTerm term={englishTerm(currentCard)} /></div>
                     {currentCard.credits && (
                       <div className="mt-4 pt-4 border-t border-stone-200 text-[10px] text-stone-500 italic">
-                        {currentCard.credits}
+                        Crédit photo : {currentCard.credits}
                       </div>
                     )}
                   </div>

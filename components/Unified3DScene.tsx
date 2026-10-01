@@ -41,9 +41,13 @@ function ResponsiveController({ currentStage }: { currentStage: "deck" | "family
       } else if (currentStage === "deck") {
         targetZ = 8.6;
         targetY = 0.20;
-      } else if (currentStage === "card") {
+      } else if (currentStage === "card" && window.innerWidth < 768) {
         targetZ = 7.2;
         targetY = 0.68; // Élève la carte au-dessus de la zone du bottom sheet mobile
+      } else if (currentStage === "card") {
+        // Volet de gauche d'une fenêtre de bureau étroite : pas de bottom sheet, on cadre comme en paysage
+        targetZ = 6.8;
+        targetY = 0.15;
       }
     } else {
       targetZ = 6.8;
@@ -544,9 +548,17 @@ function PhysicalCard3D({
         const mouseX = state.pointer.x * 0.15;
         const mouseY = state.pointer.y * 0.15;
         const frontX = 0;
-        const frontY = isPortrait ? 0.65 : 0.15;
+        // Bottom sheet mobile (< 768 px) : la carte est remontée ; sinon elle est centrée dans son volet
+        const sheetLayout = isPortrait && window.innerWidth < 768;
+        const frontY = sheetLayout ? 0.65 : 0.15;
         const frontZ = 2.4;
-        const frontScale = isPortrait ? 0.76 : 0.86;
+        // Carte ouverte : aussi grande que le volet le permet (environ 2 fois la surface d'avant)
+        const frontDist = (sheetLayout ? 7.2 : 6.8) - frontZ;
+        const frontVisH = 2 * Math.tan(THREE.MathUtils.degToRad(21)) * frontDist;
+        const frontVisW = frontVisH * (size.width / size.height);
+        const frontScale = sheetLayout
+          ? Math.min(0.82, (frontVisW * 0.92) / CARD_W)
+          : Math.min(1.2, (frontVisW * 0.92) / CARD_W, (frontVisH * 0.8) / CARD_H);
         const frontRotX = -mouseY;
         const frontRotY = 0; // le retournement est géré à part (rotation cumulative)
         const frontRotZ = -mouseX * 0.4;

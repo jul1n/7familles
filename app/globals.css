@@ -33,21 +33,21 @@ body {
 
 
 /* Contenu pédagogique des cartes (rendu Markdown) */
-.card-prose { font-size: 0.95rem; line-height: 1.65; color: #44403c; }
-.card-prose > * + * { margin-top: 0.85em; }
+.card-prose { font-size: 0.95rem; line-height: 1.5; color: #44403c; }
+.card-prose > * + * { margin-top: 0.65em; }
 .card-prose h1, .card-prose h2, .card-prose h3, .card-prose h4 {
   color: #1c1917; font-weight: 800; line-height: 1.25; letter-spacing: -0.01em;
 }
 .card-prose h1 { font-size: 1.35em; }
 .card-prose h2 {
-  font-size: 1.15em; margin-top: 1.6em; padding-top: 0.9em;
+  font-size: 1.15em; margin-top: 1.2em; padding-top: 0.7em;
   border-top: 1px solid #e7e5e4; color: #1b5d78;
 }
-.card-prose h3 { font-size: 1.02em; margin-top: 1.3em; }
+.card-prose h3 { font-size: 1.02em; margin-top: 1em; }
 .card-prose ul, .card-prose ol { padding-left: 1.25em; }
 .card-prose ul { list-style: disc; }
 .card-prose ol { list-style: decimal; }
-.card-prose li + li { margin-top: 0.35em; }
+.card-prose li + li { margin-top: 0.25em; }
 .card-prose li::marker { color: #247c9e; }
 .card-prose strong { color: #1c1917; font-weight: 700; }
 .card-prose blockquote {
