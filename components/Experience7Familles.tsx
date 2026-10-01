@@ -5,9 +5,10 @@ import { asset } from "@/lib/asset";
 import dynamic from "next/dynamic";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import MosaicView from "@/components/MosaicView";
+import { GLOBAL_LINKS, cardLinks, englishTerm } from "@/lib/links";
 import {
   Layers,
-  RotateCcw,
+  ExternalLink,
   Edit3,
   ChevronLeft,
   ChevronRight,
@@ -34,10 +35,46 @@ const Unified3DScene = dynamic(() => import("@/components/Unified3DScene"), {
   ),
 });
 
+// Liens « en savoir plus » vers des pages externes (nouvel onglet)
+function MoreLinks({ links }: { links: { label: string; url: string }[] }) {
+  return (
+    <nav aria-label="En savoir plus" className="pt-4 border-t border-stone-200">
+      <h3 className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-2">En savoir plus</h3>
+      <ul className="flex flex-wrap gap-2">
+        {links.map((l) => (
+          <li key={l.url}>
+            <a
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg text-xs font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 hover:bg-[#1b5d78]/15 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            >
+              {l.label}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+// Terme anglais de la carte, en fin de fiche
+function EnglishTerm({ term }: { term?: string }) {
+  if (!term) return null;
+  return (
+    <p className="pt-4 border-t border-stone-200 text-sm text-stone-700">
+      <span className="text-xs font-bold uppercase tracking-wide text-stone-500 mr-2">En anglais</span>
+      <span lang="en" className="font-semibold">{term}</span>
+    </p>
+  );
+}
+
 export default function Experience7Familles() {
   // Navigation & états monopage (SPA)
   const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  // Dos de la carte : easter egg, uniquement via la touche Espace
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
   // Mode d'affichage : scène 3D ou mosaïque des 42 cartes côte à côte
@@ -192,13 +229,6 @@ export default function Experience7Familles() {
   const currentCard = CARDS.find((c) => c.id === selectedCardId) || null;
   const familyCards = selectedFamilyId ? CARDS.filter((c) => c.familyId === selectedFamilyId) : [];
 
-  useEffect(() => {
-    if (currentStage !== "family") return;
-    const idx = familyCards.findIndex((c) => c.id === hoveredCardId);
-    centerInParent(document.querySelector(`[data-card-idx="${idx < 0 ? 0 : idx}"]`));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hoveredCardId, currentStage, selectedFamilyId]);
-
   // Contenu markdown actif (édité ou original)
   const currentMarkdown = currentCard
     ? customMarkdownMap[currentCard.id] ?? currentCard.contentMarkdown
@@ -265,7 +295,6 @@ export default function Experience7Familles() {
   const openCardFromMosaic = (card: CardData) => {
     setSelectedFamilyId(card.familyId);
     setSelectedCardId(card.id);
-    setIsFlipped(false);
     setSheetState("collapsed");
     setFromMosaic(true);
     setViewMode("3d");
@@ -282,16 +311,22 @@ export default function Experience7Familles() {
     }
   };
 
+  // Clic dans le vide de la scène : retour à l'affichage plus général
+  const handleSceneBack = () => {
+    if (selectedCardId) closeCard();
+    else if (selectedFamilyId) setSelectedFamilyId(null);
+  };
+
   const switchViewMode = (mode: "3d" | "mosaic") => {
     if (mode === viewMode) return;
     setSelectedCardId(null);
     setSelectedFamilyId(null);
     setHoveredCardId(null);
-    setIsFlipped(false);
     setViewMode(mode);
   };
 
   useEffect(() => {
+    setIsFlipped(false);
     if (!selectedCardId) setFromMosaic(false);
   }, [selectedCardId]);
 
@@ -300,7 +335,6 @@ export default function Experience7Familles() {
     const idx = familyCards.findIndex((c) => c.id === currentCard.id);
     const nextIdx = (idx - 1 + familyCards.length) % familyCards.length;
     setSelectedCardId(familyCards[nextIdx].id);
-    setIsFlipped(false);
   };
 
   const handleNextCard = () => {
@@ -308,7 +342,6 @@ export default function Experience7Familles() {
     const idx = familyCards.findIndex((c) => c.id === currentCard.id);
     const nextIdx = (idx + 1) % familyCards.length;
     setSelectedCardId(familyCards[nextIdx].id);
-    setIsFlipped(false);
   };
 
   // Annonce vocale dynamique pour les lecteurs d'écran (WCAG 4.1.3)
@@ -317,7 +350,7 @@ export default function Experience7Familles() {
   useEffect(() => {
     if (currentStage === "card" && currentCard) {
       setLiveAnnouncement(
-        `Carte ${currentCard.num} sur 6 sélectionnée : ${currentCard.title}, famille ${currentCard.familyName}. Flèches gauche et droite pour changer de carte, espace pour retourner.`
+        `Carte ${currentCard.num} sur 6 sélectionnée : ${currentCard.title}, famille ${currentCard.familyName}. Flèches gauche et droite pour changer de carte.`
       );
     } else if (currentStage === "family" && activeFamily) {
       setLiveAnnouncement(
@@ -499,12 +532,10 @@ export default function Experience7Familles() {
           e.preventDefault();
           if (hoveredCardId) {
             setSelectedCardId(hoveredCardId);
-            setIsFlipped(false);
-            setSheetState("collapsed");
+                    setSheetState("collapsed");
           } else if (familyCards.length > 0) {
             setSelectedCardId(familyCards[0].id);
-            setIsFlipped(false);
-            setSheetState("collapsed");
+                    setSheetState("collapsed");
           }
         }
       }
@@ -585,28 +616,30 @@ export default function Experience7Familles() {
 
         {/* Contrôles supérieurs */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Switch de vue : scène 3D / mosaïque des cartes */}
-          <button
-            role="switch"
-            aria-checked={viewMode === "mosaic"}
-            aria-label={viewMode === "mosaic" ? "Passer à la vue 3D" : "Passer à la vue mosaïque"}
-            title={viewMode === "mosaic" ? "Vue 3D" : "Vue mosaïque"}
-            onClick={() => switchViewMode(viewMode === "mosaic" ? "3d" : "mosaic")}
-            className="relative h-10 w-[76px] flex-shrink-0 rounded-xl bg-white/95 border border-stone-200/90 shadow-xs hover:shadow-md transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+          {/* Choix du mode d'affichage : carrousel 3D ou toutes les cartes */}
+          <div
+            role="group"
+            aria-label="Mode d'affichage"
+            className="flex h-10 flex-shrink-0 items-center gap-0.5 rounded-xl bg-white/95 border border-stone-200/90 p-0.5 shadow-xs"
           >
-            <span
-              aria-hidden="true"
-              className={`absolute top-1 left-1 h-8 w-8 rounded-lg bg-[#1b5d78] shadow-sm transition-transform duration-300 ease-out ${
-                viewMode === "mosaic" ? "translate-x-9" : "translate-x-0"
-              }`}
-            />
-            <span className="relative flex h-full items-center justify-between px-[9px]">
-              <Box className={`w-4 h-4 transition-colors ${viewMode === "3d" ? "text-white" : "text-stone-500"}`} />
-              <LayoutGrid
-                className={`w-4 h-4 transition-colors ${viewMode === "mosaic" ? "text-white" : "text-stone-500"}`}
-              />
-            </span>
-          </button>
+            {([
+              { mode: "3d", label: "Carrousel", Icon: Box, hint: "Carrousel 3D : feuilleter les familles et les cartes" },
+              { mode: "mosaic", label: "Toutes les cartes", Icon: LayoutGrid, hint: "Voir les 42 cartes d'un coup d'œil" },
+            ] as const).map(({ mode, label, Icon, hint }) => (
+              <button
+                key={mode}
+                onClick={() => switchViewMode(mode)}
+                aria-pressed={viewMode === mode}
+                title={hint}
+                className={`h-9 px-2.5 sm:px-3 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none ${
+                  viewMode === mode ? "bg-[#1b5d78] text-white shadow-sm" : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className={mode === "mosaic" ? "hidden sm:inline" : "hidden md:inline"}>{label}</span>
+              </button>
+            ))}
+          </div>
 
           {/* Outil d'édition des contenus : réservé au développement (absent du site publié) */}
           {process.env.NODE_ENV === "development" && (
@@ -659,16 +692,15 @@ export default function Experience7Familles() {
             selectedFamilyId={selectedFamilyId}
             selectedCardId={selectedCardId}
             isFlipped={isFlipped}
+            onBack={handleSceneBack}
             onSelectFamily={(fId) => {
               setSelectedFamilyId(fId);
               setSelectedCardId(null);
             }}
             onSelectCard={(cId) => {
               setSelectedCardId(cId);
-              setIsFlipped(false);
-              setSheetState("collapsed");
+                        setSheetState("collapsed");
             }}
-            onFlipToggle={() => setIsFlipped(!isFlipped)}
             hoveredCardId={hoveredCardId}
             setHoveredCardId={setHoveredCardId}
             isDeckSpread={isDeckSpread}
@@ -691,6 +723,24 @@ export default function Experience7Familles() {
                   Glissez ou survolez pour faire défiler les 7 familles • Cliquez sur un paquet pour l&apos;ouvrir
                 </span>
               </span>
+              <nav
+                aria-label="En savoir plus"
+                className="pointer-events-auto mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-semibold text-[#1b5d78]"
+              >
+                <span className="text-stone-500 font-medium">En savoir plus :</span>
+                {GLOBAL_LINKS.map((l) => (
+                  <a
+                    key={l.url}
+                    href={l.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 underline decoration-[#1b5d78]/30 underline-offset-2 hover:decoration-[#1b5d78] focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none rounded"
+                  >
+                    {l.label}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ))}
+              </nav>
             </div>
 
             {/* Barre inférieure : sélecteur rapide des 7 familles & bouton éventail */}
@@ -766,36 +816,10 @@ export default function Experience7Familles() {
               </div>
             </div>
 
-            {/* Sélecteur miniature rapide en bas */}
-            <div className="flex flex-col items-center gap-2 min-w-0">
-            <p className="hidden pointer-coarse:block text-center text-[11px] font-medium text-stone-600 px-3 py-1 rounded-full bg-white/80 backdrop-blur-md border border-stone-200/80">
-              Touchez une carte pour l&apos;aperçu, encore une fois pour l&apos;ouvrir
+            {/* Aide tactile : les noms des cartes sont affichés sous chacune d'elles */}
+            <p className="hidden pointer-coarse:block self-center text-center text-[11px] font-medium text-stone-600 px-3 py-1 rounded-full bg-white/80 backdrop-blur-md border border-stone-200/80">
+              Touchez une carte pour l&apos;ouvrir
             </p>
-            <div
-              role="group"
-              aria-label="Sélection des cartes de la famille"
-              className="relative flex items-center justify-start md:justify-center gap-2 w-full max-w-full overflow-x-auto pb-2 pointer-events-auto"
-            >
-              {familyCards.map((card, cardIdx) => (
-                <button
-                  key={card.id}
-                  data-card-idx={cardIdx}
-                  onClick={() => {
-                    setSelectedCardId(card.id);
-                    setIsFlipped(false);
-                    setSheetState("collapsed");
-                  }}
-                  className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 backdrop-blur-md transition shadow-md flex items-center gap-2 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
-                  aria-label={`Ouvrir la carte numéro ${card.num} : ${card.title}`}
-                >
-                  <span className="w-5 h-5 rounded-full bg-stone-100 flex items-center justify-center text-[10px] font-bold text-stone-700">
-                    {card.num}
-                  </span>
-                  <span>{card.title}</span>
-                </button>
-              ))}
-            </div>
-            </div>
           </div>
         )}
 
@@ -839,18 +863,6 @@ export default function Experience7Familles() {
               </button>
             </div>
 
-            {/* Retourner la carte : unique bouton, près de la carte (mobile : au-dessus du volet replié) */}
-            {sheetState === "collapsed" && (
-              <button
-                onClick={() => setIsFlipped(!isFlipped)}
-                className="absolute left-1/2 md:left-[22.5%] lg:left-[21%] -translate-x-1/2 bottom-[8.75rem] md:bottom-8 z-30 min-h-[40px] px-4 py-2 rounded-full text-xs font-semibold bg-white/95 text-stone-800 border border-stone-200/90 shadow-lg backdrop-blur-md flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
-                aria-label={isFlipped ? "Afficher le recto de la carte" : "Afficher le verso de la carte"}
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                {isFlipped ? "Voir le recto" : "Retourner la carte"}
-              </button>
-            )}
-
             {/* Expérience Desktop : Panneau Pédagogique droit sticky */}
             <div className="hidden md:flex flex-col flex-1 h-full border-l border-stone-200/80 bg-white/80 backdrop-blur-xl overflow-hidden z-20 shadow-xl">
               <div className="p-6 md:p-8 flex-1 overflow-y-auto">
@@ -880,6 +892,9 @@ export default function Experience7Familles() {
                   <div className="card-prose">
                     <ReactMarkdown>{currentMarkdown}</ReactMarkdown>
                   </div>
+
+                  <MoreLinks links={cardLinks(currentCard)} />
+                  <EnglishTerm term={englishTerm(currentCard)} />
 
                   {currentCard.credits && (
                     <div className="pt-6 border-t border-stone-200 text-xs text-stone-500 italic">
@@ -968,6 +983,8 @@ export default function Experience7Familles() {
                 {sheetState !== "collapsed" && (
                   <div className="mt-5 pt-4 border-t border-stone-200 card-prose card-prose-sm">
                     <ReactMarkdown>{currentMarkdown}</ReactMarkdown>
+                    <MoreLinks links={cardLinks(currentCard)} />
+                    <div className="mt-4"><EnglishTerm term={englishTerm(currentCard)} /></div>
                     {currentCard.credits && (
                       <div className="mt-4 pt-4 border-t border-stone-200 text-[10px] text-stone-500 italic">
                         {currentCard.credits}

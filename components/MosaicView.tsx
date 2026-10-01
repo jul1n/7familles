@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import { thumb } from "@/lib/asset";
+import { GLOBAL_LINKS } from "@/lib/links";
 
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
@@ -84,12 +85,27 @@ export default function MosaicView({ onOpenCard }: MosaicViewProps) {
                       draggable={false}
                       className="w-full h-auto aspect-[7/10] object-contain drop-shadow-[0_6px_10px_rgba(60,45,20,0.22)] transition duration-300 ease-out group-hover:-translate-y-1.5 group-hover:scale-[1.04] group-hover:drop-shadow-[0_14px_20px_rgba(60,45,20,0.3)] group-active:scale-[0.98]"
                     />
+                    <span className="mt-2 block text-center text-xs md:text-[13px] font-semibold leading-tight text-stone-800">
+                      <span className="text-stone-500">{card.num}.</span> {card.title}
+                    </span>
                   </button>
                 ))}
               </div>
             </section>
           );
         })}
+
+        <nav
+          aria-label="En savoir plus"
+          className="mt-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs font-semibold text-[#1b5d78]"
+        >
+          <span className="text-stone-500 font-medium">En savoir plus :</span>
+          {GLOBAL_LINKS.map((l) => (
+            <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+              {l.label}
+            </a>
+          ))}
+        </nav>
       </div>
     </div>
   );
