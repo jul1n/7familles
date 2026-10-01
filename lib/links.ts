@@ -6,14 +6,12 @@ export interface ExternalLink {
 }
 
 export const CFBR_URL = "https://www.barrages-cfbr.eu/";
-export const CFBR_ABOUT_URL = "https://www.barrages-cfbr.eu/-CFBR-.html";
 export const ARCHITECTES_URL = "https://architectesdeleau.com/";
 
 // Liens « en savoir plus » communs à toute l'application
 export const GLOBAL_LINKS: ExternalLink[] = [
   { label: "Site du CFBR", url: CFBR_URL },
   { label: "Les Architectes de l’Eau", url: ARCHITECTES_URL },
-  { label: "Missions et histoire du CFBR", url: CFBR_ABOUT_URL },
 ];
 
 // Pour chaque carte : titre de l'article Wikipédia français (wiki) et terme anglais (en),

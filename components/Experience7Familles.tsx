@@ -589,12 +589,21 @@ export default function Experience7Familles() {
             }}
           >
             {/* Vignette épurée du logo CFBR */}
-            <div className="h-10 px-2 py-0.5 bg-white/95 border border-stone-200/90 rounded-xl shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md group-hover:border-[#1b5d78]/40 transition">
+            <div className="relative h-10 px-2 py-0.5 bg-white/95 border border-stone-200/90 rounded-xl shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md group-hover:border-[#1b5d78]/40 transition">
               <img
                 src={asset("/cfbr-logo.png")}
                 alt="Logo officiel CFBR"
                 className="h-8 w-auto object-contain"
               />
+              {/* Infobulle au survol du logo : lien du CFBR avec la CIGB / ICOLD */}
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute left-0 top-full mt-2 z-50 w-64 rounded-xl bg-stone-900 px-3 py-2 text-left text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+              >
+                Le CFBR est le comité français de la <strong>CIGB</strong>, la Commission Internationale des
+                Grands Barrages, connue dans le monde entier sous le nom d&apos;<strong>ICOLD</strong>{" "}
+                (International Commission on Large Dams).
+              </span>
             </div>
 
             <div>
@@ -624,7 +633,7 @@ export default function Experience7Familles() {
           >
             {([
               { mode: "3d", label: "Carrousel", Icon: Box, hint: "Carrousel 3D : feuilleter les familles et les cartes" },
-              { mode: "mosaic", label: "Toutes les cartes", Icon: LayoutGrid, hint: "Voir les 42 cartes d'un coup d'œil" },
+              { mode: "mosaic", label: "Mosaïque", Icon: LayoutGrid, hint: "Mosaïque : voir les 42 cartes d'un coup d'œil" },
             ] as const).map(({ mode, label, Icon, hint }) => (
               <button
                 key={mode}
