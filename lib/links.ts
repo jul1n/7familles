@@ -99,3 +99,18 @@ export const BIMBAMBOUM = {
   description:
     "Studio de design fondé par Marine Monseux et Coline Mestas, graphistes et didacticiennes diplômées de la Haute école des arts du Rhin (Strasbourg). Il transmet des savoirs par le design graphique, l’illustration et les jeux sérieux, entre vulgarisation, pédagogie, ludisme et médiation, avec curiosité, engagement et une touche d’humour. Basé entre Strasbourg, Paris, Marseille et Nancy.",
 };
+
+// Auteurs du jeu (d'après la page « Auteurs du jeu » du jeu de cartes)
+export const GAME_AUTHORS = [
+  { name: "CODOR du CFBR", description: "" },
+  {
+    name: "Franck Sfiligoï Taillandier",
+    description:
+      "Chercheur à l’INRAE spécialisé en génie civil et gestion des risques, il développe des outils pour sensibiliser à la protection des écosystèmes.",
+  },
+  {
+    name: "Hello bim bam boum",
+    description:
+      "Studio de graphisme spécialisé en vulgarisation scientifique et ludo-pédagogie, fondé par Coline Mestas et Marine Monseux.",
+  },
+];

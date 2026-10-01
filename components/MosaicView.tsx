@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import { thumb } from "@/lib/asset";
-import { GLOBAL_LINKS } from "@/lib/links";
+import { GAME_AUTHORS, GLOBAL_LINKS } from "@/lib/links";
 import { RESOURCE_LINKS } from "@/lib/card-links";
 import AgencyCredit from "@/components/AgencyCredit";
 
@@ -122,6 +122,9 @@ export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) 
               </a>
             ))}
             <AgencyCredit className="text-stone-600 font-medium" />
+            <span className="text-stone-600 font-medium">
+              Auteurs du jeu : {GAME_AUTHORS.map((a) => a.name).join(" • ")}
+            </span>
             <button onClick={onPrintAll} className="underline underline-offset-2">
               Imprimer le dossier complet
             </button>

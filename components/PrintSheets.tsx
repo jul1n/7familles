@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import { asset, printImg } from "@/lib/asset";
-import { ARCHITECTES_URL, BIMBAMBOUM, CFBR_URL, GLOBAL_LINKS, cardLinks, englishTerm, englishWiki } from "@/lib/links";
+import { ARCHITECTES_URL, BIMBAMBOUM, CFBR_URL, GAME_AUTHORS, GLOBAL_LINKS, cardLinks, englishTerm, englishWiki } from "@/lib/links";
 import { RESOURCE_LINKS } from "@/lib/card-links";
 
 interface PrintSheetsProps {
@@ -174,6 +174,16 @@ function CreditsPage() {
         </a>
       </p>
 
+      <h3 className="text-base font-bold mb-1">Auteurs du jeu</h3>
+      <ul className="text-xs leading-snug mb-5 space-y-0.5">
+        {GAME_AUTHORS.map((a) => (
+          <li key={a.name}>
+            <strong>{a.name}</strong>
+            {a.description && <> : {a.description}</>}
+          </li>
+        ))}
+      </ul>
+
       <h3 className="text-base font-bold mb-1">Ressources pour aller plus loin</h3>
       <ul className="text-xs leading-snug mb-5 space-y-0.5">
         {RESOURCE_LINKS.map((l) => (
@@ -188,9 +198,11 @@ function CreditsPage() {
 
       <h3 className="text-base font-bold mb-1">Édition</h3>
       <p className="text-xs leading-snug mb-1">
-        <strong>CFBR – Comité Français des Barrages et Réservoirs</strong>, comité français de la CIGB / ICOLD
-        (Commission Internationale des Grands Barrages). Textes des cartes : version initiale des auteurs du jeu,
-        reformulée pour un public d’enfants.
+        <strong>CFBR – Comité Français des Barrages et Réservoirs</strong>, créé en 1926 : une association d’environ
+        580 membres actifs, choisis pour leurs compétences dans le domaine des barrages et des ouvrages hydrauliques.
+        En 1928, il a œuvré à la création de la Commission Internationale des Grands Barrages (CIGB / ICOLD), à
+        laquelle il est affilié. En 2026, il célèbre 100 ans d’expertise avec ce jeu de 7 familles. Textes des
+        cartes : version initiale des auteurs du jeu, reformulée pour un public d’enfants.
       </p>
       <p className="text-xs">
         {GLOBAL_LINKS.map((l, i) => (

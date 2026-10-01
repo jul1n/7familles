@@ -1302,7 +1302,7 @@ Serre-Ponçon est un **barrage en remblai**, avec une histoire d'ingéniosité :
     frontImage: "/cards/france-migouelou.webp",
     backImage: "/cards/card-back.webp",
     location: "Occitanie (Hautes-Pyrénées)",
-    credits: "© culture.gouv.fr / CFBR",
+    credits: "© CFBR",
     shortDescription: "Il retient l'eau des montagnes dans les Pyrénées pour produire de l'électricité dans des centrales.",
     contentMarkdown: `# Le barrage de Migouélou (Pyrénées)
 
@@ -1382,7 +1382,7 @@ Entre Saint-Malo et Dinard, l'usine de la Rance a été la **première usine mar
     frontImage: "/cards/france-canal-alsace.webp",
     backImage: "/cards/card-back.webp",
     location: "Grand Est",
-    credits: "© Didier Marc / EDF",
+    credits: "© Didier Marc, Parker Wayne Philips",
     shortDescription: "Il permet de naviguer sur le Rhin entre Bâle et Strasbourg et de produire de l'électricité.",
     contentMarkdown: `# Le Grand Canal d'Alsace
 
@@ -1464,7 +1464,7 @@ La protection de la Loire a été construite petit à petit :
     frontImage: "/cards/france-takamaka.webp",
     backImage: "/cards/card-back.webp",
     location: "La Réunion",
-    credits: "© EDF / BETCGB",
+    credits: "© BETCGB",
     shortDescription: "Il utilise l'eau des montagnes pour produire de l'électricité dans une centrale cachée sous terre.",
     contentMarkdown: `# Takamaka (La Réunion)
 
@@ -1629,7 +1629,7 @@ Au pied de la montagne Sainte-Victoire, près d'Aix-en-Provence, le barrage Zola
     backImage: "/cards/card-back.webp",
     location: "Le Revest-les-Eaux (Var)",
     period: "1910 – 1912",
-    credits: "© NGE / CFBR",
+    credits: "© NGE",
     shortDescription: "Près de Toulon, il stocke l'eau et contribue à l'alimentation en eau potable de la ville.",
     contentMarkdown: `# Le barrage de Dardennes (1910–1912)
 
@@ -1670,10 +1670,10 @@ C'est un **barrage poids** en maçonnerie et en béton, un peu courbé :
     frontImage: "/cards/temps-barrage-rizzanese.webp",
     backImage: "/cards/card-back.webp",
     location: "Corse-du-Sud (Levie / Sorbollano)",
-    period: "2007 – 2013",
-    credits: "© Bruno Conty / EDF",
+    period: "2007 – 2012",
+    credits: "© Bruno Conty",
     shortDescription: "Mis en service en 2013 en Corse, il produit de l'électricité pour tout le réseau de l'île.",
-    contentMarkdown: `# Le barrage du Rizzanese (2007–2013)
+    contentMarkdown: `# Le barrage du Rizzanese (2007–2012)
 
 ### En bref
 Inauguré en 2013 en Corse-du-Sud, le barrage du Rizzanese est le **plus puissant aménagement hydroélectrique de Corse**. C'est l'un des derniers grands barrages construits en France.
@@ -1713,8 +1713,8 @@ C'est un **barrage poids** très moderne, en **béton compacté au rouleau (BCR)
     frontImage: "/cards/temps-canal-seine-nord.webp",
     backImage: "/cards/card-back.webp",
     location: "Hauts-de-France",
-    period: "2022 – 2030+",
-    credits: "© Société du Canal Seine-Nord Europe",
+    period: "2022 – 2032",
+    credits: "© CSNE",
     shortDescription: "En construction, il reliera l'Oise au canal Dunkerque-Escaut pour faire circuler plus de bateaux.",
     contentMarkdown: `# Le canal Seine-Nord Europe (2022–2032)
 
