@@ -21,27 +21,56 @@ AUDIO_DIR = ROOT / "public" / "audio"
 MANIFEST = ROOT / "data" / "audio-manifest.json"
 DEFAULT_VOICE = "fr-FR-VivienneMultilingualNeural"
 
-# Prononciation : sigles épelés et mots mal lus par la synthèse
+# Prononciation : sigles épelés, noms propres et mots que la synthèse lit mal.
+# (Les unités, nombres et chiffres romains sont traités dans lib/speech.ts.)
 PRONUNCIATION = [
+    # sigles
     (r"\bEDF\b", "E D F"),
     (r"\bCFBR\b", "C F B R"),
     (r"\bCIGB\b", "C I G B"),
     (r"\bICOLD\b", "I COLD"),
     (r"\bBCR\b", "B C R"),
     (r"\bGPS\b", "G P S"),
-    (r"\bSTEP\b", "step"),
-    (r"\bGEMAPI\b", "gé-ma-pi"),
-    (r"\bUNESCO\b", "unesco"),
-    (r"\bNASA\b", "nasa"),
     (r"\bPPI\b", "P P I"),
-    (r"\bkW\b", "kilowatts"),
-    (r"\bXIIe\b", "douzième"),
-    (r"\bXVIIe\b", "dix-septième"),
-    (r"\bXIXe\b", "dix-neuvième"),
-    (r"\bXXe\b", "vingtième"),
-    (r"\bIer\b", "premier"),
-    (r"\bHz\b", "hertz"),
-    (r"\bm3\b", "mètres cubes"),
+    (r"\bSTEP\b", "step"),
+    (r"\bGEMAPI\b", "Jémapi"),
+    (r"\bUNESCO\b", "Unesco"),
+    (r"\bNASA\b", "Nasa"),
+    (r"\bJAMAIS\b", "jamais"),
+    # numéros (Takamaka I et II)
+    (r"Takamaka II\b", "Takamaka deux"),
+    (r"Takamaka I\b", "Takamaka un"),
+    # mots piégeux
+    (r"\bles fils\b", "les fil"),  # « fils » au sens de fils électriques
+    # noms de lieux et de personnes
+    (r"\bKembs\b", "Kemps"),
+    (r"\bFessenheim\b", "Fessenème"),
+    (r"\bOttmarsheim\b", "Ottmarsème"),
+    (r"\bVogelgrun\b", "Vogelgrune"),
+    (r"\bHoover Dam\b", "Houvère Dame"),
+    (r"\bHoover\b", "Houvère"),
+    (r"\bMead\b", "Mide"),
+    (r"\bEver Given\b", "Évère Guivène"),
+    (r"\bItaipu\b", "Itaï-pou"),
+    (r"\bParaná\b", "Para-na"),
+    (r"\bMaracanã\b", "Maracana"),
+    (r"\bNyaminyami\b", "Nia-mi-nia-mi"),
+    (r"\bZimbabwe\b", "Zim-bab-wé"),
+    (r"\bChongqing\b", "Tchong-tching"),
+    (r"\bYangtsé\b", "Yang-tsé"),
+    (r"\bZermatt\b", "Zer-matte"),
+    (r"\bBieudron\b", "Bieu-dron"),
+    (r"\bRagas\b", "Ra-gasse"),
+    (r"\bFoux\b", "Fou"),
+    (r"\ble Las\b(?! Vegas)", "le Lasse"),
+    (r"\bRizzanese\b", "Ritsa-nèze"),
+    (r"\bMigouélou\b", "Mi-gou-é-lou"),
+    (r"\bGolfech\b", "Golfèche"),
+    (r"\bLesseps\b", "Lessepse"),
+    (r"\bRiquet\b", "Riqué"),
+    (r"\bUbaye\b", "Ubaille"),
+    (r"\bEscaut\b", "Esco"),
+    (r"\bAix\b", "Èx"),
 ]
 
 

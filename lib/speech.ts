@@ -4,6 +4,23 @@ export function speechSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
+// Les classes \b de JavaScript ne connaissent pas les lettres accentuées : « \bm\b » trouvait le « m » de
+// « même » ou « métier » (suivi d'un « ê » ou « é ») et le lisait « mètres ». On utilise donc des bornes
+// Unicode : une unité n'est remplacée que si elle suit un nombre ou n'est collée à aucune lettre.
+const END = "(?![\\p{L}\\p{N}])";
+const NOT_AFTER_LETTER = "(?<![\\p{L}\\p{N}])";
+const AFTER_NUMBER = "(?<=\\d)\\s?";
+const rx = (source: string) => new RegExp(source, "gu");
+
+const ORDINALS: Record<string, string> = {
+  Ier: "premier",
+  XIIe: "douzième",
+  XVIIe: "dix-septième",
+  XIXe: "dix-neuvième",
+  XXe: "vingtième",
+  XXIe: "vingt et unième",
+};
+
 // Transforme le Markdown d'une fiche en texte agréable à écouter
 export function markdownToSpeech(title: string, intro: string, md: string): string {
   const body = md
@@ -12,19 +29,37 @@ export function markdownToSpeech(title: string, intro: string, md: string): stri
     .replace(/^>\s?/gm, "")
     .replace(/^\s*[-*]\s+/gm, "")
     .replace(/^\s*\d+\.\s+/gm, "")
-    .replace(/[*_`]/g, "")
-    .replace(/m³\/s/g, "mètres cubes par seconde")
-    .replace(/m³/g, "mètres cubes")
-    .replace(/km²/g, "kilomètres carrés")
-    .replace(/\bkm\b/g, "kilomètres")
-    .replace(/\bMW\b/g, "mégawatts")
-    .replace(/\bkWh\b/g, "kilowattheures")
-    .replace(/\bkm\/h\b/g, "kilomètres par heure")
+    .replace(/[*_`]/g, "");
+
+  // Nombres, unités et chiffres romains : appliqués au titre, à l'accroche et au corps du texte
+  return `${title}. ${intro}\n${body}`
+    // nombres : « 2 365 » lu d'un bloc, « 1920-1930 » → « 1920 à 1930 », « 1/10 » → « 1 sur 10 »
+    .replace(/(?<=\d)[ \u00a0\u202f](?=\d{3}(?!\d))/g, "")
+    .replace(/(\d)\s?[–-]\s?(\d)/g, "$1 à $2")
+    .replace(/(\d)\/(\d)/g, "$1 sur $2")
+    // unités (les plus longues d'abord)
+    .replace(rx(`m³/s${END}`), "mètres cubes par seconde")
+    .replace(rx(`m³${END}`), "mètres cubes")
+    .replace(rx(`km²${END}`), "kilomètres carrés")
+    .replace(rx(`m²${END}`), "mètres carrés")
+    .replace(rx(`km/h${END}`), "kilomètres par heure")
+    .replace(rx(`${AFTER_NUMBER}km${END}`), " kilomètres")
+    .replace(rx(`${AFTER_NUMBER}mm${END}`), " millimètres")
+    .replace(rx(`${AFTER_NUMBER}cm${END}`), " centimètres")
+    .replace(rx(`${AFTER_NUMBER}m${END}`), " mètres")
+    .replace(rx(`${AFTER_NUMBER}h${END}`), " heures")
+    .replace(rx(`${NOT_AFTER_LETTER}MW${END}`), "mégawatts")
+    .replace(rx(`${NOT_AFTER_LETTER}kWh${END}`), "kilowattheures")
+    .replace(rx(`${NOT_AFTER_LETTER}kW${END}`), "kilowatts")
+    .replace(rx(`${NOT_AFTER_LETTER}Hz${END}`), "hertz")
     .replace(/CO₂/g, "C O deux")
-    .replace(/\bm\b/g, "mètres")
     .replace(/%/g, " pour cent")
+    .replace(/\s=\s/g, " veut dire ")
+    .replace(/\s\/\s/g, " et ")
+    // siècles et chiffres romains
+    .replace(rx(`${NOT_AFTER_LETTER}(Ier|XIIe|XVIIe|XIXe|XXe|XXIe)${END}`), (_, r: string) => ORDINALS[r])
+    .replace(/Louis XIV/g, "Louis quatorze")
     .replace(/\n{2,}/g, "\n");
-  return `${title}. ${intro}\n${body}`;
 }
 
 // Meilleure voix française disponible : les voix « naturelles » / « multilingues » d'Edge d'abord,
