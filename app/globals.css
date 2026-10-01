@@ -73,6 +73,6 @@ body {
   .print-sheet { break-after: page; page-break-after: always; display: flex; flex-direction: column; }
   .print-sheet:not(.print-bare) { min-height: 276mm; }
   .print-sheet:last-child { break-after: auto; page-break-after: auto; }
-  .print-sheet .card-prose { font-size: 0.72rem; line-height: 1.35; }
+  .print-sheet .card-prose { font-size: 0.68rem; line-height: 1.32; }
   .print-sheet img { break-inside: avoid; }
 }
