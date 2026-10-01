@@ -9,7 +9,7 @@ import PrintSheets from "@/components/PrintSheets";
 import AgencyCredit from "@/components/AgencyCredit";
 import { markdownToSpeech, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import audioManifest from "@/data/audio-manifest.json";
-import { ARCHITECTES_URL, cardLinks, englishTerm } from "@/lib/links";
+import { ARCHITECTES_URL, cardLinks, englishTerm, englishWiki } from "@/lib/links";
 import {
   Layers,
   ExternalLink,
@@ -123,13 +123,26 @@ function UKFlag({ className }: { className?: string }) {
 }
 
 // Terme anglais de la carte, en fin de fiche
-function EnglishTerm({ term }: { term?: string }) {
+function EnglishTerm({ term, wiki }: { term?: string; wiki?: { label: string; url: string } }) {
   if (!term) return null;
   return (
     <p className="pt-4 border-t border-stone-200 text-sm text-stone-700">
       <UKFlag className="inline-block w-5 h-[14px] rounded-[2px] shadow-sm mr-2 align-[-2px]" />
       <span className="text-xs font-bold uppercase tracking-wide text-stone-500 mr-2">En anglais</span>
-      <span lang="en" className="font-semibold">{term}</span>
+      {wiki ? (
+        <a
+          href={wiki.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          lang="en"
+          title={wiki.label}
+          className="font-semibold text-[#1b5d78] underline decoration-dotted underline-offset-2 hover:decoration-solid"
+        >
+          {term}
+        </a>
+      ) : (
+        <span lang="en" className="font-semibold">{term}</span>
+      )}
     </p>
   );
 }
@@ -1041,7 +1054,7 @@ export default function Experience7Familles() {
                   </div>
 
                   <MoreLinks links={cardLinks(currentCard)} />
-                  <EnglishTerm term={englishTerm(currentCard)} />
+                  <EnglishTerm term={englishTerm(currentCard)} wiki={englishWiki(currentCard)} />
 
                   {currentCard.credits && (
                     <div className="pt-6 border-t border-stone-200 text-xs text-stone-500 italic">
@@ -1145,7 +1158,7 @@ export default function Experience7Familles() {
                   <div className="mt-5 pt-4 border-t border-stone-200 card-prose card-prose-sm">
                     <ReactMarkdown>{currentMarkdown}</ReactMarkdown>
                     <MoreLinks links={cardLinks(currentCard)} />
-                    <div className="mt-4"><EnglishTerm term={englishTerm(currentCard)} /></div>
+                    <div className="mt-4"><EnglishTerm term={englishTerm(currentCard)} wiki={englishWiki(currentCard)} /></div>
                     {currentCard.credits && (
                       <div className="mt-4 pt-4 border-t border-stone-200 text-[10px] text-stone-500 italic">
                         Crédit photo : {currentCard.credits}

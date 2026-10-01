@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import { thumb } from "@/lib/asset";
 import { GLOBAL_LINKS } from "@/lib/links";
+import { RESOURCE_LINKS } from "@/lib/card-links";
 import AgencyCredit from "@/components/AgencyCredit";
 
 interface MosaicViewProps {
@@ -97,20 +98,34 @@ export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) 
           );
         })}
 
-        <nav
-          aria-label="En savoir plus"
-          className="mt-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs font-semibold text-[#1b5d78]"
-        >
-          <span className="text-stone-500 font-medium">En savoir plus :</span>
-          {GLOBAL_LINKS.map((l) => (
-            <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-              {l.label}
-            </a>
-          ))}
-          <AgencyCredit className="text-stone-600 font-medium" />
-          <button onClick={onPrintAll} className="underline underline-offset-2">
-            Imprimer le dossier complet
-          </button>
+        <nav aria-label="Ressources" className="mt-10 text-xs font-semibold text-[#1b5d78]">
+          <p className="mb-2 text-center font-medium text-stone-500">Pour aller plus loin</p>
+          <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            {RESOURCE_LINKS.map((l) => (
+              <li key={l.url}>
+                <a
+                  href={l.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={l.description}
+                  className="underline underline-offset-2"
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            {GLOBAL_LINKS.map((l) => (
+              <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                {l.label}
+              </a>
+            ))}
+            <AgencyCredit className="text-stone-600 font-medium" />
+            <button onClick={onPrintAll} className="underline underline-offset-2">
+              Imprimer le dossier complet
+            </button>
+          </p>
         </nav>
       </div>
     </div>

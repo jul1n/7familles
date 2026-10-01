@@ -1,4 +1,5 @@
 import type { CardData } from "@/data/cards";
+import { CARD_LINKS } from "./card-links";
 
 export interface ExternalLink {
   label: string;
@@ -72,25 +73,21 @@ export function englishTerm(card: CardData): string | undefined {
   return CARD_REFS[card.id]?.en;
 }
 
-// Liens d'approfondissement d'une carte : Wikipédia (français, puis anglais si connu),
-// puis les sites de référence.
+// Liens « pour aller plus loin » d'une carte : une sélection faite à la main (voir card-links.ts), sinon une
+// recherche Wikipédia sur le titre de la carte.
 export function cardLinks(card: CardData): ExternalLink[] {
-  const ref = CARD_REFS[card.id];
-  const links: ExternalLink[] = [];
-  if (ref) {
-    links.push({ label: "Wikipédia", url: `https://fr.wikipedia.org/wiki/${ref.wiki}` });
-    if (ref.enWiki) {
-      // Le libellé donne le titre exact de l'article anglais, pour vérifier d'un coup d'œil qu'il correspond à la carte
-      links.push({
-        label: `Wikipedia EN – ${ref.enWiki.replace(/_/g, " ")}`,
-        url: `https://en.wikipedia.org/wiki/${encodeURI(ref.enWiki)}`,
-      });
-    }
-  } else {
-    links.push({ label: "Wikipédia", url: `https://fr.wikipedia.org/w/index.php?search=${encodeURIComponent(card.title)}` });
-  }
-  links.push({ label: "Les Architectes de l’Eau", url: ARCHITECTES_URL }, { label: "Site du CFBR", url: CFBR_URL });
-  return links;
+  return (
+    CARD_LINKS[card.id] ?? [
+      { label: "Wikipédia", url: `https://fr.wikipedia.org/w/index.php?search=${encodeURIComponent(card.title)}` },
+    ]
+  );
+}
+
+// Page Wikipédia anglaise exacte de la carte, quand il en existe une pertinente (affichée sur le terme anglais)
+export function englishWiki(card: CardData): ExternalLink | undefined {
+  const title = CARD_REFS[card.id]?.enWiki;
+  if (!title) return undefined;
+  return { label: `Wikipedia EN – ${title.replace(/_/g, " ")}`, url: `https://en.wikipedia.org/wiki/${encodeURI(title)}` };
 }
 
 // Agence de design des cartes (illustrations et mise en page)

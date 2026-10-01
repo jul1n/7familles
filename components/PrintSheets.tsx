@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import { asset, printImg } from "@/lib/asset";
-import { ARCHITECTES_URL, BIMBAMBOUM, CFBR_URL, GLOBAL_LINKS, cardLinks, englishTerm } from "@/lib/links";
+import { ARCHITECTES_URL, BIMBAMBOUM, CFBR_URL, GLOBAL_LINKS, cardLinks, englishTerm, englishWiki } from "@/lib/links";
+import { RESOURCE_LINKS } from "@/lib/card-links";
 
 interface PrintSheetsProps {
   cards: CardData[];
@@ -173,6 +174,18 @@ function CreditsPage() {
         </a>
       </p>
 
+      <h3 className="text-base font-bold mb-1">Ressources pour aller plus loin</h3>
+      <ul className="text-xs leading-snug mb-5 space-y-0.5">
+        {RESOURCE_LINKS.map((l) => (
+          <li key={l.url}>
+            <a href={l.url} className="text-[#1b5d78] underline">
+              {l.label}
+            </a>
+            <span className="text-stone-600"> : {l.description}</span>
+          </li>
+        ))}
+      </ul>
+
       <h3 className="text-base font-bold mb-1">Édition</h3>
       <p className="text-xs leading-snug mb-1">
         <strong>CFBR – Comité Français des Barrages et Réservoirs</strong>, comité français de la CIGB / ICOLD
@@ -253,22 +266,26 @@ export default function PrintSheets({ cards, booklet, markdownFor }: PrintSheets
           <footer className="mt-4 pt-2 border-t border-stone-300 text-[10px] text-stone-600 space-y-0.5">
             {englishTerm(card) && (
               <p>
-                <strong>En anglais :</strong> {englishTerm(card)}
+                <strong>En anglais :</strong>{" "}
+                {englishWiki(card) ? (
+                  <a href={englishWiki(card)!.url} className="text-[#1b5d78] underline">
+                    {englishTerm(card)}
+                  </a>
+                ) : (
+                  englishTerm(card)
+                )}
               </p>
             )}
             <div>
               <strong>En savoir plus :</strong>
-              <ul className="ml-3">
-                {cardLinks(card)
-                  .filter((l) => l.url !== CFBR_URL && l.url !== ARCHITECTES_URL)
-                  .map((l) => (
-                    <li key={l.url}>
-                      <a href={l.url} className="text-[#1b5d78] underline">
-                        {l.label}
-                      </a>{" "}
-                      <span className="text-stone-400">({domainOf(l.url)})</span>
-                    </li>
-                  ))}
+              <ul className="ml-3 flex flex-wrap gap-x-4">
+                {cardLinks(card).map((l) => (
+                  <li key={l.url}>
+                    <a href={l.url} className="text-[#1b5d78] underline">
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
             {card.credits && <p className="italic">Crédit photo : {card.credits}</p>}
