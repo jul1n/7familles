@@ -73,6 +73,6 @@ body {
   html, body { background: #fff !important; height: auto !important; overflow: visible !important; }
   .print-sheet { break-after: page; page-break-after: always; }
   .print-sheet:last-child { break-after: auto; page-break-after: auto; }
-  .print-sheet .card-prose { font-size: 0.78rem; line-height: 1.45; }
+  .print-sheet .card-prose { font-size: 0.72rem; line-height: 1.35; }
   .print-sheet img { break-inside: avoid; }
 }

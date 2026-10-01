@@ -229,7 +229,7 @@ export default function Experience7Familles() {
   useEffect(() => setCanSpeak(speechSupported()), []);
 
   // Impression : une page par carte (la carte ouverte, ou les 42 depuis la mosaïque)
-  const [printCards, setPrintCards] = useState<CardData[] | null>(null);
+  const [printCards, setPrintCards] = useState<{ cards: CardData[]; booklet: boolean } | null>(null);
   useEffect(() => {
     if (!printCards) return;
     let cancelled = false;
@@ -730,6 +730,17 @@ export default function Experience7Familles() {
             ))}
           </div>
 
+          {/* Dossier complet à imprimer ou à enregistrer en PDF */}
+          <button
+            onClick={() => setPrintCards({ cards: CARDS, booklet: true })}
+            title="Imprimer le dossier complet (ou l'enregistrer en PDF) : page de garde, mosaïque, une page par carte"
+            aria-label="Imprimer le dossier complet"
+            className="min-h-[40px] px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="hidden md:inline">Imprimer</span>
+          </button>
+
           {/* Outil d'édition des contenus : réservé au développement (absent du site publié) */}
           {process.env.NODE_ENV === "development" && (
           <button
@@ -762,7 +773,7 @@ export default function Experience7Familles() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {viewMode === "mosaic" && <MosaicView onOpenCard={openCardFromMosaic} onPrintAll={() => setPrintCards(CARDS)} />}
+        {viewMode === "mosaic" && <MosaicView onOpenCard={openCardFromMosaic} onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })} />}
 
         {viewMode === "3d" && (
         <>
@@ -978,7 +989,7 @@ export default function Experience7Familles() {
                     isSpeaking={isSpeaking}
                     canSpeak={canSpeak}
                     onToggleSpeak={toggleSpeak}
-                    onPrint={() => setPrintCards([currentCard])}
+                    onPrint={() => setPrintCards({ cards: [currentCard], booklet: false })}
                   />
 
                   <p className="text-base text-stone-800 leading-relaxed font-medium bg-[#F5F2EB] p-4 rounded-xl border border-stone-200/90">
@@ -1082,7 +1093,7 @@ export default function Experience7Familles() {
                       isSpeaking={isSpeaking}
                       canSpeak={canSpeak}
                       onToggleSpeak={toggleSpeak}
-                      onPrint={() => setPrintCards([currentCard])}
+                      onPrint={() => setPrintCards({ cards: [currentCard], booklet: false })}
                     />
                   </div>
                 )}
@@ -1226,7 +1237,7 @@ export default function Experience7Familles() {
         </div>
       )}
     </div>
-    {printCards && <PrintSheets cards={printCards} markdownFor={markdownFor} />}
+    {printCards && <PrintSheets cards={printCards.cards} booklet={printCards.booklet} markdownFor={markdownFor} />}
     </>
   );
 }

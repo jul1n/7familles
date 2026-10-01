@@ -107,7 +107,7 @@ export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) 
             </a>
           ))}
           <button onClick={onPrintAll} className="underline underline-offset-2">
-            Imprimer les 42 fiches
+            Imprimer le dossier complet
           </button>
         </nav>
       </div>

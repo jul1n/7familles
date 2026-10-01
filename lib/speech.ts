@@ -27,6 +27,29 @@ export function markdownToSpeech(title: string, intro: string, md: string): stri
   return `${title}. ${intro}\n${body}`;
 }
 
+// Meilleure voix française disponible : les voix « naturelles » / « multilingues » d'Edge d'abord,
+// puis les voix Google (Chrome), puis les voix d'Apple, puis n'importe quelle voix française.
+function scoreVoice(v: SpeechSynthesisVoice): number {
+  const name = v.name.toLowerCase();
+  let score = 0;
+  if (v.lang.toLowerCase().replace("_", "-") === "fr-fr") score += 5;
+  if (name.includes("natural")) score += 40;
+  if (name.includes("multilingual")) score += 35;
+  if (name.includes("online")) score += 10;
+  if (name.includes("google")) score += 20;
+  if (name.includes("premium") || name.includes("enhanced") || name.includes("amélie") || name.includes("thomas")) score += 15;
+  if (v.localService === false) score += 2;
+  return score;
+}
+
+export function bestFrenchVoice(): SpeechSynthesisVoice | undefined {
+  if (!speechSupported()) return undefined;
+  return window.speechSynthesis
+    .getVoices()
+    .filter((v) => v.lang.toLowerCase().startsWith("fr"))
+    .sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
+}
+
 let utterances: SpeechSynthesisUtterance[] = [];
 
 export function stopSpeaking() {
@@ -40,21 +63,35 @@ export function speak(text: string, onEnd: () => void) {
   if (!speechSupported()) return onEnd();
   stopSpeaking();
   const synth = window.speechSynthesis;
-  const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith("fr"));
-  const chunks = text
-    .split(/\n|(?<=[.!?:;])\s+/)
-    .map((t) => t.trim())
-    .filter(Boolean);
-  utterances = chunks.map((chunk, i) => {
-    const u = new SpeechSynthesisUtterance(chunk);
-    u.lang = "fr-FR";
-    if (voice) u.voice = voice;
-    u.rate = 0.95;
-    if (i === chunks.length - 1) {
-      u.onend = onEnd;
-      u.onerror = onEnd;
-    }
-    return u;
-  });
-  utterances.forEach((u) => synth.speak(u));
+
+  const start = () => {
+    const voice = bestFrenchVoice();
+    const chunks = text
+      .split(/\n|(?<=[.!?:;])\s+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    utterances = chunks.map((chunk, i) => {
+      const u = new SpeechSynthesisUtterance(chunk);
+      u.lang = voice?.lang ?? "fr-FR";
+      if (voice) u.voice = voice;
+      if (i === chunks.length - 1) {
+        u.onend = onEnd;
+        u.onerror = onEnd;
+      }
+      return u;
+    });
+    utterances.forEach((u) => synth.speak(u));
+  };
+
+  // La liste des voix se charge parfois après le premier clic : on l'attend brièvement
+  if (synth.getVoices().length > 0) return start();
+  let started = false;
+  const once = () => {
+    if (started) return;
+    started = true;
+    synth.removeEventListener("voiceschanged", once);
+    start();
+  };
+  synth.addEventListener("voiceschanged", once);
+  setTimeout(once, 500);
 }
