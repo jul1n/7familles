@@ -197,15 +197,15 @@ function BackCover() {
       <div className="h-1.5 w-40 rounded-full bg-gradient-to-r from-[#1b5d78] via-[#247c9e] to-[#22c55e] mb-16" />
       <a href={CFBR_URL}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={asset("/cfbr-logo.png")} alt="Logo du CFBR" className="w-[9cm] h-auto" />
+        <img src={asset("/logos/cfbr-hd.png")} alt="Logo du CFBR" className="w-[12cm] h-auto" />
       </a>
       <p className="mt-6 text-base font-medium text-stone-800">Comité Français des Barrages et Réservoirs</p>
-      <div className="mt-24 flex items-center justify-center gap-14">
+      <div className="mt-20 flex items-center justify-center gap-16">
         <a href={ARCHITECTES_URL} className="flex flex-col items-center gap-2">
-          <PartnerLogo file="architectes-de-leau.png" name="Les Architectes de l’Eau" className="h-14 w-auto" />
+          <PartnerLogo file="architectes-de-leau.png" name="Les Architectes de l’Eau" className="h-[13mm] w-auto" />
         </a>
         <a href={BIMBAMBOUM.instagram} className="flex flex-col items-center gap-2">
-          <PartnerLogo file="hello-bim-bam-boum.png" name="Hello Bim Bam Boum" className="h-14 w-auto" />
+          <PartnerLogo file="hello-bim-bam-boum.png" name="Hello Bim Bam Boum" className="h-[22mm] w-auto" />
         </a>
       </div>
     </section>
