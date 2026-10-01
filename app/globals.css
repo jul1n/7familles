@@ -71,8 +71,11 @@ body {
 @media print {
   html, body { background: #fff !important; height: auto !important; overflow: visible !important; }
   .print-sheet { break-after: page; page-break-after: always; display: flex; flex-direction: column; }
-  .print-sheet:not(.print-bare) { min-height: 276mm; }
+  .print-sheet:not(.print-bare) { min-height: 270mm; }
   .print-sheet:last-child { break-after: auto; page-break-after: auto; }
   .print-sheet .card-prose { font-size: 0.68rem; line-height: 1.32; }
+  .print-sheet .card-prose > * + * { margin-top: 0.45em; }
+  .print-sheet .card-prose h3 { margin-top: 0.8em; }
+  .print-sheet .card-prose li + li { margin-top: 0.12em; }
   .print-sheet img { break-inside: avoid; }
 }

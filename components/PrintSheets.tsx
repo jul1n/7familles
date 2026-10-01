@@ -32,9 +32,9 @@ function domainOf(url: string): string {
 // Numérotation des pages et marges. Les pages « bare » (couverture et 4e de couverture) n'ont ni logo ni numéro.
 function RunningStyle() {
   const css = `
-@page { size: A4; margin: 14mm 14mm 6mm;
-  @bottom-center { content: counter(page); font: 8pt sans-serif; color: #57534e; } }
-@page bare { margin: 14mm; @bottom-center { content: none; } }
+@page { size: A4; margin: 14mm 14mm 11mm;
+  @bottom-right { content: counter(page); font: 10pt sans-serif; color: #44403c; vertical-align: top; padding-top: 1mm; } }
+@page bare { margin: 14mm; @bottom-right { content: none; } }
 .print-bare { page: bare; }
 `;
   return <style dangerouslySetInnerHTML={{ __html: css }} />;
@@ -43,10 +43,10 @@ function RunningStyle() {
 // Pied de page de chaque feuille : logo du CFBR (le numéro de page est ajouté sous le pied de page)
 function SheetFooter() {
   return (
-    <div className="print-footer mt-auto flex items-center justify-between border-t border-stone-300 pt-2">
+    <div className="print-footer mt-auto flex items-center justify-between border-t border-stone-300 pt-1.5">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={asset("/cfbr-logo.png")} alt="CFBR" className="h-[9mm] w-auto" />
-      <span className="text-[8pt] text-stone-500">7 Familles des Barrages • 1926–2026</span>
+      <img src={asset("/cfbr-logo.png")} alt="CFBR" className="h-[10mm] w-auto" />
+      <span className="text-[10pt] text-stone-700">7 Familles des Barrages • 1926–2026</span>
     </div>
   );
 }
@@ -242,7 +242,7 @@ export default function PrintSheets({ cards, booklet, markdownFor }: PrintSheets
 
       {cards.map((card) => (
         <article key={card.id} id={`print-card-${card.id}`} className="print-sheet">
-          <header className="flex items-center justify-between border-b-2 pb-2 mb-4" style={{ borderColor: card.familyColor }}>
+          <header className="flex items-center justify-between border-b-2 pb-1.5 mb-2" style={{ borderColor: card.familyColor }}>
             <span
               id={card.num === 1 ? `print-fam-${card.familyId}` : undefined}
               className="text-sm font-bold"
@@ -263,7 +263,7 @@ export default function PrintSheets({ cards, booklet, markdownFor }: PrintSheets
               </div>
             </div>
           </div>
-          <footer className="mt-4 pt-2 border-t border-stone-300 text-[10px] text-stone-600 space-y-0.5">
+          <footer className="mt-2 mb-2 pt-1.5 border-t border-stone-300 text-[10px] text-stone-600 space-y-0.5">
             {englishTerm(card) && (
               <p>
                 <strong>En anglais :</strong>{" "}
