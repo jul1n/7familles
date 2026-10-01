@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import { thumb } from "@/lib/asset";
 import { GLOBAL_LINKS } from "@/lib/links";
+import AgencyCredit from "@/components/AgencyCredit";
 
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
@@ -106,6 +107,7 @@ export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) 
               {l.label}
             </a>
           ))}
+          <AgencyCredit className="text-stone-600 font-medium" />
           <button onClick={onPrintAll} className="underline underline-offset-2">
             Imprimer le dossier complet
           </button>

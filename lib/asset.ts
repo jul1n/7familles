@@ -12,3 +12,9 @@ export function asset(path: string): string {
 export function thumb(path: string): string {
   return asset(path.replace("/cards/", "/cards/thumbs/"));
 }
+
+// Version JPEG légère d'une carte (560 px de large, fond blanc) pour le dossier imprimable :
+// le PDF reste compact (le WebP transparent gonfle le PDF à plus de 50 Mo).
+export function printImg(path: string): string {
+  return asset(path.replace("/cards/", "/cards/print/").replace(/\.webp$/, ".jpg"));
+}

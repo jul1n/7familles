@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { FAMILIES, CARDS, CardData } from "@/data/cards";
 import MosaicView from "@/components/MosaicView";
 import PrintSheets from "@/components/PrintSheets";
+import AgencyCredit from "@/components/AgencyCredit";
 import { markdownToSpeech, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import audioManifest from "@/data/audio-manifest.json";
 import { GLOBAL_LINKS, cardLinks, englishTerm } from "@/lib/links";
@@ -264,6 +265,13 @@ export default function Experience7Familles() {
       window.removeEventListener("afterprint", finish);
     };
   }, [printCards]);
+
+  // Lien direct vers le dossier imprimable : ...?dossier=pdf
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("dossier") === "pdf") {
+      setPrintCards({ cards: CARDS, booklet: true });
+    }
+  }, []);
 
   // Bottom sheet mobile (collapsed | intermediate | expanded)
   const [sheetState, setSheetState] = useState<"collapsed" | "intermediate" | "expanded">("collapsed");
@@ -868,6 +876,7 @@ export default function Experience7Familles() {
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 ))}
+                <AgencyCredit className="text-stone-600 font-medium" placement="bottom" />
               </nav>
             </div>
 
@@ -1036,6 +1045,9 @@ export default function Experience7Familles() {
                       Crédit photo : {currentCard.credits}
                     </div>
                   )}
+                  <p className="text-xs text-stone-500 italic">
+                    <AgencyCredit />
+                  </p>
                 </div>
               </div>
             </div>
@@ -1136,6 +1148,9 @@ export default function Experience7Familles() {
                         Crédit photo : {currentCard.credits}
                       </div>
                     )}
+                    <p className="mt-2 text-[10px] text-stone-500 italic">
+                      <AgencyCredit />
+                    </p>
                   </div>
                 )}
               </div>

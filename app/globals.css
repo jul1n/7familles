@@ -68,10 +68,9 @@ body {
 .mosaic-card { animation: mosaic-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 /* Impression des fiches : une page A4 par carte, sans l'interface */
-@page { size: A4; margin: 14mm; }
 @media print {
   html, body { background: #fff !important; height: auto !important; overflow: visible !important; }
-  .print-sheet { break-after: page; page-break-after: always; }
+  .print-sheet { break-after: page; page-break-after: always; display: flex; flex-direction: column; min-height: 262mm; }
   .print-sheet:last-child { break-after: auto; page-break-after: auto; }
   .print-sheet .card-prose { font-size: 0.72rem; line-height: 1.35; }
   .print-sheet img { break-inside: avoid; }
