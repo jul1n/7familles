@@ -15,6 +15,7 @@ export function getContent(lang: Lang): { FAMILIES: FamilyData[]; CARDS: CardDat
       return en
         ? {
             ...c,
+            frontImage: c.frontImage.replace("/cards/", "/cards/en/"),
             title: en.title,
             shortDescription: en.shortDescription,
             contentMarkdown: en.contentMarkdown,

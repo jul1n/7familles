@@ -127,13 +127,21 @@ function TocPage({ lang }: { lang: Lang }) {
 }
 
 // Les 6 cartes « hors famille » du jeu imprimé (inventaire, infos, règles, CFBR, auteurs)
-const RULE_CARDS = [
+const RULE_CARDS_FR = [
   { file: "regles-jeu-1", label: "Règles du jeu (1/2)" },
   { file: "regles-jeu-2", label: "Règles du jeu (2/2)" },
   { file: "regles-inventaire", label: "Inventaire" },
   { file: "regles-infos", label: "Infos complémentaires" },
   { file: "regles-cfbr", label: "Le CFBR" },
   { file: "regles-auteurs", label: "Auteurs du jeu" },
+];
+const RULE_CARDS_EN = [
+  { file: "regles-jeu-1", label: "Game rules (1/2)" },
+  { file: "regles-jeu-2", label: "Game rules (2/2)" },
+  { file: "regles-inventaire", label: "Inventory" },
+  { file: "regles-infos", label: "Additional information" },
+  { file: "regles-cfbr", label: "The CFBR" },
+  { file: "regles-auteurs", label: "Game authors" },
 ];
 
 // Règles du jeu (2 pages) : règle, infos complémentaires avec QR code, CFBR et auteurs
@@ -242,15 +250,15 @@ function OverviewPages({ lang }: { lang: Lang }) {
               </div>
             ))}
             {/* 2e page : les cartes « règles du jeu » à la suite des 42 cartes */}
-            {pi === pages.length - 1 && lang === "fr" && (
+            {pi === pages.length - 1 && (
               <div>
                 <p className="text-xs font-bold mb-1 text-[#1b5d78]">{t.pdfRuleCardsRow}</p>
                 <div className="grid grid-cols-6 gap-1.5">
-                  {RULE_CARDS.map((c) => (
+                  {(lang === "fr" ? RULE_CARDS_FR : RULE_CARDS_EN).map((c) => (
                     <a key={c.file} href="#print-regles" className="block">
                       <figure className="text-center">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={asset(`/cards/print/${c.file}.jpg`)} alt={c.label} className="w-full h-auto" />
+                        <img src={asset(`/cards/print/${lang === "fr" ? "" : "en/"}${c.file}.jpg`)} alt={c.label} className="w-full h-auto" />
                         <figcaption className="mt-0.5 text-[7pt] leading-tight font-medium">{c.label}</figcaption>
                       </figure>
                     </a>
