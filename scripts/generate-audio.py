@@ -47,7 +47,11 @@ PRONUNCIATION = [
     (r"\bFessenheim\b", "Fessenème"),
     (r"\bOttmarsheim\b", "Ottmarsème"),
     (r"\bVogelgrun\b", "Vogelgrune"),
-    (r"\bHoover Dam\b", "Houvère Dame"),
+    # Pas de groupe de deux mots étrangers isolé (la voix multilingue hésite sur la langue) :
+    # « Hoover Dam » est lu comme une expression française, « barrage Hoover ».
+    (r"\bHoover Dam\b", "barrage Hoover"),
+    (r"\bExplore2\b", "Explore deux"),
+    (r"\bIguaçu\b", "Igoua-ssou"),
     (r"\bHoover\b", "Houvère"),
     (r"\bMead\b", "Mide"),
     (r"\bEver Given\b", "Évère Guivène"),

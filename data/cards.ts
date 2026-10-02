@@ -124,11 +124,8 @@ Le propriétaire doit :
 > Les plus grands barrages ont un plan d'alerte pour les habitants, avec des **sirènes** testées régulièrement, pour que tout le monde soit prêt si un jour il fallait évacuer.
 
 ### Pour aller plus loin
-- **Qui est qui ?** Le propriétaire possède l'ouvrage, l'exploitant le fait fonctionner, le concessionnaire est l'entreprise à qui l'État confie un aménagement hydroélectrique : ce n'est pas toujours la même personne.
-- **Classement** : la classe A suppose au moins 20 m de hauteur et un calcul qui combine hauteur et volume (H²√V ≥ 1500, avec H la hauteur en mètres et V le volume retenu en millions de m³). Les classes B et C ont des seuils plus bas.
-- **Étude de dangers** : actualisée tous les 10 ans pour la classe A et tous les 15 ans pour la classe B.
-- **Plan d'alerte (PPI)** : prévu notamment pour les aménagements d'au moins 15 millions de m³ et 20 m de haut.
-- Source : réglementation française (Code de l'environnement et Code de la sécurité intérieure, sur Légifrance).`,
+En France, les barrages sont classés A, B ou C surtout selon leur hauteur et la quantité d'eau qu'ils retiennent. Les barrages des classes les plus importantes font l'objet de contrôles et d'études plus poussés. Certains très grands aménagements disposent aussi d'un plan particulier d'intervention (PPI), qui organise l'alerte et la protection des habitants en cas d'accident.
+`,
   },
   {
     id: "metiers-conceptrice",
@@ -166,8 +163,8 @@ Un barrage est calculé pour résister à des crues **extrêmement rares**, bien
 > Un ingénieur français, **André Coyne**, est l'un des grands pionniers des barrages-voûtes minces modernes : des murs courbes, fins et solides. Ses barrages ont été construits sur plusieurs continents.
 
 ### Pour aller plus loin
-- Un ingénieur ne démontre jamais qu'une rupture est « impossible » : il vérifie que l'ouvrage respecte des critères de sûreté, avec des marges, pour des situations de référence.
-- La crue de référence dépend du type et de la classe du barrage. Pour les ouvrages les plus importants, on prend en compte des crues de l'ordre de la millénale, voire plus rares.`,
+Pour les crues, les ingénieurs n'étudient pas seulement celles déjà observées. Ils calculent aussi des crues très rares pour vérifier que le barrage et son évacuateur peuvent y faire face. Une crue dite « millénale » correspond à environ une chance sur 1 000 de se produire chaque année : elle ne revient pas forcément tous les 1 000 ans.
+`,
   },
   {
     id: "metiers-constructeur",
@@ -204,8 +201,8 @@ Construire un grand barrage en béton, c'est un grand jeu de patience. Voici un 
 > Le barrage Hoover, aux États-Unis, contient des kilomètres de tuyaux d'eau froide. Sans eux, le béton aurait mis **plus de 100 ans** à refroidir et se serait fissuré !
 
 ### Pour aller plus loin
-- Cet enchaînement (détourner la rivière, creuser jusqu'au rocher, couler le béton par blocs refroidis) décrit un grand barrage en béton. Un barrage en terre ou en enrochement se construit autrement : on compacte des couches de terre et de pierres.
-- La durée, les téléphériques et les centrales à béton dépendent de chaque chantier.`,
+Les machines dépendent du lieu et du barrage construit. En haute montagne, un téléphérique peut transporter les ouvriers et les matériaux lorsqu'aucune route n'arrive jusqu'au chantier. Pour un grand barrage en béton, on installe souvent une centrale à béton tout près afin d'en produire de très grandes quantités.
+`,
   },
   {
     id: "metiers-expert-securite",
@@ -280,8 +277,8 @@ Le débit se mesure en **mètres cubes par seconde** (m³/s). Un mètre cube, c'
 > Un grand lac peut perdre **plusieurs millimètres d'eau par jour** en été, rien que par évaporation. Les hydrologues le mesurent aussi !
 
 ### Pour aller plus loin
-- On parle de **débit** (le volume d'eau qui passe chaque seconde), pas de « puissance » de la rivière.
-- Les effets du changement climatique varient beaucoup selon les régions et les saisons : les hydrologues travaillent avec plusieurs scénarios.`,
+Les hydrologues ne font pas une seule prédiction du futur : ils comparent plusieurs modèles. Selon les régions, le changement climatique peut modifier différemment les pluies, la neige, les sécheresses et les crues. En France, le projet Explore2 étudie ces évolutions bassin par bassin et montre aussi ce que les scientifiques connaissent encore mal.
+`,
   },
   {
     id: "metiers-geologue",
@@ -317,8 +314,8 @@ Pour un barrage en forme de voûte, les falaises de chaque côté doivent suppor
 > En 1959, le barrage de Malpasset (France) s'est rompu. Ce n'est pas d'abord le béton de la voûte qui a cédé : les enquêtes ont montré le rôle de la **roche** sur laquelle il s'appuyait et de l'eau qui s'y trouvait. Depuis, on étudie la roche et l'eau du sous-sol encore bien plus soigneusement.
 
 ### Pour aller plus loin
-- À Malpasset, la rupture a notamment impliqué la stabilité de l'appui rocheux et les conditions géologiques et hydrauliques de la fondation (pressions d'eau dans la roche).
-- Chaque site est différent : c'est la géologie qui décide du type de barrage possible.`,
+Le choix du barrage dépend de plusieurs choses : la forme de la vallée, la solidité et l'étanchéité de la roche, les matériaux disponibles, les crues à évacuer et l'usage du barrage. Une vallée étroite avec une roche très solide peut bien convenir à une voûte ; une vallée plus large peut mieux convenir à un barrage en remblai.
+`,
   },
   {
     id: "usages-eau-potable",
@@ -353,8 +350,8 @@ En France, environ **un tiers** de l'eau prélevée pour devenir potable vient d
 > À Marseille, l'eau du robinet vient des Alpes ! Elle voyage sur **plus de 100 kilomètres** dans des canaux, grâce au système Durance-Verdon (auquel le barrage de Serre-Ponçon contribue beaucoup), en descendant simplement la pente.
 
 ### Pour aller plus loin
-- Les périmètres de protection autour des captages (là où on prélève l'eau) ont des règles qui varient selon chaque site.
-- Environ un tiers des volumes d'eau potable vient d'eaux de surface et environ deux tiers d'eaux souterraines (données nationales récentes).`,
+L'eau d'un lac de barrage n'est jamais envoyée directement au robinet. Avant d'être distribuée, elle est traitée, puis contrôlée régulièrement : on vérifie qu'elle ne contient ni microbes ni produits dangereux. C'est la raison pour laquelle on protège aussi le lac lui-même : plus l'eau est propre au départ, plus elle est simple à rendre potable.
+`,
   },
   {
     id: "usages-hydroelectricite",
@@ -392,9 +389,8 @@ Imagine un toboggan géant :
 > Quand tout le monde allume la lumière le soir, ou que le soleil se couche et que les panneaux solaires s'arrêtent, les centrales hydrauliques peuvent **augmenter leur production très vite** : elles aident à garder le réseau électrique en équilibre.
 
 ### Pour aller plus loin
-- Émissions : très faibles pendant le fonctionnement. Sur toute la vie d'une centrale (construction comprise), elles sont faibles mais pas nulles, et dépendent des sites.
-- Le démarrage rapide ne concerne pas toutes les centrales.
-- Source : bilan électrique 2025 de RTE (l'hydraulique représente 11,4 % de la production de la France métropolitaine).`,
+Une centrale hydroélectrique ne brûle aucun combustible : elle utilise seulement l'eau qui tombe, donc elle rejette très peu de gaz qui réchauffent la planète quand elle fonctionne. Mais la construction d'un barrage demande beaucoup de béton, d'acier et de travaux, ce qui laisse une empreinte sur l'environnement. C'est pourquoi on compare les sources d'électricité sur toute leur vie, de la construction jusqu'à la fin de l'ouvrage.
+`,
   },
   {
     id: "usages-irrigation",
@@ -430,9 +426,8 @@ Sans eau, les plantes ne poussent pas ! L'**irrigation**, c'est apporter de l'ea
 > Le lac de Serre-Ponçon permet d'arroser **plus de 150 000 hectares** en Provence. Grâce à lui, on y cultive fruits et légumes même quand il ne pleut presque pas !
 
 ### Pour aller plus loin
-- On parle de **prélèvements** : de l'eau prise dans les rivières et les nappes, dont une partie retourne ensuite dans la nature.
-- Le goutte-à-goutte réduit les pertes seulement s'il est bien conçu et bien piloté.
-- Les surfaces irriguées en France doivent être actualisées avec les chiffres officiels les plus récents (recensement agricole) avant publication.`,
+Toute l'eau prélevée pour arroser n'est pas « consommée ». Une partie est bue par les plantes ou s'évapore dans l'air, alors qu'une autre retourne à la rivière ou s'infiltre dans le sol pour rejoindre les nappes. Les spécialistes distinguent donc l'eau **prélevée** (celle qu'on va chercher) de l'eau réellement **consommée** (celle qui ne revient pas).
+`,
   },
   {
     id: "usages-regulation-debit",
@@ -467,8 +462,8 @@ Les 4 grands lacs-réservoirs en amont de Paris peuvent garder **810 millions de
 > Pendant les étés très secs, comme en 2022, les barrages de Naussac et de Villerest **lâchent de l'eau** pour aider la Loire à continuer de couler. Sur certains secteurs, cet apport peut représenter une part importante de son débit.
 
 ### Pour aller plus loin
-- Un barrage ne supprime pas le risque d'inondation : il peut réduire certaines crues quand il garde une capacité réservée pour cela.
-- Les chiffres sur la part du débit de la Loire venant des barrages doivent être datés et sourcés avant publication.`,
+Pour atténuer une crue, un barrage doit avoir de la place libre dans son réservoir avant l'arrivée de l'eau : un lac déjà plein ne peut plus rien stocker. C'est pourquoi certains barrages gardent une partie de leur volume vide, ou baissent un peu leur niveau quand de grosses pluies sont annoncées. Même ainsi, un barrage réduit le risque d'inondation sans jamais le supprimer.
+`,
   },
   {
     id: "usages-transport",
@@ -537,12 +532,11 @@ Les lacs de Serre-Ponçon et de Sainte-Croix (dans les gorges du Verdon) sont de
 - **Randonnée** : longue promenade à pied dans la nature.
 
 > **Le saviez-vous ?**
-> Si l'eau de certains lacs de montagne est turquoise, c'est grâce à la **« farine de roche »** : de minuscules grains de roche, broyés par les glaciers, flottent dans l'eau et renvoient la lumière du soleil.
+> Si l'eau de certains lacs glaciaires est turquoise, c'est grâce à la **« farine de roche »** : de minuscules grains de roche, broyés par les glaciers, flottent dans l'eau et renvoient la lumière du soleil.
 
 ### Pour aller plus loin
-- Tous les barrages ne sont pas des sites touristiques : l'accès, la baignade et le niveau du lac dépendent de chaque lac.
-- La « farine de roche » explique la couleur de certains lacs glaciaires, pas celle de tous les lacs de barrage.
-- Les chiffres de fréquentation doivent être datés et sourcés avant publication.`,
+Le niveau d'un lac de barrage n'est pas fixe : il peut monter ou descendre de plusieurs mètres selon les saisons et les usages (stocker la fonte des neiges, produire de l'électricité, soutenir la rivière en été). Selon la période, une plage ou un ponton peut donc se retrouver loin de l'eau. Pour se baigner ou naviguer en sécurité, on suit toujours les consignes affichées sur place.
+`,
   },
   {
     id: "composants-corps",
@@ -615,8 +609,8 @@ L'évacuateur d'Itaipu (Brésil et Paraguay) peut laisser passer environ **62 00
 > Certains évacuateurs ont la forme d'un **entonnoir géant** (on les appelle « marguerites »). L'eau y tourbillonne, plonge dans un grand trou, puis ressort plus bas, derrière le barrage.
 
 ### Pour aller plus loin
-- Un seuil libre peut tout de même être bouché, abîmé par l'érosion ou se révéler trop petit : il doit être bien dimensionné et entretenu.
-- Comparaison pour Itaipu : environ 40 fois le débit moyen des chutes d'Iguaçu (et non de la Seine à Paris).`,
+Il existe deux grandes familles d'évacuateurs. Le **seuil libre** fonctionne sans moteur ni commande : dès que le lac dépasse un niveau précis, l'eau passe par-dessus, ce qui évite les pannes. L'évacuateur **vanné** possède de grandes portes qu'on peut ouvrir à la demande pour contrôler le niveau du lac, mais il demande de l'énergie et de l'entretien. De nombreux barrages combinent les deux.
+`,
   },
   {
     id: "composants-fondation",
@@ -652,8 +646,8 @@ Selon le site, on creuse parfois **plusieurs dizaines de mètres** sous le lit d
 > À Serre-Ponçon, le rocher se trouvait sous **plus de 100 mètres de sable et de graviers** ! Les ingénieurs ont réalisé une profonde coupure étanche dans ces alluvions (le sable et les graviers déposés par la rivière) pour limiter les fuites sous le barrage.
 
 ### Pour aller plus loin
-- Les profondeurs données pour les injections et les fouilles sont des exemples : elles changent selon la géologie du site.
-- À Serre-Ponçon, la coupure étanche limite les infiltrations dans les alluvions : le barrage en remblai ne « repose » pas sur un simple mur.`,
+L'eau qui passe sous un barrage ne fait pas que fuir : elle appuie vers le haut et « allège » le barrage, un peu comme un bateau qui flotte. Un barrage plus léger frotte moins sur son sol et résiste moins bien au glissement. C'est pour cela que les ingénieurs installent des drains et mesurent en permanence la pression de l'eau dans la fondation.
+`,
   },
   {
     id: "composants-prise-deau",
@@ -727,8 +721,8 @@ Un barrage-voûte de 100 mètres de haut **avance de quelques millimètres à qu
 > Dans certains barrages récents, on a noyé dans le béton **des kilomètres de fibres optiques**. Elles mesurent la température et les déformations tout le long du barrage.
 
 ### Pour aller plus loin
-- Les longueurs et les précisions des instruments sont des ordres de grandeur : elles changent selon le barrage.
-- Les mesures permettent de vérifier que le comportement reste compatible avec ce qui est attendu ; ce n'est pas une garantie à elles seules.`,
+Ce qui intéresse l'ingénieur, c'est surtout l'évolution d'une mesure dans le temps. Une valeur isolée dit peu de choses : un déplacement de quelques millimètres peut être tout à fait normal en été et inquiétant s'il apparaît en plein hiver. On compare donc chaque mesure à celles des années précédentes, pour repérer une dérive lente avant qu'elle devienne un problème.
+`,
   },
   {
     id: "composants-riviere",
@@ -764,8 +758,8 @@ En France, dans le cas général, la loi impose de laisser couler au moins **un 
 > Au barrage de Golfech, sur la Garonne, un courant d'eau attire les poissons migrateurs dans une grande cage. Elle les **fait monter en ascenseur** de l'autre côté du barrage !
 
 ### Pour aller plus loin
-- Le débit réservé est en général de 1/10 du module (le débit moyen annuel), et de 1/20 dans certains cas, avec des dispositions particulières et des variations selon les saisons.
-- La gestion des sédiments (sable, graviers) doit être adaptée à chaque site.`,
+Un barrage retient une partie du sable et des graviers que la rivière transporte : ils se déposent au fond du lac. En aval, la rivière peut alors en manquer, son lit se creuse peu à peu et les poissons trouvent moins d'endroits pour pondre. C'est pourquoi on organise parfois des opérations pour laisser repartir ces sédiments vers l'aval.
+`,
   },
   {
     id: "types-barrage-remblai",
@@ -804,8 +798,8 @@ Au lieu d'un mur droit, il a une forme de **grand triangle étalé** :
 > Pour un barrage en remblai classique, l'eau qui passe par-dessus (la **surverse**) est un risque majeur : elle peut arracher la terre en quelques minutes. C'est pourquoi on prévoit un évacuateur de crues bien dimensionné.
 
 ### Pour aller plus loin
-- Il existe des remblais spécialement conçus pour résister à une surverse, mais ce n'est pas le cas général.
-- Pour donner un pourcentage de barrages en remblai, il faudrait citer une référence (ICOLD) et préciser les barrages comptés.`,
+Dans un barrage en terre, un peu d'eau finit toujours par traverser : l'important est qu'elle n'emporte pas la terre avec elle. Les **filtres**, des couches de sable et de graviers triés, laissent passer l'eau mais retiennent les grains de terre ; les **drains** récupèrent cette eau et la renvoient vers l'aval. Sans bons filtres, un minuscule passage pourrait s'agrandir de l'intérieur.
+`,
   },
   {
     id: "types-barrage-poids",
@@ -843,8 +837,8 @@ Le plus haut barrage poids du monde est **la Grande-Dixence** (Suisse) : **285 m
 > Aujourd'hui, de nombreux barrages poids sont faits en **béton compacté au rouleau** : on l'étale comme de la terre, puis on le tasse. On construit ainsi bien plus vite !
 
 ### Pour aller plus loin
-- Un barrage-poids résiste principalement grâce à son poids, en interaction avec sa fondation.
-- La Grande-Dixence (285 m) est confirmée par son exploitant comme le plus haut barrage-poids du monde.`,
+Dans un barrage-poids, la fondation et le drainage sont presque aussi importants que le poids du béton. Si l'eau s'infiltre sous le barrage, elle le soulève un peu et diminue le frottement qui le retient sur le sol. On perce donc des drains sous l'ouvrage, et on surveille la pression de l'eau pour s'assurer qu'elle reste faible.
+`,
   },
   {
     id: "types-barrage-voute",
@@ -883,9 +877,8 @@ C'est le même principe que les arches des vieux ponts ou des églises, mais cou
 > Quand le lac se remplit, l'eau pousse plus fort et la voûte **se serre davantage sur ses appuis**. Les ingénieurs calculent ces efforts et ces déformations pour tous les niveaux d'eau.
 
 ### Pour aller plus loin
-- La voûte transmet principalement les efforts à ses appuis rocheux.
-- Le gain de béton par rapport à un barrage-poids dépend du site : il n'existe pas de rapport universel.
-- Quand le niveau monte, la charge et les déformations augmentent : on ne peut pas dire que la voûte « devient plus solide ».`,
+Une voûte utilise peu de béton, mais elle a besoin en échange d'une vallée assez étroite et d'appuis rocheux très solides, car toute la poussée de l'eau finit dans les falaises. C'est pourquoi on la construit surtout dans des gorges. Dans une vallée large, un barrage en remblai ou un barrage-poids est souvent mieux adapté.
+`,
   },
   {
     id: "types-canaux",
@@ -914,7 +907,7 @@ Une rivière descend la pente toute seule. Un canal, lui, est plutôt un **escal
 
 ### À retenir
 - **Canal d'Ille-et-Rance** (Bretagne) : 85 km et 48 écluses entre Rennes et Saint-Malo, ouvert en 1832.
-- La France compte environ **8 500 à 8 600 km** de voies navigables (canaux et rivières aménagées), l'un des plus longs réseaux d'Europe.
+- La France compte environ **8 500 km** de voies navigables (canaux et rivières aménagées), l'un des plus longs réseaux d'Europe.
 
 ### Les mots à connaître
 - **Bief** : portion de canal entre deux écluses.
@@ -924,8 +917,8 @@ Une rivière descend la pente toute seule. Un canal, lui, est plutôt un **escal
 > Le point le plus haut d'un canal (le *bief de partage*) est délicat à alimenter, car chaque éclusage fait descendre de l'eau. On l'approvisionne avec des **réservoirs**, des rigoles ou des pompes, sinon le canal s'assécherait !
 
 ### Pour aller plus loin
-- Canal d'Ille-et-Rance : 85 km et 48 écluses (Région Bretagne).
-- La longueur du réseau français est à actualiser avec les chiffres de VNF (Voies navigables de France).`,
+Chaque passage d'écluse utilise de l'eau : comme une grande boîte qu'on remplit, tout le volume d'eau nécessaire pour monter un bateau repart ensuite vers l'aval. Il faut donc alimenter le canal en permanence, surtout à son point le plus haut. Certaines écluses ont des **bassins d'épargne**, des réservoirs voisins qui récupèrent une partie de cette eau pour la rendre au passage suivant.
+`,
   },
   {
     id: "types-digue-protection",
@@ -963,11 +956,11 @@ En France, des **milliers de kilomètres de digues** protègent des millions de 
 - **Digue** : long mur ou talus qui retient l'eau.
 
 > **Le saviez-vous ?**
-> Depuis la loi **GEMAPI**, les communes et leurs groupements organisent la gestion des digues : celles qui sont retenues pour protéger la population forment des « systèmes d'endiguement », autorisés et surveillés.
+> Les terriers de ragondins, de blaireaux ou de renards peuvent fragiliser une digue. C'est pourquoi des agents la parcourent régulièrement, surtout après une crue, pour repérer et reboucher ces trous.
 
 ### Pour aller plus loin
-- La loi GEMAPI ne transforme pas automatiquement chaque digue en système d'endiguement : seuls les ouvrages retenus et autorisés en font partie.
-- La longueur nationale des digues doit être datée et sourcée avant publication.`,
+Une digue réduit un risque, mais elle ne le supprime pas : elle est conçue pour protéger jusqu'à un certain niveau de crue. Si une crue plus forte arrive, l'eau peut passer par-dessus ou la digue peut céder. C'est pourquoi on évite de construire juste derrière une digue, et pourquoi les habitants des zones protégées doivent rester informés des risques.
+`,
   },
   {
     id: "types-step",
@@ -1003,11 +996,11 @@ Une STEP a deux réservoirs situés à des altitudes différentes : un en haut, 
 - **Rendement** : ce qu'on récupère par rapport à ce qu'on a mis.
 
 > **Le saviez-vous ?**
-> Une STEP récupère environ **70 à 80 %** de l'électricité utilisée pour pomper : sur 100 « unités » dépensées, on en retrouve de 70 à 80 !
+> L'idée n'est pas nouvelle : les premières STEP ont été construites en Italie et en Suisse à la fin du XIXe siècle, il y a plus de 120 ans !
 
 ### Pour aller plus loin
-- Fin 2025, les batteries ont dépassé les STEP en puissance installée dans le monde (selon l'Agence internationale de l'énergie), mais les STEP gardent une très grande capacité de stockage d'énergie.
-- Le rendement d'une STEP est de l'ordre de 70 à 80 %.`,
+Une STEP ne crée pas d'énergie : elle en consomme pour pomper l'eau vers le haut, puis en récupère environ 70 à 80 % quand l'eau redescend. Ce qu'elle apporte, c'est la possibilité de **stocker** de très grandes quantités d'électricité, pendant des heures, pour les rendre au moment où le réseau en a besoin.
+`,
   },
   {
     id: "monde-itaipu",
@@ -1046,8 +1039,8 @@ Itaipu mélange un grand barrage en béton et de longues digues de terre sur les
 > Le barrage est tout près des **chutes d'Iguaçu**, l'une des plus grandes chutes d'eau du monde. En cas de très grande crue, son évacuateur peut laisser passer environ 40 fois le débit moyen de ces chutes !
 
 ### Pour aller plus loin
-- Les parts de 85 % (Paraguay) et 15 % (Brésil) sont celles de 2016 : elles varient selon les années.
-- La comparaison avec des stades de football a été retirée faute de source.`,
+Itaipu est géré par une entreprise commune aux deux pays, détenue à parts égales par le Brésil et le Paraguay. L'électricité produite est partagée en deux moitiés égales. Comme le Paraguay en consomme moins que sa moitié, il vend le reste au Brésil : c'est ainsi que le barrage fournit beaucoup d'électricité aux deux pays.
+`,
   },
   {
     id: "monde-canal-suez",
@@ -1076,7 +1069,7 @@ Le canal de Suez a une particularité : **il n'a aucune écluse** !
 ### À retenir
 - **Longueur** : 193 km, de Port-Saïd à Suez.
 - **Inauguré** lors d'une grande cérémonie le 17 novembre 1869, après 10 ans de travaux. Le projet était porté par le Français Ferdinand de Lesseps.
-- Environ **10 à 12 %** du commerce maritime mondial y passe (selon les années et les sources).
+- Environ **un dixième** du commerce maritime mondial y passe.
 
 ### Les mots à connaître
 - **Écluse** : ascenseur à bateaux qui rattrape une différence de niveau d'eau.
@@ -1086,8 +1079,8 @@ Le canal de Suez a une particularité : **il n'a aucune écluse** !
 > En mars 2021, un énorme porte-conteneurs de 400 mètres, l'*Ever Given*, s'est retrouvé **en travers du canal** à cause du vent. Il est resté coincé six jours, et plus de 400 bateaux ont dû attendre !
 
 ### Pour aller plus loin
-- Part du commerce mondial : environ 10 % selon la CNUCED en 2024, 12 % selon l'autorité du canal.
-- Ferdinand de Lesseps a porté le projet ; le canal a été inauguré lors d'une cérémonie qui réunissait de nombreux souverains et personnalités.`,
+Pas d'écluses, mais deux défis permanents. Le premier est le sable : le vent du désert en dépose sans cesse, et il faut draguer le canal en continu pour garder la profondeur. Le second est la circulation : sur une grande partie du canal, il n'y a qu'une seule voie, alors les navires circulent en convois et se croisent dans des zones élargies, comme le Grand Lac Amer.
+`,
   },
   {
     id: "monde-grande-dixence",
@@ -1126,8 +1119,8 @@ Pour remplir ce lac de 400 millions de mètres cubes, les Suisses ont fait un tr
 > Au fond du lac se trouve **un ancien barrage**, celui de la Dixence, construit dans les années 1930. Quand le grand barrage a été rempli, le petit a été englouti, et il y dort toujours !
 
 ### Pour aller plus loin
-- Selon l'exploitant, le barrage a été construit de 1951 à 1961 ; il mesure 285 m de haut et retient 400 millions de m³ d'eau.
-- Avant d'afficher « record mondial » pour la chute de Bieudron, il faut préciser le critère exact et la date.`,
+Le lac de la Grande-Dixence n'est pas rempli seulement par la vallée située juste derrière le barrage. Un réseau de galeries et de prises d'eau capte aussi l'eau de torrents de plusieurs vallées voisines, parfois en la pompant, et l'amène jusqu'au lac. Un barrage n'est donc pas toujours alimenté par « sa » seule rivière.
+`,
   },
   {
     id: "monde-kariba",
@@ -1165,8 +1158,8 @@ Kariba est un **barrage voûte** : il est courbé, et la poussée du fleuve est 
 > Pendant le chantier, le fleuve a connu de très grosses crues. Dans la tradition des Tonga, un peuple riverain du fleuve, c'était la colère de **Nyaminyami**, le dieu-serpent du fleuve. Les ingénieurs ont tenu bon et ont terminé le barrage !
 
 ### Pour aller plus loin
-- Les classements des plus grands réservoirs dépendent des définitions et du niveau de remplissage.
-- Le barrage a été conçu par Coyne et Bellier, sous l'impulsion d'André Coyne.`,
+Kariba est exploité en commun par deux pays voisins séparés par le fleuve : la Zambie et le Zimbabwe. Une autorité commune aux deux pays gère le lac et le barrage. Chaque pays possède sa propre centrale, sur sa rive du Zambèze.
+`,
   },
   {
     id: "monde-trois-gorges",
@@ -1194,7 +1187,7 @@ Il remplit trois missions à la fois :
 3. **Permettre la navigation** : cinq écluses en escalier et un **ascenseur à bateaux** de 113 mètres de haut permettent aux cargos de 3 000 tonnes de remonter jusqu'à Chongqing.
 
 ### À retenir
-- **Puissance installée** : 22 500 MW, soit la puissance d'une vingtaine de réacteurs nucléaires d'environ 1 000 MW chacun (attention : la puissance n'est pas l'énergie produite sur l'année).
+- **Puissance installée** : 22 500 MW, soit la puissance d'une vingtaine de réacteurs nucléaires d'environ 1 000 MW chacun.
 - **Longueur** : 2 335 m. **Hauteur** : 185 m.
 - **Béton** : 28 millions de mètres cubes, coulés entre 1994 et 2009.
 
@@ -1206,8 +1199,8 @@ Il remplit trois missions à la fois :
 > L'eau du lac est si lourde (près de 40 milliards de tonnes) que, selon des calculs de la NASA, elle pourrait avoir **allongé la durée d'une journée d'environ 0,06 microseconde** (une microseconde, c'est un millionième de seconde). Autant dire presque rien, mais c'est une estimation de la NASA !
 
 ### Pour aller plus loin
-- Record de production annuelle : 111,8 TWh en 2020. La production varie d'une année à l'autre : ce n'est pas un record permanent.
-- Le changement de durée du jour est une variation unique estimée (environ 0,06 microseconde), pas un ralentissement qui s'ajouterait chaque jour.`,
+La puissance installée dit ce qu'une centrale peut produire au maximum à un instant précis, un peu comme la vitesse maximale d'une voiture. L'énergie produite en un an dépend de l'eau disponible : une année sèche donne moins qu'une année humide. Une centrale ne tourne donc presque jamais à pleine puissance toute l'année.
+`,
   },
   {
     id: "monde-hoover-dam",
@@ -1247,8 +1240,8 @@ C'est un **barrage voûte-poids** : il est courbé comme une voûte et aussi tr�
 > Près du barrage, deux grandes statues de bronze de 9 mètres de haut veillent sur le site. Leurs **orteils sont devenus brillants**, car les visiteurs les touchent pour porter chance !
 
 ### Pour aller plus loin
-- 1935 est l'année de l'inauguration ; l'acceptation définitive de l'ouvrage date du début de 1936.
-- L'eau du bassin du Colorado et l'électricité du barrage ne desservent pas exactement le même public : on ne les additionne pas (le chiffre « 20 millions de personnes » a été retiré).`,
+Quand le lac Mead baisse pendant une sécheresse, deux choses diminuent à la fois : la réserve d'eau, et la hauteur de chute. Or plus l'eau tombe de haut, plus elle donne d'énergie aux turbines. Avec un lac plus bas, la centrale produit donc moins d'électricité avec la même quantité d'eau.
+`,
   },
   {
     id: "france-serre-poncon",
@@ -1276,7 +1269,7 @@ Serre-Ponçon est un **barrage en remblai**, avec une histoire d'ingéniosité :
 - Son usine, creusée sous terre, produit de l'électricité, puis l'eau repart dans un canal qui alimente 15 autres centrales jusqu'à l'étang de Berre.
 
 ### À retenir
-- **Le lac** : environ 1,2 milliard de mètres cubes (jusqu'à 1,27 selon les sources), le plus grand lac artificiel de France métropolitaine par volume.
+- **Le lac** : environ 1,2 milliard de mètres cubes, de quoi remplir près de 500 000 piscines olympiques.
 - **Hauteur** : 123 m. **Mis en service** en 1960.
 
 ### Les mots à connaître
@@ -1287,8 +1280,8 @@ Serre-Ponçon est un **barrage en remblai**, avec une histoire d'ingéniosité :
 > Au milieu du lac, on voit la minuscule **chapelle Saint-Michel**, sur un îlot. Elle rappelle le paysage d'avant, quand les villages de Savines et d'Ubaye ont été engloutis par la mise en eau du lac.
 
 ### Pour aller plus loin
-- Volume du lac : EDF indique 1,2 milliard de m³, d'autres documents techniques 1,27 milliard.
-- « Plus grand lac artificiel » s'entend pour la France métropolitaine : le lac de Petit-Saut, en Guyane, est plus volumineux (environ 3,5 milliards de m³).`,
+Serre-Ponçon est le plus grand lac artificiel de France métropolitaine par son volume. Mais en Guyane, le lac de Petit-Saut est encore plus volumineux, avec environ 3,5 milliards de mètres cubes.
+`,
   },
   {
     id: "france-migouelou",
@@ -1327,7 +1320,8 @@ Construire si haut était un défi pour les ingénieurs. Comme tout le ciment de
 > Aucune route ne monte jusqu'au barrage ! Ouvriers, machines (démontées en morceaux) et matériaux sont montés par **téléphérique**. Aujourd'hui, il faut en général **plusieurs heures de randonnée**, selon l'itinéraire, pour le visiter.
 
 ### Pour aller plus loin
-- Caractéristiques : 9 voûtes, 8 contreforts, environ 17 millions de m³ d'eau et 7 centrales dans la vallée d'Azun.`,
+Un barrage à voûtes multiples n'est pas un grand arc unique : ce sont plusieurs voûtes minces, côte à côte, qui transmettent chacune la poussée de l'eau à des contreforts, les piliers de béton. Ces piliers envoient ensuite la poussée dans la roche. On économise ainsi du béton, ce qui était précieux quand tout devait monter par téléphérique.
+`,
   },
   {
     id: "france-rance",
@@ -1368,7 +1362,8 @@ Entre Saint-Malo et Dinard, l'usine de la Rance a été la **première usine mar
 > Le dessus du barrage est aussi **une route à 4 voies** : des milliers de voitures l'empruntent chaque jour pour aller de Dinard à Saint-Malo sans faire le grand tour !
 
 ### Pour aller plus loin
-- Le chiffre de 30 000 véhicules par jour a été retiré tant qu'un comptage récent n'est pas disponible.`,
+Les marées sont prévisibles très longtemps à l'avance : on connaît l'heure et la hauteur de la marée pour les années à venir, car elles dépendent du mouvement de la Lune et du Soleil. Ce n'est pas le cas du vent ou du soleil, qui changent avec la météo. C'est un atout rare pour une énergie renouvelable.
+`,
   },
   {
     id: "france-canal-alsace",
@@ -1408,8 +1403,8 @@ Au XXe siècle, la France a décidé d'aménager le Rhin, un fleuve alors sauvag
 > Des **passes à poissons** ont été installées sur le Rhin pour aider les poissons migrateurs, comme le saumon atlantique, à remonter le fleuve : elles participent à la restauration de la continuité du Rhin.
 
 ### Pour aller plus loin
-- Le Grand Canal proprement dit mesure environ 50 km (de Kembs à Vogelgrun) ; la liaison navigable Bâle–Strasbourg est plus longue.
-- Le retour du saumon « jusqu'en Suisse » est une situation qui évolue : à vérifier avant de l'affirmer.`,
+Les passes à poissons améliorent la continuité du fleuve, mais elles ne suffisent pas à elles seules. Pour qu'un saumon remonte le Rhin, il doit franchir tous les obstacles du fleuve, depuis la mer jusqu'aux rivières où il pond. Le retour des poissons migrateurs dépend donc de l'ensemble du fleuve, pas d'un seul barrage.
+`,
   },
   {
     id: "france-levees-loire",
@@ -1438,7 +1433,7 @@ La protection de la Loire a été construite petit à petit :
 
 ### À retenir
 - **600 km** de levées le long du fleuve.
-- Elles protègent des habitants, des activités et des territoires (environ 300 000 personnes selon certaines estimations). Le Val de Loire est aussi inscrit au Patrimoine mondial de l'UNESCO pour son paysage culturel (liste des lieux à protéger pour toute l'humanité).
+- Elles protègent des habitants, des activités et des territoires (de l'ordre de 300 000 personnes). Le Val de Loire est aussi inscrit au Patrimoine mondial de l'UNESCO pour son paysage culturel (liste des lieux à protéger pour toute l'humanité).
 - Grandes crues de référence : **1846, 1856 et 1866**.
 
 ### Les mots à connaître
@@ -1449,8 +1444,8 @@ La protection de la Loire a été construite petit à petit :
 > Les levées de la Loire servent aussi de **chemin** : la célèbre véloroute « La Loire à Vélo » les emprunte souvent !
 
 ### Pour aller plus loin
-- Les chiffres de 600 km de levées et de 300 000 personnes protégées doivent être rattachés à une source et à une année.
-- L'inscription à l'UNESCO concerne le paysage culturel : ce n'est pas elle que les levées protègent de l'eau.`,
+Quand une levée casse, l'eau peut envahir très vite la plaine derrière elle, car cette plaine est plus basse que le fleuve. C'est le grand danger de ces digues, et la raison pour laquelle on les surveille et on les entretient en permanence. Les déversoirs servent à choisir l'endroit où l'eau passera en cas de très grande crue, plutôt que de laisser la levée céder là où il y a des habitations.
+`,
   },
   {
     id: "france-takamaka",
@@ -1479,7 +1474,7 @@ La vallée de la rivière des Marsouins est l'une des plus **pluvieuses du monde
 
 ### À retenir
 - Il pleut jusqu'à **7 à 8 mètres d'eau par an** dans la région !
-- **Puissance** : de l'ordre de 40 MW pour l'ensemble des deux aménagements (selon les sources). L'hydraulique est l'une des principales sources d'électricité renouvelable de l'île.
+- **Puissance** : environ 44 MW pour l'ensemble des deux aménagements. L'hydraulique est l'une des principales sources d'électricité renouvelable de l'île.
 - Mis en service en 1968 (Takamaka I) et 1989 (Takamaka II).
 
 ### Les mots à connaître
@@ -1490,8 +1485,8 @@ La vallée de la rivière des Marsouins est l'une des plus **pluvieuses du monde
 > La vallée est si abrupte qu'aucun véhicule n'y descend ! Le matériel et les techniciens d'EDF y accèdent par un **téléphérique** qui survole des vides de plusieurs centaines de mètres.
 
 ### Pour aller plus loin
-- Les sources d'EDF ne donnent pas toutes la même puissance pour les deux aménagements : à confirmer auprès de l'exploitant avant publication.
-- C'est la filière hydraulique, et non Takamaka seul, qui est une source renouvelable majeure de l'île.`,
+En janvier 1966, le cyclone Denise a fait tomber à La Réunion plus de 1 800 millimètres de pluie en 24 heures, un record du monde : presque trois ans de pluie parisienne en une seule journée ! Voilà pourquoi la rivière peut monter si vite, et pourquoi les ingénieurs ont mis la centrale à l'abri sous la montagne.
+`,
   },
   {
     id: "temps-pont-du-gard",
@@ -1574,7 +1569,8 @@ Depuis l'Antiquité, on rêvait de relier l'Atlantique à la Méditerranée sans
 > Pierre-Paul Riquet a dépensé toute sa fortune et sa santé pour son canal. Il est mort en 1680, **quelques mois avant l'ouverture du canal** : il ne l'a jamais vu terminé !
 
 ### Pour aller plus loin
-- 240 km et 65 écluses entre Toulouse et l'étang de Thau (VNF). Le site classé à l'UNESCO est plus large que le canal principal.`,
+Saint-Ferréol ne se remplit pas tout seul. Un réseau de rigoles, creusées sur les pentes de la Montagne Noire, capte l'eau de plusieurs ruisseaux et la conduit jusqu'au lac. Une autre rigole amène ensuite l'eau jusqu'au point le plus haut du canal.
+`,
   },
   {
     id: "temps-barrage-zola",
@@ -1614,7 +1610,8 @@ Au pied de la montagne Sainte-Victoire, près d'Aix-en-Provence, le barrage Zola
 > Quand il était enfant, Émile Zola se promenait près du barrage de son père avec son ami **Paul Cézanne**, qui deviendra un grand peintre. Ils s'y baignaient, et Cézanne a même peint le barrage !
 
 ### Pour aller plus loin
-- Le barrage de Bimont date du XXe siècle : il n'a pas remplacé Zola en 1877. C'est le canal du Verdon qui a pris le relais.`,
+À l'époque, on construisait surtout des murs épais et lourds, en se fiant à l'expérience. François Zola, lui, a utilisé le calcul pour trouver la forme d'un arc qui renvoie la poussée de l'eau vers les rives rocheuses. Aujourd'hui, les ingénieurs font les mêmes raisonnements avec des ordinateurs.
+`,
   },
   {
     id: "temps-barrage-dardennes",
@@ -1652,11 +1649,11 @@ C'est un **barrage poids** en maçonnerie et en béton, un peu courbé :
 - **Ozone** : gaz utilisé pour désinfecter l'eau.
 
 > **Le saviez-vous ?**
-> Selon certaines sources, l'eau de Dardennes aurait été désinfectée très tôt avec la méthode de **la « verdunisation »**, mise au point pendant la bataille de Verdun pour protéger les soldats contre la typhoïde, une maladie de l'eau sale.
+> Dans une roche karstique, des **rivières entières peuvent couler sous terre** : l'eau disparaît dans un trou, voyage dans l'obscurité, puis ressort parfois à plusieurs kilomètres, sous forme de source.
 
 ### Pour aller plus loin
-- Les caractéristiques techniques (31,6 m de haut, 154 m de long, 1,1 million de m³, travaux de 2020 à 2022) sont à faire valider par l'exploitant (Toulon Provence Méditerranée).
-- L'histoire de la verdunisation à Dardennes doit être confirmée par une source spécialisée.`,
+Une roche karstique est comme une éponge pleine de trous : la pluie s'y infiltre vite et ressort plus bas en sources très abondantes. Mais l'eau y est très peu filtrée par la roche, et elle peut emporter des impuretés. C'est pourquoi l'eau de Dardennes est filtrée et désinfectée à l'ozone avant d'arriver aux robinets.
+`,
   },
   {
     id: "temps-barrage-rizzanese",
@@ -1697,9 +1694,8 @@ C'est un **barrage poids** très moderne, en **béton compacté au rouleau (BCR)
 > Le chantier a pris des mesures pour protéger des **truites** patrimoniales de Corse, avec un débit d'eau minimal garanti dans la rivière.
 
 ### Pour aller plus loin
-- Le barrage fait environ 40,5 m de haut : ce n'est pas le plus haut de Corse. Il est surtout le plus puissant aménagement hydroélectrique de l'île (55 MW).
-- Le « +40 % » concerne la capacité de production, pas une part de la production annuelle.
-- Les liaisons SACOI et SARCO relient la Corse à l'Italie et à la Sardaigne.`,
+Sur une île, le réseau électrique est petit et peu relié à d'autres : à chaque instant, la quantité d'électricité produite doit être égale à celle qui est consommée, sinon le réseau se dérègle. Une centrale hydraulique peut changer sa production en quelques minutes. Elle est donc précieuse pour compenser un pic de consommation le soir, ou un nuage qui fait chuter la production des panneaux solaires.
+`,
   },
   {
     id: "temps-canal-seine-nord",
@@ -1740,7 +1736,7 @@ C'est un grand chantier plein d'idées modernes :
 > Le canal passera au-dessus de la vallée de la Somme sur un **pont-canal de 1,3 km**, perché sur des piliers : les animaux et les rivières pourront continuer à passer dessous.
 
 ### Pour aller plus loin
-- Économie d'eau : jusqu'à environ 70 % par les bassins d'épargne, ou de deux tiers aux trois quarts selon les ouvrages ; le reste peut être récupéré par pompage.
-- Calendrier : essais et navigation annoncés entre 2031 et 2032. C'est la source du projet qui fait foi, et non Wikipédia.`,
+Le principe des bassins d'épargne est simple. Quand un bateau descend, une partie de l'eau de l'écluse s'écoule d'abord dans de grands bassins voisins, sans aucune pompe, simplement grâce à la pente. Quand un bateau monte, on rend cette eau à l'écluse. L'eau qui manque encore est remplacée par pompage.
+`,
   },
 ];

@@ -18,15 +18,29 @@ const CFBR_METIERS = cfbr("Les métiers de la conception", "Metiers-40.html");
 
 export const CARD_LINKS: Record<string, ExternalLink[]> = {
   // Métiers
-  "metiers-proprietaire": [cfbr("L’exploitation, rôle du maître d’ouvrage", "-L-exploitation-.html"), cfbr("Classes de barrages", "classes-de-barrages.html")],
-  "metiers-conceptrice": [cfbr("La conception des barrages", "Description-38.html"), CIGB_TECHNOLOGIE],
+  "metiers-proprietaire": [
+    { label: "Légifrance – classement des barrages (article R.214-112)", url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000030594166/" },
+    { label: "Légifrance – PPI de certains aménagements hydrauliques (article R.741-18)", url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000031625499" },
+    cfbr("Classes de barrages", "classes-de-barrages.html"),
+  ],
+  "metiers-conceptrice": [
+    cfbr("La conception des barrages", "Description-38.html"),
+    { label: "CFBR – dimensionnement des évacuateurs de crues", url: "https://www.barrages-cfbr.eu/IMG/pdf/recommandations_cfbr_2013_evc.pdf" },
+  ],
   "metiers-constructeur": [CIGB_TECHNOLOGIE, wiki("Barrage", "Barrage")],
   "metiers-expert-securite": [cfbr("Surveillance des barrages", "Surveillance.html"), CIGB_SECURITE],
-  "metiers-hydrologue": [CFBR_METIERS, wiki("Hydrologie", "Hydrologie")],
+  "metiers-hydrologue": [
+    CFBR_METIERS,
+    { label: "OFB – Explore2, les futurs de l’eau", url: "https://ofb.gouv.fr/explore2-des-futurs-de-eau" },
+  ],
   "metiers-geologue": [CFBR_METIERS, wiki("Géotechnique", "Géotechnique")],
   // Usages
   "usages-eau-potable": [cfbr("Alimentation en eau", "Alimentation-en-eau.html"), wiki("Eau potable", "Eau_potable")],
-  "usages-hydroelectricite": [cfbr("Hydroélectricité", "Hydroelectricite.html"), wiki("Énergie hydroélectrique", "Énergie_hydroélectrique")],
+  "usages-hydroelectricite": [
+    cfbr("Hydroélectricité", "Hydroelectricite.html"),
+    { label: "RTE – Bilan électrique 2025 (production hydraulique)", url: "https://assets.rte-france.com/prod/public/2026-02/Bilan-electrique-2025-principaux-resultats.pdf" },
+    wiki("Énergie hydroélectrique", "Énergie_hydroélectrique"),
+  ],
   "usages-irrigation": [cfbr("Irrigation et agriculture", "Irrigation-et-agriculture.html"), wiki("Irrigation", "Irrigation")],
   "usages-regulation-debit": [cfbr("Écrêtement des crues", "Ecretement-des-crues.html"), cfbr("Soutien d’étiage", "Soutien-d-etiage.html")],
   "usages-transport": [cfbr("Navigation", "Navigation.html"), wiki("Transport fluvial", "Transport_fluvial")],
