@@ -28,6 +28,7 @@ import {
   Compass,
   Box,
   LayoutGrid,
+  CircleHelp,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -37,7 +38,7 @@ const Unified3DScene = dynamic(() => import("@/components/Unified3DScene"), {
   loading: () => (
     <div className="w-full h-full flex flex-col items-center justify-center gap-3">
       <div className="w-12 h-12 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin" />
-      <span className="text-xs text-slate-400 font-medium">Initialisation de la scène 3D continue...</span>
+      <span className="text-xs text-stone-600 font-medium">Initialisation de la scène 3D continue...</span>
     </div>
   ),
 });
@@ -46,7 +47,7 @@ const Unified3DScene = dynamic(() => import("@/components/Unified3DScene"), {
 function MoreLinks({ links }: { links: { label: string; url: string }[] }) {
   return (
     <nav aria-label="En savoir plus" className="pt-4 border-t border-stone-200">
-      <h3 className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-2">En savoir plus</h3>
+      <h3 className="text-xs font-bold uppercase tracking-wide text-stone-600 mb-2">En savoir plus</h3>
       <ul className="flex flex-wrap gap-2">
         {links.map((l) => (
           <li key={l.url}>
@@ -128,7 +129,7 @@ function EnglishTerm({ term, wiki }: { term?: string; wiki?: { label: string; ur
   return (
     <p className="pt-4 border-t border-stone-200 text-sm text-stone-700">
       <UKFlag className="inline-block w-5 h-[14px] rounded-[2px] shadow-sm mr-2 align-[-2px]" />
-      <span className="text-xs font-bold uppercase tracking-wide text-stone-500 mr-2">En anglais</span>
+      <span className="text-xs font-bold uppercase tracking-wide text-stone-600 mr-2">En anglais</span>
       {wiki ? (
         <a
           href={wiki.url}
@@ -156,6 +157,38 @@ export default function Experience7Familles() {
 
   // Mode d'affichage : scène 3D ou mosaïque des 42 cartes côte à côte
   const [viewMode, setViewMode] = useState<"3d" | "mosaic">("3d");
+  // Préférence « réduire les animations » et disponibilité de WebGL : sans l'un ou l'autre, on propose la mosaïque
+  const [reducedMotion, setReducedMotion] = useState<boolean>(false);
+  const [webglOk, setWebglOk] = useState<boolean>(true);
+  const [showHelp, setShowHelp] = useState<boolean>(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const onChange = () => setReducedMotion(mq.matches);
+    mq.addEventListener("change", onChange);
+    let ok = false;
+    try {
+      const c = document.createElement("canvas");
+      ok = !!(c.getContext("webgl2") || c.getContext("webgl"));
+    } catch {
+      ok = false;
+    }
+    setWebglOk(ok);
+    // Ouverture directe d'une carte : ?carte=<id> (liens partagés et pages statiques des cartes)
+    const params = new URLSearchParams(window.location.search);
+    const wanted = CARDS.find((c) => c.id === params.get("carte"));
+    const wantedFamily = FAMILIES.find((f) => f.id === params.get("famille"));
+    if (!ok || (mq.matches && !wanted && !wantedFamily)) {
+      setViewMode("mosaic");
+    }
+    if (ok && wanted) {
+      setSelectedFamilyId(wanted.familyId);
+      setSelectedCardId(wanted.id);
+    } else if (ok && wantedFamily) {
+      setSelectedFamilyId(wantedFamily.id);
+    }
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
   const [fromMosaic, setFromMosaic] = useState<boolean>(false);
 
   // État du Deck 3D (pile compacte vs éventail des 7 familles)
@@ -180,7 +213,7 @@ export default function Experience7Familles() {
 
   // Détection du survol gauche et droite pour faire défiler le carrousel 3D
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (selectedFamilyId || viewMode === "mosaic") {
+    if (selectedFamilyId || viewMode === "mosaic" || reducedMotion) {
       hoverVelocityRef.current = 0;
       return;
     }
@@ -239,6 +272,8 @@ export default function Experience7Familles() {
   // Glisser-déposer / swipe à la souris ou au doigt
   const handlePointerDown = (e: React.PointerEvent) => {
     if (selectedFamilyId || viewMode === "mosaic") return;
+    // Seule la scène (et non les boutons ou le panneau) fait défiler le carrousel
+    if (!(e.target as HTMLElement).closest("canvas")) return;
     isDraggingRef.current = true;
     dragStartXRef.current = e.clientX;
     dragStartOffsetRef.current = deckScrollRef.current;
@@ -472,6 +507,49 @@ export default function Experience7Familles() {
     setSelectedCardId(familyCards[nextIdx].id);
   };
 
+  // URL partageable : ?famille=<id> ou ?carte=<id>, et bouton « Précédent » du navigateur
+  const urlSyncSkipFirst = useRef(true);
+  useEffect(() => {
+    if (urlSyncSkipFirst.current) {
+      urlSyncSkipFirst.current = false;
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    params.delete("carte");
+    params.delete("famille");
+    if (selectedCardId) params.set("carte", selectedCardId);
+    else if (selectedFamilyId) params.set("famille", selectedFamilyId);
+    const qs = params.toString();
+    const next = window.location.pathname + (qs ? `?${qs}` : "");
+    if (next !== window.location.pathname + window.location.search) window.history.pushState({}, "", next);
+  }, [selectedFamilyId, selectedCardId]);
+  useEffect(() => {
+    const onPop = () => {
+      const params = new URLSearchParams(window.location.search);
+      const card = CARDS.find((c) => c.id === params.get("carte"));
+      const fam = FAMILIES.find((f) => f.id === params.get("famille"));
+      setSelectedCardId(card ? card.id : null);
+      setSelectedFamilyId(card ? card.familyId : fam ? fam.id : null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // Focus : à chaque changement d'étape, le focus clavier suit le nouveau titre
+  const focusSkipFirst = useRef(true);
+  useEffect(() => {
+    if (focusSkipFirst.current) {
+      focusSkipFirst.current = false;
+      return;
+    }
+    if (viewMode !== "3d") return;
+    const target = currentStage === "card" ? "card-title" : currentStage === "family" ? "family-title" : "deck-title";
+    const el = Array.from(document.querySelectorAll<HTMLElement>(`[data-focus-target="${target}"]`)).find(
+      (n) => n.offsetParent !== null
+    );
+    el?.focus({ preventScroll: true });
+  }, [currentStage, selectedCardId, viewMode]);
+
   // Annonce vocale dynamique pour les lecteurs d'écran (WCAG 4.1.3)
   const [liveAnnouncement, setLiveAnnouncement] = useState<string>("");
 
@@ -494,6 +572,12 @@ export default function Experience7Familles() {
   const touchSheetStartPosRef = useRef<{ y: number; time: number } | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Les bords de l'écran sont réservés aux gestes du système (retour arrière sur iOS et Android)
+    const x0 = e.touches[0]?.clientX ?? 100;
+    if (x0 < 24 || x0 > window.innerWidth - 24) {
+      touchStartPosRef.current = null;
+      return;
+    }
     if (e.touches.length === 1) {
       touchStartPosRef.current = {
         x: e.touches[0].clientX,
@@ -605,6 +689,11 @@ export default function Experience7Familles() {
 
       if (viewMode === "mosaic" && e.key !== "Escape") return;
 
+      // Espace et Entrée activent déjà les boutons, liens et onglets : on ne les détourne pas
+      const onControl =
+        e.target instanceof Element && !!e.target.closest('button, a[href], [role="button"], [role="tab"], select, summary');
+      if (onControl && (e.key === " " || e.key === "Spacebar" || e.key === "Enter")) return;
+
       if (e.key === "Escape") {
         if (isEditing) {
           setIsEditing(false);
@@ -686,6 +775,26 @@ export default function Experience7Familles() {
   return (
     <>
     <div className="relative w-full h-dvh overflow-hidden print:hidden bg-[radial-gradient(ellipse_at_50%_38%,#FFFEFB_0%,#F7F5F0_52%,#EAE4D6_100%)] text-stone-900 flex flex-col font-sans select-none">
+      {/* Liens d'évitement : visibles uniquement quand ils reçoivent le focus clavier */}
+      <nav
+        aria-label="Accès rapide"
+        className="sr-only focus-within:not-sr-only focus-within:absolute focus-within:left-3 focus-within:top-3 focus-within:z-[60] focus-within:flex focus-within:gap-2 focus-within:rounded-xl focus-within:bg-white focus-within:p-2 focus-within:shadow-lg"
+      >
+        <a
+          href="#contenu"
+          className="min-h-[40px] inline-flex items-center rounded-lg bg-[#1b5d78] px-3 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+        >
+          Aller au contenu
+        </a>
+        <button
+          type="button"
+          onClick={() => switchViewMode("mosaic")}
+          className="min-h-[40px] rounded-lg border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+        >
+          Afficher la mosaïque des 42 cartes (version sans animation)
+        </button>
+      </nav>
+
       {/* Annonceur vocal accessible invisible */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {liveAnnouncement}
@@ -697,35 +806,32 @@ export default function Experience7Familles() {
 
       <header
         role="banner"
-        className="h-16 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 z-40 transition-colors"
+        className="h-16 [@media(max-height:500px)]:h-12 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 z-40 transition-colors"
       >
         <div className="flex items-center gap-3">
           {/* Logo officiel CFBR & Titre avec retour accueil */}
-          <div
-            role="button"
-            tabIndex={0}
-            aria-label="Accueil du jeu des 7 familles - CFBR"
-            className="flex items-center gap-3 cursor-pointer group focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none rounded-xl p-1 -m-1"
+          <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Retour à l'accueil du jeu des 7 familles (logo CFBR)"
+            aria-describedby="cfbr-logo-tip"
+            className="relative cursor-pointer group focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none rounded-xl"
             onClick={() => {
               setSelectedFamilyId(null);
               setSelectedCardId(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                setSelectedFamilyId(null);
-                setSelectedCardId(null);
-              }
+              setViewMode("3d");
             }}
           >
             {/* Vignette épurée du logo CFBR */}
-            <div className="relative h-10 px-2 py-0.5 bg-white/95 border border-stone-200/90 rounded-xl shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md group-hover:border-[#1b5d78]/40 transition">
+            <span className="relative h-10 px-2 py-0.5 bg-white/95 border border-stone-200/90 rounded-xl shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:shadow-md group-hover:border-[#1b5d78]/40 transition">
               <img
                 src={asset("/cfbr-logo.png")}
-                alt="Logo officiel CFBR"
+                alt=""
                 className="h-8 w-auto object-contain"
               />
               {/* Infobulle au survol du logo : lien du CFBR avec la CIGB / ICOLD */}
               <span
+                id="cfbr-logo-tip"
                 role="tooltip"
                 className="pointer-events-none absolute left-0 top-full mt-2 z-50 w-64 rounded-xl bg-stone-900 px-3 py-2 text-left text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
               >
@@ -733,7 +839,8 @@ export default function Experience7Familles() {
                 Grands Barrages, connue dans le monde entier sous le nom d&apos;<strong>ICOLD</strong>{" "}
                 (International Commission on Large Dams).
               </span>
-            </div>
+            </span>
+          </button>
 
             <div>
               <div className="flex items-center gap-2">
@@ -741,21 +848,18 @@ export default function Experience7Familles() {
                   <span className="sm:hidden">7 Familles</span>
                   <span className="hidden sm:inline">7 Familles des Barrages</span>
                 </h1>
-                <span className="hidden lg:inline-flex whitespace-nowrap items-center text-[10px] font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
+                <span className="hidden lg:inline-flex whitespace-nowrap items-center text-[11px] font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
                   1926–2026
                 </span>
               </div>
-              <p className="text-[11px] text-stone-500 hidden md:block">
+              <p className="text-[11px] text-stone-600 hidden md:block">
                 Comité Français des Barrages et Réservoirs
               </p>
             </div>
           </div>
-        </div>
 
-        {/* Contrôles supérieurs */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Partenaires : le logo renvoie directement vers leur site ou leur compte */}
-          <div className="hidden md:flex items-center gap-3 mr-1">
+          <div className="hidden md:flex items-center gap-3 ml-2 pl-4 border-l border-stone-200">
             <a
               href={ARCHITECTES_URL}
               target="_blank"
@@ -766,7 +870,7 @@ export default function Experience7Familles() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset("/logos/architectes-de-leau.png")} alt="Les Architectes de l’Eau" className="h-8 w-auto" />
             </a>
-            <AgencyCredit placement="bottom" align="right">
+            <AgencyCredit placement="bottom" align="center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={asset("/logos/hello-bim-bam-boum-small.png")}
@@ -775,7 +879,10 @@ export default function Experience7Familles() {
               />
             </AgencyCredit>
           </div>
+        </div>
 
+        {/* Contrôles supérieurs */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Choix du mode d'affichage : carrousel 3D ou toutes les cartes */}
           <div
             role="group"
@@ -789,17 +896,30 @@ export default function Experience7Familles() {
               <button
                 key={mode}
                 onClick={() => switchViewMode(mode)}
+                disabled={mode === "3d" && !webglOk}
                 aria-pressed={viewMode === mode}
+                aria-label={label}
                 title={hint}
                 className={`h-9 px-2.5 sm:px-3 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none ${
                   viewMode === mode ? "bg-[#1b5d78] text-white shadow-sm" : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
-                }`}
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 <Icon className="w-4 h-4" />
                 <span className={mode === "mosaic" ? "hidden sm:inline" : "hidden md:inline"}>{label}</span>
               </button>
             ))}
           </div>
+
+          {/* Aide : gestes et raccourcis */}
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            aria-label="Aide : gestes et raccourcis clavier"
+            title="Aide : gestes et raccourcis clavier"
+            className="hidden sm:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+          >
+            <CircleHelp className="w-4 h-4" />
+          </button>
 
           {/* Dossier complet à imprimer ou à enregistrer en PDF */}
           <button
@@ -832,6 +952,7 @@ export default function Experience7Familles() {
 
       {/* 2. SCÈNE 3D UNIQUE ET PERMANENTE (AU CŒUR DU SITE) */}
       <main
+        id="contenu"
         role="main"
         aria-label="Espace de jeu interactif 3D"
         className="flex-1 relative flex overflow-hidden touch-pan-y"
@@ -844,7 +965,11 @@ export default function Experience7Familles() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {viewMode === "mosaic" && <MosaicView onOpenCard={openCardFromMosaic} onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })} />}
+        {viewMode === "mosaic" && <MosaicView
+            onOpenCard={openCardFromMosaic}
+            onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })}
+            notice={!webglOk ? "L'affichage 3D n'est pas disponible sur cet appareil : voici les 42 cartes à plat." : undefined}
+          />}
 
         {viewMode === "3d" && (
         <>
@@ -884,6 +1009,9 @@ export default function Experience7Familles() {
         {/* OVERLAY ÉTAPE 1 : DECK ACCUEIL */}
         {currentStage === "deck" && (
           <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6">
+            <h2 data-focus-target="deck-title" tabIndex={-1} className="sr-only focus:outline-none">
+              Les 7 familles du jeu
+            </h2>
             {/* Guide supérieur */}
             <div className="text-center pt-1">
               <span className="inline-block px-3.5 py-1.5 text-xs font-semibold rounded-full bg-white/90 text-stone-700 border border-stone-200/90 backdrop-blur-md shadow-sm">
@@ -900,7 +1028,7 @@ export default function Experience7Familles() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pb-2 pointer-events-auto">
               {/* Pastilles directes des 7 familles */}
               <div
-                role="tablist"
+                role="group"
                 aria-label="Sélection rapide des familles de barrages"
                 className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/95 border border-stone-200/90 backdrop-blur-xl shadow-lg overflow-x-auto max-w-full"
               >
@@ -910,16 +1038,15 @@ export default function Experience7Familles() {
                     <button
                       key={fam.id}
                       data-deck-idx={idx}
-                      onClick={() => setDeckScrollOffset(3 - idx)}
-                      onDoubleClick={() => setSelectedFamilyId(fam.id)}
+                      onClick={() => (isCentered ? setSelectedFamilyId(fam.id) : setDeckScrollOffset(3 - idx))}
                       className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                         isCentered
                           ? "bg-stone-900 text-white shadow-sm border border-stone-900 scale-105"
                           : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
                       }`}
-                      title={`Centrer la famille ${fam.name}`}
-                      aria-label={`Centrer la famille ${fam.name}`}
-                      aria-selected={isCentered}
+                      title={isCentered ? `Ouvrir la famille ${fam.name}` : `Centrer la famille ${fam.name}`}
+                      aria-label={isCentered ? `Ouvrir la famille ${fam.name}` : `Centrer la famille ${fam.name}`}
+                      aria-current={isCentered ? "true" : undefined}
                     >
                       <span
                         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -962,12 +1089,33 @@ export default function Experience7Familles() {
                   className="w-3.5 h-3.5 rounded-full shadow-sm"
                   style={{ backgroundColor: activeFamily.color }}
                 />
-                <span className="text-sm font-bold text-stone-900">
+                <h2 data-focus-target="family-title" tabIndex={-1} className="text-sm font-bold text-stone-900 focus:outline-none">
                   Famille {activeFamily.name}
-                </span>
-                <span className="text-xs text-stone-500">• 6 cartes</span>
+                </h2>
+                <span className="text-xs text-stone-600">• 6 cartes</span>
               </div>
             </div>
+
+            {/* Accès clavier aux 6 cartes : apparaît seulement quand il reçoit le focus */}
+            <nav
+              aria-label={`Cartes de la famille ${activeFamily.name}`}
+              className="pointer-events-auto sr-only focus-within:not-sr-only focus-within:absolute focus-within:bottom-4 focus-within:left-1/2 focus-within:z-40 focus-within:flex focus-within:max-w-[calc(100%-2rem)] focus-within:-translate-x-1/2 focus-within:flex-wrap focus-within:justify-center focus-within:gap-2 focus-within:rounded-2xl focus-within:bg-white/95 focus-within:p-2 focus-within:shadow-lg"
+            >
+              {familyCards.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onFocus={() => setHoveredCardId(c.id)}
+                  onClick={() => {
+                    setSelectedCardId(c.id);
+                    setSheetState("collapsed");
+                  }}
+                  className="min-h-[40px] rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                >
+                  {c.num}. {c.title}
+                </button>
+              ))}
+            </nav>
 
             {/* Aide tactile : les noms des cartes sont affichés sous chacune d'elles */}
             <p className="hidden pointer-coarse:block self-center text-center text-[11px] font-medium text-stone-600 px-3 py-1 rounded-full bg-white/80 backdrop-blur-md border border-stone-200/80">
@@ -1034,7 +1182,12 @@ export default function Experience7Familles() {
                     )}
                   </div>
 
-                  <h2 className="text-3xl font-extrabold text-stone-900 tracking-tight">
+                  <h2
+                    data-focus-target="card-title"
+                    tabIndex={-1}
+                    lang={currentCard.id === "monde-hoover-dam" ? "en" : undefined}
+                    className="text-3xl font-extrabold text-stone-900 tracking-tight focus:outline-none"
+                  >
                     {currentCard.title}
                   </h2>
 
@@ -1057,11 +1210,11 @@ export default function Experience7Familles() {
                   <EnglishTerm term={englishTerm(currentCard)} wiki={englishWiki(currentCard)} />
 
                   {currentCard.credits && (
-                    <div className="pt-6 border-t border-stone-200 text-xs text-stone-500 italic">
+                    <div className="pt-6 border-t border-stone-200 text-xs text-stone-600 italic">
                       Crédit photo : {currentCard.credits}
                     </div>
                   )}
-                  <p className="text-xs text-stone-500 italic">
+                  <p className="text-xs text-stone-600 italic">
                     <AgencyCredit />
                   </p>
                 </div>
@@ -1109,7 +1262,7 @@ export default function Experience7Familles() {
                 onTouchEnd={handleSheetTouchEnd}
               >
                 <div className="w-12 h-1.5 rounded-full bg-stone-300 mb-2" />
-                <div className="flex items-center gap-1 text-[11px] font-semibold text-stone-500">
+                <div className="flex items-center gap-1 text-[11px] font-semibold text-stone-600">
                   <span>
                     {sheetState === "expanded" ? "Réduire" : "En savoir plus"}
                   </span>
@@ -1124,21 +1277,26 @@ export default function Experience7Familles() {
               <div id="card-pedagogic-content" className="px-5 pb-6 overflow-y-auto flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <span
-                    className="text-[10px] font-bold px-2.5 py-0.5 rounded-full text-white shadow-sm"
+                    className="text-[11px] font-bold px-2.5 py-0.5 rounded-full text-white shadow-sm"
                     style={{ backgroundColor: currentCard.familyColor }}
                   >
                     {currentCard.familyName} • n°{currentCard.num}
                   </span>
                   {currentCard.period && (
-                    <span className="text-[10px] text-stone-500">
+                    <span className="text-[11px] text-stone-600">
                       {currentCard.period}
                     </span>
                   )}
                 </div>
 
-                <h3 className="text-lg font-bold text-stone-900 leading-snug">
+                <h2
+                  data-focus-target="card-title"
+                  tabIndex={-1}
+                  lang={currentCard.id === "monde-hoover-dam" ? "en" : undefined}
+                  className="text-lg font-bold text-stone-900 leading-snug focus:outline-none"
+                >
                   {currentCard.title}
-                </h3>
+                </h2>
                 <p className="text-xs text-stone-600 mt-1 line-clamp-2">
                   {currentCard.shortDescription}
                 </p>
@@ -1160,11 +1318,11 @@ export default function Experience7Familles() {
                     <MoreLinks links={cardLinks(currentCard)} />
                     <div className="mt-4"><EnglishTerm term={englishTerm(currentCard)} wiki={englishWiki(currentCard)} /></div>
                     {currentCard.credits && (
-                      <div className="mt-4 pt-4 border-t border-stone-200 text-[10px] text-stone-500 italic">
+                      <div className="mt-4 pt-4 border-t border-stone-200 text-[11px] text-stone-600 italic">
                         Crédit photo : {currentCard.credits}
                       </div>
                     )}
-                    <p className="mt-2 text-[10px] text-stone-500 italic">
+                    <p className="mt-2 text-[11px] text-stone-600 italic">
                       <AgencyCredit />
                     </p>
                   </div>
@@ -1178,6 +1336,41 @@ export default function Experience7Familles() {
       </main>
 
       {/* 3. MODALE DU MODE ÉDITION DE DÉVELOPPEMENT */}
+      {showHelp && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/40 p-4 print:hidden"
+          onClick={() => setShowHelp(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="help-title"
+            className="w-full max-w-md rounded-2xl bg-white p-5 text-stone-800 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.key === "Escape" && setShowHelp(false)}
+          >
+            <div className="flex items-center justify-between">
+              <h2 id="help-title" className="text-base font-bold text-stone-900">Comment jouer ?</h2>
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setShowHelp(false)}
+                aria-label="Fermer l'aide"
+                className="h-9 w-9 rounded-lg hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <ul className="mt-3 space-y-2 text-sm leading-snug">
+              <li><strong>Souris ou doigt :</strong> faites glisser pour faire défiler les familles, cliquez sur un paquet pour l&apos;ouvrir, puis sur une carte pour la lire.</li>
+              <li><strong>Clavier :</strong> flèches gauche et droite pour naviguer, <kbd className="rounded border border-stone-300 px-1">Entrée</kbd> pour ouvrir, <kbd className="rounded border border-stone-300 px-1">Échap</kbd> pour revenir en arrière.</li>
+              <li><strong>Sur téléphone :</strong> faites glisser la fiche vers le haut pour lire le texte en entier.</li>
+              <li><strong>Mosaïque :</strong> le bouton « Mosaïque » affiche les 42 cartes d&apos;un coup, sans animation.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
       {isEditing && (
         <div
           role="dialog"

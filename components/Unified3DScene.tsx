@@ -550,7 +550,7 @@ function PhysicalCard3D({
         const frontX = 0;
         // Bottom sheet mobile (< 768 px) : la carte est remontée ; sinon elle est centrée dans son volet
         const sheetLayout = isPortrait && window.innerWidth < 768;
-        const frontY = sheetLayout ? 0.65 : 0.15;
+        const frontY = sheetLayout ? 1.1 : 0.15;
         const frontZ = 2.4;
         // Carte ouverte : aussi grande que le volet le permet (environ 2 fois la surface d'avant)
         const frontDist = (sheetLayout ? 7.2 : 6.8) - frontZ;
@@ -898,7 +898,7 @@ function LoadingBar() {
           style={{ width: `${Math.max(6, progress)}%` }}
         />
       </div>
-      <span className="text-[11px] font-medium text-stone-500">Chargement des cartes… {Math.round(progress)} %</span>
+      <span className="text-[11px] font-medium text-stone-600">Chargement des cartes… {Math.round(progress)} %</span>
     </div>
   );
 }
@@ -922,6 +922,11 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
     };
   }, []);
 
+  // Mouvement réduit : la scène ne flotte plus d'elle-même
+  const reduceMotion = useMemo(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    []
+  );
   const maxDpr = useMemo(
     () => (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches ? 1.5 : 2),
     []
@@ -966,7 +971,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
         <directionalLight position={[-5, -2, -3]} intensity={0.5} color="#e2e8f0" />
         <pointLight position={[0, 2, 5]} intensity={0.4} color="#fef3c7" />
 
-        <Float speed={1.1} rotationIntensity={0.06} floatIntensity={0.12}>
+        <Float speed={reduceMotion ? 0 : 1.1} rotationIntensity={reduceMotion ? 0 : 0.06} floatIntensity={reduceMotion ? 0 : 0.12}>
           <group position={[0, 0, 0]}>
             <DeckBlock visible={props.currentStage === "deck" && !props.isDeckSpread} />
             {FAMILIES.map((family, fIdx) => {

@@ -10,10 +10,11 @@ import AgencyCredit from "@/components/AgencyCredit";
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
   onPrintAll: () => void;
+  notice?: string; // ex. : affichage 3D indisponible sur cet appareil
 }
 
 // Vue « mosaïque » : les 42 cartes côte à côte, regroupées par famille, cliquables.
-export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) {
+export default function MosaicView({ onOpenCard, onPrintAll, notice }: MosaicViewProps) {
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
   const families = activeFamilyId ? FAMILIES.filter((f) => f.id === activeFamilyId) : FAMILIES;
 
@@ -23,6 +24,11 @@ export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) 
       role="region"
       aria-label="Mosaïque des 42 cartes"
     >
+      {notice && (
+        <p role="status" className="mx-auto max-w-6xl px-4 md:px-8 pt-3 text-xs font-medium text-stone-700">
+          {notice}
+        </p>
+      )}
       {/* Filtre par famille */}
       <div className="sticky top-0 z-10 px-4 md:px-8 pt-3 pb-2 bg-gradient-to-b from-[#F7F5F0] via-[#F7F5F0]/95 to-transparent">
         <div
@@ -67,7 +73,7 @@ export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) 
               <div className="flex items-baseline gap-3 mb-3">
                 <span className="w-1.5 h-5 rounded-full self-center" style={{ backgroundColor: fam.color }} />
                 <h2 className="text-base md:text-lg font-extrabold tracking-tight text-stone-900">{fam.name}</h2>
-                <p className="hidden md:block text-xs text-stone-500 truncate">{fam.description}</p>
+                <p className="hidden md:block text-xs text-stone-600 truncate">{fam.description}</p>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
@@ -89,7 +95,7 @@ export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) 
                       className="w-full h-auto aspect-[7/10] object-contain drop-shadow-[0_6px_10px_rgba(60,45,20,0.22)] transition duration-300 ease-out group-hover:-translate-y-1.5 group-hover:scale-[1.04] group-hover:drop-shadow-[0_14px_20px_rgba(60,45,20,0.3)] group-active:scale-[0.98]"
                     />
                     <span className="mt-2 block text-center text-xs md:text-[13px] font-semibold leading-tight text-stone-800">
-                      <span className="text-stone-500">{card.num}.</span> {card.title}
+                      <span className="text-stone-600">{card.num}.</span> {card.title}
                     </span>
                   </button>
                 ))}
@@ -99,7 +105,7 @@ export default function MosaicView({ onOpenCard, onPrintAll }: MosaicViewProps) 
         })}
 
         <nav aria-label="Ressources" className="mt-10 text-xs font-semibold text-[#1b5d78]">
-          <p className="mb-2 text-center font-medium text-stone-500">Pour aller plus loin</p>
+          <p className="mb-2 text-center font-medium text-stone-600">Pour aller plus loin</p>
           <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             {RESOURCE_LINKS.map((l) => (
               <li key={l.url}>
