@@ -1,0 +1,170 @@
+{
+  "metiers-proprietaire": {
+    "hash": "2fa1230b2f8c5117",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "metiers-conceptrice": {
+    "hash": "bad3188d4cc430a7",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "metiers-constructeur": {
+    "hash": "a4bb30bca1c9b506",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "metiers-expert-securite": {
+    "hash": "dbef7d17820e3678",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "metiers-hydrologue": {
+    "hash": "40ce72f2b94ffef7",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "metiers-geologue": {
+    "hash": "48c1bf8447f95b74",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "usages-eau-potable": {
+    "hash": "d8f5ec757907a344",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "usages-hydroelectricite": {
+    "hash": "1a0b6bd6465d3178",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "usages-irrigation": {
+    "hash": "3a24d3b4dab89b7f",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "usages-regulation-debit": {
+    "hash": "feb82f0b963d02fb",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "usages-transport": {
+    "hash": "0c314eed35ab8332",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "usages-tourisme": {
+    "hash": "cc31d8eabb15d3cf",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "composants-corps": {
+    "hash": "2faf1026dc8cfe70",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "composants-evacuateur": {
+    "hash": "c74697a5d1051f30",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "composants-fondation": {
+    "hash": "d81f158ee6dddd0e",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "composants-prise-deau": {
+    "hash": "ad99ca694045466f",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "composants-capteurs": {
+    "hash": "ac8c2bf9797ac384",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "composants-riviere": {
+    "hash": "0257f2b0dc1b0b26",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "types-barrage-remblai": {
+    "hash": "a164e3039b58623e",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "types-barrage-poids": {
+    "hash": "abccd8696e3e08a5",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "types-barrage-voute": {
+    "hash": "e2cbd40d575de556",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "types-canaux": {
+    "hash": "97a0fb6234e7c627",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "types-digue-protection": {
+    "hash": "0532a6152fd10eb1",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "types-step": {
+    "hash": "f60c987f0fdba90d",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "monde-itaipu": {
+    "hash": "bef6e8d162536482",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "monde-canal-suez": {
+    "hash": "82bf75dc67fc5587",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "monde-grande-dixence": {
+    "hash": "124228aca7c813a6",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "monde-kariba": {
+    "hash": "5a92c6740f57f76d",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "monde-trois-gorges": {
+    "hash": "06794e2be086e6dc",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "monde-hoover-dam": {
+    "hash": "e2c262bca671aeaa",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "france-serre-poncon": {
+    "hash": "d1816b383a60fb49",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "france-migouelou": {
+    "hash": "419868d36091b9d7",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "france-rance": {
+    "hash": "d08caa34bbfd330d",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "france-canal-alsace": {
+    "hash": "42caf3f4b3d132a3",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "france-levees-loire": {
+    "hash": "cc1c6ca75ff80795",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "france-takamaka": {
+    "hash": "ac21a69ee8689934",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "temps-pont-du-gard": {
+    "hash": "fa0df14efc1e1e22",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "temps-canal-du-midi": {
+    "hash": "76e288138fcc4afd",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "temps-barrage-zola": {
+    "hash": "a4575a26fcf87314",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "temps-barrage-dardennes": {
+    "hash": "1db3750015301899",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "temps-barrage-rizzanese": {
+    "hash": "e99b3cbf8962a350",
+    "voice": "en-US-AvaMultilingualNeural"
+  },
+  "temps-canal-seine-nord": {
+    "hash": "333ef1982624f824",
+    "voice": "en-US-AvaMultilingualNeural"
+  }
+}
