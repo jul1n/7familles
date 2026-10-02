@@ -1,20 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
-import { FAMILIES, CARDS, CardData } from "@/data/cards";
-import { thumb } from "@/lib/asset";
-import { GAME_AUTHORS, GLOBAL_LINKS } from "@/lib/links";
-import { RESOURCE_LINKS } from "@/lib/card-links";
+import type { CardData } from "@/data/cards";
+import { getContent, paths, type Lang } from "@/lib/content";
+import { UI } from "@/lib/ui";
+import { asset, thumb } from "@/lib/asset";
+import { GLOBAL_LINKS, gameAuthors } from "@/lib/links";
+import { RESOURCE_LINKS, RESOURCE_LINKS_EN } from "@/lib/card-links";
 import AgencyCredit from "@/components/AgencyCredit";
 
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
   onPrintAll: () => void;
   notice?: string; // ex. : affichage 3D indisponible sur cet appareil
+  lang?: Lang;
 }
 
 // Vue « mosaïque » : les 42 cartes côte à côte, regroupées par famille, cliquables.
-export default function MosaicView({ onOpenCard, onPrintAll, notice }: MosaicViewProps) {
+export default function MosaicView({ onOpenCard, onPrintAll, notice, lang = "fr" }: MosaicViewProps) {
+  const t = UI[lang];
+  const { FAMILIES, CARDS } = getContent(lang);
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
   const families = activeFamilyId ? FAMILIES.filter((f) => f.id === activeFamilyId) : FAMILIES;
 
@@ -22,7 +27,7 @@ export default function MosaicView({ onOpenCard, onPrintAll, notice }: MosaicVie
     <div
       className="absolute inset-0 overflow-y-auto overscroll-contain"
       role="region"
-      aria-label="Mosaïque des 42 cartes"
+      aria-label={t.mosaicRegion}
     >
       {notice && (
         <p role="status" className="mx-auto max-w-6xl px-4 md:px-8 pt-3 text-xs font-medium text-stone-700">
@@ -33,7 +38,7 @@ export default function MosaicView({ onOpenCard, onPrintAll, notice }: MosaicVie
       <div className="sticky top-0 z-10 px-4 md:px-8 pt-3 pb-2 bg-gradient-to-b from-[#F7F5F0] via-[#F7F5F0]/95 to-transparent">
         <div
           role="group"
-          aria-label="Filtrer par famille"
+          aria-label={t.filterByFamily}
           className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-6xl mx-auto"
         >
           <button
@@ -45,7 +50,7 @@ export default function MosaicView({ onOpenCard, onPrintAll, notice }: MosaicVie
                 : "bg-white/90 text-stone-600 border-stone-200 hover:text-stone-900 hover:bg-white"
             }`}
           >
-            Toutes • 42
+            {t.allCards}
           </button>
           {FAMILIES.map((fam) => (
             <button
@@ -69,7 +74,7 @@ export default function MosaicView({ onOpenCard, onPrintAll, notice }: MosaicVie
         {families.map((fam) => {
           const cards = CARDS.filter((c) => c.familyId === fam.id);
           return (
-            <section key={fam.id} className="mt-5" aria-label={`Famille ${fam.name}`}>
+            <section key={fam.id} className="mt-5" aria-label={t.familyLabel(fam.name)}>
               <div className="flex items-baseline gap-3 mb-3">
                 <span className="w-1.5 h-5 rounded-full self-center" style={{ backgroundColor: fam.color }} />
                 <h2 className="text-base md:text-lg font-extrabold tracking-tight text-stone-900">{fam.name}</h2>
@@ -83,12 +88,12 @@ export default function MosaicView({ onOpenCard, onPrintAll, notice }: MosaicVie
                     onClick={() => onOpenCard(card)}
                     className="mosaic-card group relative block w-full rounded-2xl focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:ring-offset-2 focus-visible:outline-none"
                     style={{ animationDelay: `${Math.min(i * 40, 240)}ms` }}
-                    aria-label={`Ouvrir la carte n°${card.num} : ${card.title}`}
+                    aria-label={t.openCard(card.num, card.title)}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={thumb(card.frontImage)}
-                      alt={`Carte n°${card.num} : ${card.title}`}
+                      alt={t.cardAlt(card.num, card.title)}
                       loading="lazy"
                       decoding="async"
                       draggable={false}
@@ -104,10 +109,15 @@ export default function MosaicView({ onOpenCard, onPrintAll, notice }: MosaicVie
           );
         })}
 
-        <nav aria-label="Ressources" className="mt-10 text-xs font-semibold text-[#1b5d78]">
-          <p className="mb-2 text-center font-medium text-stone-600">Pour aller plus loin</p>
+        <nav aria-label={t.resources} className="mt-10 text-xs font-semibold text-[#1b5d78]">
+          <p className="mb-2 text-center font-medium text-stone-600">{t.furtherReading}</p>
           <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            {RESOURCE_LINKS.map((l) => (
+            <li>
+              <a href={asset(paths.rules(lang))} className="underline underline-offset-2">
+                {t.rules}
+              </a>
+            </li>
+            {(lang === "fr" ? RESOURCE_LINKS : RESOURCE_LINKS_EN).map((l) => (
               <li key={l.url}>
                 <a
                   href={l.url}
@@ -124,15 +134,15 @@ export default function MosaicView({ onOpenCard, onPrintAll, notice }: MosaicVie
           <p className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             {GLOBAL_LINKS.map((l) => (
               <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-                {l.label}
+                {lang === "en" && l.url.includes("barrages-cfbr") ? t.cfbrSite : l.label}
               </a>
             ))}
-            <AgencyCredit className="text-stone-600 font-medium" />
+            <AgencyCredit className="text-stone-600 font-medium" lang={lang} />
             <span className="text-stone-600 font-medium">
-              Auteurs du jeu : {GAME_AUTHORS.map((a) => a.name).join(" • ")}
+              {t.rulesAuthors} : {gameAuthors(lang).map((a) => a.name).join(" • ")}
             </span>
             <button onClick={onPrintAll} className="underline underline-offset-2">
-              Imprimer le dossier complet
+              {t.printAll}
             </button>
           </p>
         </nav>

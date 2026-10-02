@@ -3,18 +3,21 @@
 import React from "react";
 import { ExternalLink } from "lucide-react";
 import { BIMBAMBOUM } from "@/lib/links";
+import { UI } from "@/lib/ui";
+import type { Lang } from "@/lib/content";
 
 interface AgencyCreditProps {
   className?: string;
   placement?: "top" | "bottom";
   align?: "center" | "right";
+  lang?: Lang;
   children?: React.ReactNode; // déclencheur personnalisé (ex. le logo) ; par défaut, le texte du crédit
 }
 
 // Crédit des illustrations et du design des cartes, avec une infobulle (survol ou clavier) qui présente l'agence.
 // L'infobulle touche son déclencheur (le vide est comblé par un remplissage transparent) : on peut y descendre
 // avec la souris et cliquer sur les liens LinkedIn et Instagram sans qu'elle disparaisse.
-export default function AgencyCredit({ className = "", placement = "top", align = "center", children }: AgencyCreditProps) {
+export default function AgencyCredit({ className = "", placement = "top", align = "center", lang = "fr", children }: AgencyCreditProps) {
   const vertical = placement === "top" ? "bottom-full pb-2" : "top-full pt-2";
   const horizontal = align === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
   return (
@@ -30,7 +33,7 @@ export default function AgencyCredit({ className = "", placement = "top", align 
             : "underline decoration-dotted underline-offset-2 hover:decoration-solid focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none rounded"
         }
       >
-        {children ?? `Illustrations et design des cartes : ${BIMBAMBOUM.name}`}
+        {children ?? `${UI[lang].agencyCredit} : ${BIMBAMBOUM.name}`}
       </a>
       <span
         role="tooltip"
@@ -38,7 +41,7 @@ export default function AgencyCredit({ className = "", placement = "top", align 
       >
         <span className="block rounded-xl bg-stone-900 px-3.5 py-3 text-left text-[11px] font-medium leading-snug text-white shadow-xl not-italic">
           <strong className="block text-xs mb-1">{BIMBAMBOUM.name}</strong>
-          {BIMBAMBOUM.description}
+          {lang === "fr" ? BIMBAMBOUM.description : UI.en.agencyDesc}
           <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold">
             <a
               href={BIMBAMBOUM.linkedin}

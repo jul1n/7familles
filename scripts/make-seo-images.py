@@ -25,6 +25,7 @@ def paste_fit(base, img, box):
 
 (ROOT / "public/icons").mkdir(exist_ok=True)
 (ROOT / "public/og").mkdir(exist_ok=True)
+(ROOT / "public/og/en").mkdir(exist_ok=True)
 for size, name in [(192, "icon-192.png"), (512, "icon-512.png"), (180, "apple-touch-icon.png")]:
     bg = Image.new("RGB", (size, size), BG)
     m = int(size * 0.1)
@@ -74,3 +75,26 @@ for m in re.finditer(r'id: "([a-z0-9-]+)",\n    familyId: "[^"]+",\n    familyNa
     og(ROOT / f"public/og/{cid}.jpg", title, f"{fam} · carte n°{num}", color, ROOT / f"public/cards/{cid}.webp")
     n += 1
 print("images :", n, "cartes")
+
+# Version anglaise : titres tirés de data/en
+en = {}
+for f in (ROOT / "data/en").glob("*.ts"):
+    t = f.read_text(encoding="utf-8")
+    for m in re.finditer(r'"([a-z0-9-]+)": \{\s*title: "([^"]+)"', t):
+        en[m.group(1)] = m.group(2)
+fam_en = {
+    "Métiers": "Jobs",
+    "Usages": "Uses",
+    "Composants": "Components",
+    "Types d'ouvrages": "Types of structures",
+    "Dans le monde": "Around the world",
+    "En France": "In France",
+    "Dans le temps": "Through time",
+}
+(ROOT / "public/og/en").mkdir(exist_ok=True)
+og(ROOT / "public/og/en/accueil.jpg", "The 7 Families of Dams", "The 42-card game · 1926–2026", TEAL)
+for m in re.finditer(r'id: "([a-z0-9-]+)",\n    familyId: "[^"]+",\n    familyName: "([^"]+)",\n    familyColor: "(#[0-9A-Fa-f]{6})",\n    familyIcon: "[^"]+",\n    num: (\d+),\n    title: "([^"]+)"', src):
+    cid, fam, col, num, title = m.groups()
+    color = tuple(int(col[i:i + 2], 16) for i in (1, 3, 5))
+    og(ROOT / f"public/og/en/{cid}.jpg", en.get(cid, title), f"{fam_en.get(fam, fam)} · card no. {num}", color, ROOT / f"public/cards/{cid}.webp")
+print("images EN OK")

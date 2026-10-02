@@ -128,3 +128,13 @@ export const RESOURCE_LINKS: ResourceLink[] = [
   { label: "CIGB – Sécurité des barrages", url: "https://www.icold-cigb.org/FR/barrages/securite_des_barrages.asp", description: "Surveillance, ruptures, fondations, surverse, érosion interne." },
   { label: "CFBR – Statistiques nationales", url: "https://www.barrages-cfbr.eu/-Statistiques-nationales-.html", description: "Types, usages, dates et caractéristiques du parc français." },
 ];
+
+// Version anglaise des ressources générales (pages ICOLD en anglais)
+export const RESOURCE_LINKS_EN: ResourceLink[] = [
+  { label: "CFBR – Document library (in French)", url: "https://www.barrages-cfbr.eu/-Base-documentaire-205-.html", description: "More than 4,600 CFBR / ICOLD references, an excellent technical starting point." },
+  { label: "ICOLD – Technical dictionary of dams", url: "https://www.icold-cigb.org/GB/publications/e-dictionnaire.asp", description: "Translations of components, structures and jobs." },
+  { label: "ICOLD – World Register of Dams", url: "https://www.icold-cigb.org/GB/world_register/general_synthesis.asp", description: "International reference for the characteristics of dams." },
+  { label: "ICOLD – Dam technology", url: "https://www.icold-cigb.org/GB/dams/dam_technology.asp", description: "Types of dams and how they work." },
+  { label: "ICOLD – Dam safety", url: "https://www.icold-cigb.org/GB/dams/dam_safety.asp", description: "Monitoring, failures, foundations, overtopping, internal erosion." },
+  { label: "CFBR – National statistics (in French)", url: "https://www.barrages-cfbr.eu/-Statistiques-nationales-.html", description: "Types, uses, dates and characteristics of the French dam stock." },
+];

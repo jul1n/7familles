@@ -2,13 +2,15 @@ import React, { useRef, useMemo, useState, Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useTexture, ContactShadows, Text, Float, useProgress } from "@react-three/drei";
 import * as THREE from "three";
-import { FAMILIES, CARDS, CardData } from "@/data/cards";
+import type { CardData } from "@/data/cards";
+import { getContent, type Lang } from "@/lib/content";
 import { asset, thumb } from "@/lib/asset";
 
 // Police locale pour les étiquettes 3D (évite la police récupérée sur un CDN par défaut)
 const FONT_URL = asset("/fonts/Geist-Regular.ttf");
 
 interface Unified3DSceneProps {
+  lang?: Lang;
   currentStage: "deck" | "family" | "card";
   selectedFamilyId: string | null;
   selectedCardId: string | null;
@@ -752,7 +754,8 @@ function PhysicalCard3D({
         }
       }
     } else if (currentStage === "card") {
-      if (!isTargetSelectedCard && isCardInSelectedFamily) {
+      // Carte voisine : on l'ouvre. Carte déjà ouverte : le parent s'en sert pour déployer la fiche (mobile).
+      if (isTargetSelectedCard || isCardInSelectedFamily) {
         onSelectCard(card.id);
       }
     }
@@ -872,7 +875,7 @@ function PhysicalCard3D({
 }
 
 // Barre de progression du chargement initial (affichée une seule fois)
-function LoadingBar() {
+function LoadingBar({ lang }: { lang: Lang }) {
   const { progress } = useProgress();
   const [done, setDone] = useState(false);
   React.useEffect(() => {
@@ -884,7 +887,7 @@ function LoadingBar() {
   return (
     <div
       role="progressbar"
-      aria-label="Chargement des cartes"
+      aria-label={lang === "fr" ? "Chargement des cartes" : "Loading the cards"}
       aria-valuenow={Math.round(progress)}
       aria-valuemin={0}
       aria-valuemax={100}
@@ -898,7 +901,7 @@ function LoadingBar() {
           style={{ width: `${Math.max(6, progress)}%` }}
         />
       </div>
-      <span className="text-[11px] font-medium text-stone-600">Chargement des cartes… {Math.round(progress)} %</span>
+      <span className="text-[11px] font-medium text-stone-600">{lang === "fr" ? "Chargement des cartes…" : "Loading the cards…"} {Math.round(progress)} %</span>
     </div>
   );
 }
@@ -952,12 +955,14 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
     []
   );
   const props = { ...rawProps, setHoveredCardId };
+  const lang: Lang = rawProps.lang ?? "fr";
+  const { FAMILIES, CARDS } = useMemo(() => getContent(lang), [lang]);
 
   return (
     <div
       className="w-full h-full relative cursor-grab active:cursor-grabbing select-none touch-pan-y"
       role="region"
-      aria-label="Scène 3D interactive des cartes et des familles de barrages"
+      aria-label={lang === "fr" ? "Scène 3D interactive des cartes et des familles de barrages" : "Interactive 3D scene of the dam cards and families"}
     >
       <Canvas
         camera={{ position: [0, 0.15, 6.8], fov: 42 }}
@@ -1024,7 +1029,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
           far={4}
         />
       </Canvas>
-      <LoadingBar />
+      <LoadingBar lang={lang} />
     </div>
   );
 }

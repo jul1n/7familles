@@ -25,6 +25,8 @@ const ORDINALS: Record<string, string> = {
 export function markdownToSpeech(title: string, intro: string, md: string): string {
   const body = md
     .replace(/^#\s.*$/m, "") // le titre est lu à part
+    // Titres d'ouverture non lus (« En bref », « Comment ça marche ? ») : la lecture est plus fluide
+    .replace(/^#{2,6}\s*(?:En bref|En un coup d['’]œil|Comment ça marche\s*\?)\s*$/gm, "")
     .replace(/^#{2,6}\s*(.*)$/gm, "$1.")
     .replace(/^>\s?/gm, "")
     .replace(/^\s*[-*]\s+/gm, "")
@@ -62,6 +64,35 @@ export function markdownToSpeech(title: string, intro: string, md: string): stri
     .replace(/\n{2,}/g, "\n");
 }
 
+// Version anglaise : le texte à lire d'une fiche (Markdown nettoyé, unités épelées)
+export function markdownToSpeechEn(title: string, intro: string, md: string): string {
+  const body = md
+    .replace(/^#\s.*$/m, "")
+    .replace(/^#{2,6}\s*(?:In brief|How does it work\s*\?)\s*$/gm, "")
+    .replace(/^#{2,6}\s*(.*)$/gm, "$1.")
+    .replace(/^>\s?/gm, "")
+    .replace(/^\s*[-*]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/[*_`]/g, "");
+  return `${title}. ${intro}\n${body}`
+    .replace(/(\d)\s?km²/g, "$1 square kilometers")
+    .replace(/(\d)\s?km\/h/g, "$1 kilometers per hour")
+    .replace(/(\d)\s?m³\/s/g, "$1 cubic meters per second")
+    .replace(/(\d)\s?m³/g, "$1 cubic meters")
+    .replace(/(\d)\s?km\b/g, "$1 kilometers")
+    .replace(/(\d)\s?kWh/g, "$1 kilowatt-hours")
+    .replace(/(\d)\s?TWh/g, "$1 terawatt-hours")
+    .replace(/(\d)\s?GW\b/g, "$1 gigawatts")
+    .replace(/(\d)\s?MW\b/g, "$1 megawatts")
+    .replace(/(\d)\s?kW\b/g, "$1 kilowatts")
+    .replace(/(\d)\s?mm\b/g, "$1 millimeters")
+    .replace(/(\d)\s?cm\b/g, "$1 centimeters")
+    .replace(/(\d)\s?m\b/g, "$1 meters")
+    .replace(/CO₂/g, "C O 2")
+    .replace(/\bm\/s\b/g, "meters per second")
+    .replace(/\n{2,}/g, "\n");
+}
+
 // Meilleure voix française disponible : les voix « naturelles » / « multilingues » d'Edge d'abord,
 // puis les voix Google (Chrome), puis les voix d'Apple, puis n'importe quelle voix française.
 function scoreVoice(v: SpeechSynthesisVoice): number {
@@ -77,12 +108,16 @@ function scoreVoice(v: SpeechSynthesisVoice): number {
   return score;
 }
 
-export function bestFrenchVoice(): SpeechSynthesisVoice | undefined {
+export function bestVoice(lang: "fr" | "en" = "fr"): SpeechSynthesisVoice | undefined {
   if (!speechSupported()) return undefined;
   return window.speechSynthesis
     .getVoices()
-    .filter((v) => v.lang.toLowerCase().startsWith("fr"))
+    .filter((v) => v.lang.toLowerCase().startsWith(lang))
     .sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
+}
+
+export function bestFrenchVoice(): SpeechSynthesisVoice | undefined {
+  return bestVoice("fr");
 }
 
 let utterances: SpeechSynthesisUtterance[] = [];
@@ -116,20 +151,20 @@ export function playAudio(url: string, onEnd: () => void, onFail: () => void) {
 }
 
 // Lit le texte phrase par phrase (évite l'arrêt des longs textes sur certains navigateurs)
-export function speak(text: string, onEnd: () => void) {
+export function speak(text: string, onEnd: () => void, lang: "fr" | "en" = "fr") {
   if (!speechSupported()) return onEnd();
   stopSpeaking();
   const synth = window.speechSynthesis;
 
   const start = () => {
-    const voice = bestFrenchVoice();
+    const voice = bestVoice(lang);
     const chunks = text
       .split(/\n|(?<=[.!?:;])\s+/)
       .map((t) => t.trim())
       .filter(Boolean);
     utterances = chunks.map((chunk, i) => {
       const u = new SpeechSynthesisUtterance(chunk);
-      u.lang = voice?.lang ?? "fr-FR";
+      u.lang = voice?.lang ?? (lang === "fr" ? "fr-FR" : "en-US");
       if (voice) u.voice = voice;
       if (i === chunks.length - 1) {
         u.onend = onEnd;
