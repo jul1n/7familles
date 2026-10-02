@@ -49,10 +49,11 @@ PRONUNCIATION = [
     (r"\bVogelgrun\b", "Vogelgrune"),
     # Pas de groupe de deux mots étrangers isolé (la voix multilingue hésite sur la langue) :
     # « Hoover Dam » est lu comme une expression française, « barrage Hoover ».
+    # Le titre « Hoover Dam » seul est remplacé par une phrase d'introduction complète.
+    (r"\A\s*Hoover Dam\.", "La carte porte sur le barrage Hoover."),
     (r"\bHoover Dam\b", "barrage Hoover"),
     (r"\bExplore2\b", "Explore deux"),
     (r"\bIguaçu\b", "Igoua-ssou"),
-    (r"\bHoover\b", "Houvère"),
     (r"\bMead\b", "Mide"),
     (r"\bEver Given\b", "Évère Guivène"),
     (r"\bItaipu\b", "Itaï-pou"),
