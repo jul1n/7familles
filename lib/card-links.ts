@@ -138,12 +138,3 @@ export const RESOURCE_LINKS_EN: ResourceLink[] = [
   { label: "ICOLD – Dam safety", url: "https://www.icold-cigb.org/GB/dams/dam_safety.asp", description: "Monitoring, failures, foundations, overtopping, internal erosion." },
   { label: "CFBR – National statistics (in French)", url: "https://www.barrages-cfbr.eu/-Statistiques-nationales-.html", description: "Types, uses, dates and characteristics of the French dam stock." },
 ];
-
-// Pied de page : seulement les ressources générales (les autres, très spécifiques, restent dans le dossier imprimable)
-const FOOTER_RESOURCE_URLS = [
-  "https://www.barrages-cfbr.eu/-Base-documentaire-205-.html",
-  "https://www.icold-cigb.org/FR/publications/e-dictionnaire.asp",
-  "https://www.icold-cigb.org/GB/publications/e-dictionnaire.asp",
-];
-export const footerResources = (lang: "fr" | "en"): ResourceLink[] =>
-  (lang === "fr" ? RESOURCE_LINKS : RESOURCE_LINKS_EN).filter((l) => FOOTER_RESOURCE_URLS.includes(l.url));

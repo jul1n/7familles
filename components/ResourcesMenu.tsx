@@ -5,8 +5,7 @@ import { BookOpen, X } from "lucide-react";
 import { paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { asset } from "@/lib/asset";
-import { CFBR_URL, gameAuthors } from "@/lib/links";
-import { footerResources } from "@/lib/card-links";
+import { gameAuthors } from "@/lib/links";
 
 // Variante « menu flottant » du pied de page : un seul bouton, et les liens se déploient vers le haut en cascade.
 // L'ancienne bande de liens reste disponible dans ResourcesNav (voir FOOTER_STYLE dans Experience7Familles).
@@ -30,9 +29,7 @@ export default function ResourcesMenu({ lang }: { lang: Lang }) {
     };
   }, [open]);
 
-  const resources = footerResources(lang);
   const link = "block rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#1b5d78] hover:bg-[#1b5d78]/10 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none";
-  const heading = "px-2.5 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-stone-500";
   // Chaque ligne apparaît avec un léger décalage : effet de cascade à l'ouverture
   const step = (i: number): React.CSSProperties => ({ transitionDelay: open ? `${60 + i * 28}ms` : "0ms" });
   const row = `transition duration-300 ease-out ${open ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"}`;
@@ -55,25 +52,8 @@ export default function ResourcesMenu({ lang }: { lang: Lang }) {
           </a>
         </div>
 
-        <p className={`${heading} ${row}`} style={step(i++)}>{t.furtherReading}</p>
-        {resources.map((l) => (
-          <div key={l.url} className={row} style={step(i++)}>
-            <a href={l.url} target="_blank" rel="noopener noreferrer" title={l.description} className={link}>
-              {l.label}
-            </a>
-          </div>
-        ))}
-
-        <p className={`${heading} ${row}`} style={step(i++)}>CFBR</p>
-        <div className={row} style={step(i++)}>
-          <a href={CFBR_URL} target="_blank" rel="noopener noreferrer" className={link}>
-            {t.cfbrSite}
-          </a>
-        </div>
-
-        <p className={`${heading} ${row}`} style={step(i++)}>{t.rulesAuthors}</p>
-        <div className={`px-2.5 pb-1 text-xs text-stone-600 ${row}`} style={step(i++)}>
-          {gameAuthors(lang).map((a) => a.name).join(" • ")}
+        <div className={`hidden px-2.5 pb-1 pt-1 text-[11px] text-stone-600 sm:block ${row}`} style={step(i++)}>
+          {gameAuthors(lang).map((a) => a.name).join(" · ")}
         </div>
 
       </div>
