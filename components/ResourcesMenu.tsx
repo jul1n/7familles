@@ -5,7 +5,7 @@ import { BookOpen, Printer, X } from "lucide-react";
 import { paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { asset } from "@/lib/asset";
-import { ARCHITECTES_URL, GLOBAL_LINKS, gameAuthors } from "@/lib/links";
+import { GLOBAL_LINKS, gameAuthors } from "@/lib/links";
 import { RESOURCE_LINKS, RESOURCE_LINKS_EN } from "@/lib/card-links";
 import AgencyCredit from "@/components/AgencyCredit";
 
@@ -73,11 +73,6 @@ export default function ResourcesMenu({ lang, onPrintAll }: { lang: Lang; onPrin
             </a>
           </div>
         ))}
-        <div className={row} style={step(i++)}>
-          <a href={ARCHITECTES_URL} target="_blank" rel="noopener noreferrer" className={link}>
-            Les Architectes de l’Eau
-          </a>
-        </div>
 
         <p className={`${heading} ${row}`} style={step(i++)}>{t.rulesAuthors}</p>
         <div className={`px-2.5 pb-1 text-xs text-stone-600 ${row}`} style={step(i++)}>

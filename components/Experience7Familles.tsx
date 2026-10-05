@@ -1134,7 +1134,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
             {/* Barre inférieure : sélecteur rapide des 7 familles & bouton éventail */}
             <div className="flex flex-col items-center gap-2 pb-1 pointer-events-auto">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-3 max-w-full">
               {/* Pastilles directes des 7 familles */}
               <div
                 role="group"
@@ -1167,6 +1167,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 })}
               </div>
 
+              <div className="flex items-center gap-3">
               {/* Bouton éventail / paquet */}
               <button
                 onClick={() => setIsDeckSpread(!isDeckSpread)}
@@ -1180,6 +1181,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               {FOOTER_STYLE === "menu" && (
                 <ResourcesMenu lang={lang} onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })} />
               )}
+              </div>
             </div>
               {FOOTER_STYLE === "bar" && (
               <ResourcesNav
