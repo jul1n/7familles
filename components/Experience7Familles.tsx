@@ -9,6 +9,7 @@ import { UI, type UiText } from "@/lib/ui";
 import MosaicView from "@/components/MosaicView";
 import GameIntro from "@/components/GameIntro";
 import ResourcesNav from "@/components/ResourcesNav";
+import ResourcesMenu from "@/components/ResourcesMenu";
 import PrintSheets from "@/components/PrintSheets";
 import AgencyCredit from "@/components/AgencyCredit";
 import { markdownToSpeech, markdownToSpeechEn, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
@@ -37,6 +38,9 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+
+// Pied de page du carrousel : « menu » = bouton flottant qui déploie les liens ; « bar » = ancienne bande de liens (gardée pour comparer)
+const FOOTER_STYLE: "menu" | "bar" = "menu";
 
 // Import de la scène 3D unifiée continue
 const Unified3DScene = dynamic(() => import("@/components/Unified3DScene"), {
@@ -1172,14 +1176,19 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 <Compass className="w-4 h-4 text-cyan-600" />
                 <span>{isDeckSpread ? t.spreadOn : t.spreadOff}</span>
               </button>
+
+              {FOOTER_STYLE === "menu" && (
+                <ResourcesMenu lang={lang} onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })} />
+              )}
             </div>
-              {/* Mêmes liens qu'en bas de la mosaïque : règles, ressources, CFBR, crédits */}
+              {FOOTER_STYLE === "bar" && (
               <ResourcesNav
                 lang={lang}
                 compact
                 onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })}
                 className="max-w-5xl rounded-xl bg-white/80 px-3 py-1.5 backdrop-blur-md [@media(max-height:620px)]:hidden"
               />
+              )}
             </div>
           </div>
         )}
