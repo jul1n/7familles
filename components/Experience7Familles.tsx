@@ -7,6 +7,8 @@ import type { CardData } from "@/data/cards";
 import { getContent, paths, type Lang } from "@/lib/content";
 import { UI, type UiText } from "@/lib/ui";
 import MosaicView from "@/components/MosaicView";
+import GameIntro from "@/components/GameIntro";
+import ResourcesNav from "@/components/ResourcesNav";
 import PrintSheets from "@/components/PrintSheets";
 import AgencyCredit from "@/components/AgencyCredit";
 import { markdownToSpeech, markdownToSpeechEn, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
@@ -1127,7 +1129,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             </div>
 
             {/* Barre inférieure : sélecteur rapide des 7 familles & bouton éventail */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pb-2 pointer-events-auto">
+            <div className="flex flex-col items-center gap-2 pb-1 pointer-events-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               {/* Pastilles directes des 7 familles */}
               <div
                 role="group"
@@ -1169,6 +1172,14 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 <Compass className="w-4 h-4 text-cyan-600" />
                 <span>{isDeckSpread ? t.spreadOn : t.spreadOff}</span>
               </button>
+            </div>
+              {/* Mêmes liens qu'en bas de la mosaïque : règles, ressources, CFBR, crédits */}
+              <ResourcesNav
+                lang={lang}
+                compact
+                onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })}
+                className="max-w-5xl rounded-xl bg-white/80 px-3 py-1.5 backdrop-blur-md [@media(max-height:620px)]:hidden"
+              />
             </div>
           </div>
         )}
@@ -1465,6 +1476,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 <X className="w-4 h-4" />
               </button>
             </div>
+            <GameIntro lang={lang} className="mt-3 text-sm leading-snug text-stone-800" />
             <ul className="mt-3 space-y-2 text-sm leading-snug">
               {t.helpItems.map((it) => (
                 <li key={it.k}>

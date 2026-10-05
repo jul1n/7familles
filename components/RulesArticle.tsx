@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getContent, paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { asset } from "@/lib/asset";
+import GameIntro from "@/components/GameIntro";
 import { BIMBAMBOUM, CFBR_CONTACT_URL, CFBR_URL, gameAuthors, getCopyText } from "@/lib/links";
 import {
   CFBR_HISTORY,
@@ -51,7 +52,8 @@ export default function RulesArticle({ lang = "fr" }: { lang?: Lang }) {
       <main className="mx-auto max-w-3xl px-4 pb-16">
         <article>
           <h1 className="text-3xl font-extrabold tracking-tight">{t.rulesTitle}</h1>
-          <p className="mt-2 text-base text-stone-800">{t.rulesIntro}</p>
+          <GameIntro lang={lang} className="mt-3 rounded-xl border border-[#1b5d78]/20 bg-[#1b5d78]/5 px-4 py-3 text-base text-stone-800" />
+          <p className="mt-3 text-base text-stone-800">{t.rulesIntro}</p>
           {t.rulesImagesNote && <p className="mt-2 text-sm text-stone-700">{t.rulesImagesNote}</p>}
 
           <ul className="mt-4 flex flex-wrap gap-2" aria-label={t.rulesTitle}>

@@ -12,6 +12,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Grand écran : toute l'interface (boutons, textes, barres) est en rem et grandit avec la fenêtre ;
+   les breakpoints Tailwind (media queries en rem) restent calés sur la taille par défaut du navigateur. */
+html {
+  font-size: clamp(16px, 1.04vw, 28px);
+}
+
 body {
   background: #F7F5F0;
   color: #1c1917;
@@ -69,6 +75,7 @@ body {
 
 /* Impression des fiches : une page A4 par carte, sans l'interface */
 @media print {
+  html { font-size: 16px; }
   html, body { background: #fff !important; height: auto !important; overflow: visible !important; }
   .print-sheet { break-after: page; page-break-after: always; display: flex; flex-direction: column; }
   .print-sheet:not(.print-bare) { min-height: 270mm; }

@@ -6,6 +6,9 @@ interface UiText {
   siteName: string;
   siteNameShort: string;
   siteDescription: string;
+  seoKeywords: string[];
+  // Présentation courte du jeu par analogie avec un jeu connu (version anglaise : « Happy Families »)
+  gameIntro: { text: string; linkLabel: string; url: string } | null;
   subtitle: string;
   home: string;
   logoLabel: string;
@@ -132,6 +135,16 @@ const fr: UiText = {
   siteNameShort: "7 Familles",
   siteDescription:
     "Jeu des 7 familles des barrages du Comité Français des Barrages et Réservoirs (1926–2026) : explorez 42 cartes illustrées et leurs fiches pédagogiques.",
+  seoKeywords: [
+    "jeu des 7 familles",
+    "jeu de familles",
+    "barrages",
+    "CFBR",
+    "jeu de cartes pédagogique",
+    "hydraulique",
+    "ouvrages hydrauliques",
+  ],
+  gameIntro: null,
   subtitle: "Comité Français des Barrages et Réservoirs",
   home: "Retour à l'accueil du jeu des 7 familles (logo CFBR)",
   logoLabel: "Logo officiel CFBR",
@@ -264,7 +277,26 @@ const en: UiText = {
   siteName: "The 7 Families of Dams",
   siteNameShort: "7 Families",
   siteDescription:
-    "The dam family card game by the French Committee on Large Dams (CFBR, 1926–2026): explore 42 illustrated cards and their educational fact sheets. English edition of the website.",
+    "A dam card game in the spirit of Happy Families (Quartett), by the French Committee on Large Dams (CFBR, 1926–2026): collect 7 families of 6 cards and explore 42 illustrated cards with their educational fact sheets. English edition of the website.",
+  seoKeywords: [
+    "Happy Families",
+    "Happy Families card game",
+    "Quartett",
+    "Quartets",
+    "Go Fish",
+    "family card game",
+    "dams",
+    "dam card game",
+    "educational card game",
+    "CFBR",
+    "ICOLD",
+    "hydraulic structures",
+  ],
+  gameIntro: {
+    text: "The 7 Families of Dams is a card game in the spirit of “Happy Families” (known as “Quartett” in German): you ask the other players for cards to complete whole families. It is similar, but a little different: each family has 6 cards instead of 4, there is a draw pile as in “Go Fish”, and every card teaches you something about dams.",
+    linkLabel: "About Happy Families (Wikipedia)",
+    url: "https://en.wikipedia.org/wiki/Happy_families",
+  },
   subtitle: "French Committee on Large Dams (CFBR)",
   home: "Back to the home screen of the 7 Families game (CFBR logo)",
   logoLabel: "Official CFBR logo",
@@ -353,7 +385,7 @@ const en: UiText = {
     "Design studio founded by Marine Monseux and Coline Mestas, graphic designers and educators trained at the Haute école des arts du Rhin (Strasbourg). It shares knowledge through graphic design, illustration and serious games, mixing science communication, teaching, play and mediation, with curiosity, commitment and a touch of humor. Based between Strasbourg, Paris, Marseille and Nancy.",
   rulesTitle: "Rules of the game",
   rulesIntro:
-    "The 7 Families of Dams is played like the family card game you know: you collect cards to form complete families, and you learn about dams along the way. The printed game is currently available in French only; this page is a translation of its rules.",
+    "You collect cards to form complete families, and you learn about dams along the way. The printed game is currently available in French only; this page is a translation of its rules.",
   rulesMaterial: "Contents",
   rulesGoal: "Goal of the game",
   rulesFlow: "How to play",

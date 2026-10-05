@@ -5,9 +5,7 @@ import type { CardData } from "@/data/cards";
 import { getContent, paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { asset, thumb } from "@/lib/asset";
-import { GLOBAL_LINKS, gameAuthors } from "@/lib/links";
-import { RESOURCE_LINKS, RESOURCE_LINKS_EN } from "@/lib/card-links";
-import AgencyCredit from "@/components/AgencyCredit";
+import ResourcesNav from "@/components/ResourcesNav";
 
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
@@ -109,43 +107,7 @@ export default function MosaicView({ onOpenCard, onPrintAll, notice, lang = "fr"
           );
         })}
 
-        <nav aria-label={t.resources} className="mt-10 text-xs font-semibold text-[#1b5d78]">
-          <p className="mb-2 text-center font-medium text-stone-600">{t.furtherReading}</p>
-          <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <li>
-              <a href={asset(paths.rules(lang))} className="underline underline-offset-2">
-                {t.rules}
-              </a>
-            </li>
-            {(lang === "fr" ? RESOURCE_LINKS : RESOURCE_LINKS_EN).map((l) => (
-              <li key={l.url}>
-                <a
-                  href={l.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={l.description}
-                  className="underline underline-offset-2"
-                >
-                  {l.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            {GLOBAL_LINKS.map((l) => (
-              <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-                {lang === "en" && l.url.includes("barrages-cfbr") ? t.cfbrSite : l.label}
-              </a>
-            ))}
-            <AgencyCredit className="text-stone-600 font-medium" lang={lang} />
-            <span className="text-stone-600 font-medium">
-              {t.rulesAuthors} : {gameAuthors(lang).map((a) => a.name).join(" • ")}
-            </span>
-            <button onClick={onPrintAll} className="underline underline-offset-2">
-              {t.printAll}
-            </button>
-          </p>
-        </nav>
+        <ResourcesNav lang={lang} onPrintAll={onPrintAll} className="mt-10" />
       </div>
     </div>
   );

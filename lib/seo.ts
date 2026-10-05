@@ -17,11 +17,12 @@ function alternates(frPath: string, enPath: string, current: Lang): Metadata["al
 
 export function rootMetadata(lang: Lang): Metadata {
   const t = UI[lang];
-  const title = lang === "fr" ? "7 Familles des Barrages – CFBR" : "The 7 Families of Dams – CFBR";
+  const title = lang === "fr" ? "7 Familles des Barrages – CFBR" : "The 7 Families of Dams – a Happy Families card game – CFBR";
   return {
     metadataBase: new URL(SITE_URL + "/"),
     title: { default: title, template: `%s – ${t.siteName}` },
     description: t.siteDescription,
+    keywords: t.seoKeywords,
     applicationName: t.siteName,
     alternates: alternates("/", "/en/", lang),
     icons: {
@@ -93,7 +94,7 @@ export function rulesMetadata(lang: Lang): Metadata {
   const description =
     lang === "fr"
       ? "Règles du jeu des 7 familles des barrages : matériel, but du jeu, déroulement d’une partie, fin de partie, liste des 42 cartes, présentation du CFBR et des auteurs."
-      : "Rules of the 7 Families of Dams card game: contents, goal, how to play, end of the game, the list of the 42 cards, and the CFBR and authors of the game.";
+      : "Rules of the 7 Families of Dams, a card game similar to Happy Families (Quartett): contents, goal, how to play, end of the game, the list of the 42 cards, and the CFBR and authors of the game.";
   return {
     title: t.rulesTitle,
     description,

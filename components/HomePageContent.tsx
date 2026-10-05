@@ -24,6 +24,7 @@ export default function HomePageContent({ lang }: { lang: Lang }) {
     name: lang === "fr" ? SITE_NAME : t.siteName,
     url: absoluteUrl(paths.home(lang)),
     description: t.siteDescription,
+    keywords: t.seoKeywords.join(", "),
     inLanguage: lang,
     publisher: {
       "@type": "Organization",
