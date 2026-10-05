@@ -2,6 +2,7 @@ import React from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,7 +19,9 @@ const geistMono = Geist_Mono({
 export default function RootShell({ lang, children }: { lang: Lang; children: React.ReactNode }) {
   return (
     <html lang={UI[lang].htmlLang} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">{children}
+        <ServiceWorkerRegister />
+      </body>
     </html>
   );
 }

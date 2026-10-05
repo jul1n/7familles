@@ -8,6 +8,7 @@ export const metadata: Metadata = rootMetadata("fr");
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover", // plein écran sous l'encoche : les marges sont gérées par env(safe-area-inset-*)
   themeColor: "#F7F5F0",
 };
 

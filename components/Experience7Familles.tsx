@@ -8,8 +8,6 @@ import { getContent, paths, type Lang } from "@/lib/content";
 import { UI, type UiText } from "@/lib/ui";
 import MosaicView from "@/components/MosaicView";
 import GameIntro from "@/components/GameIntro";
-import ResourcesNav from "@/components/ResourcesNav";
-import ResourcesMenu from "@/components/ResourcesMenu";
 import PrintSheets from "@/components/PrintSheets";
 import AgencyCredit from "@/components/AgencyCredit";
 import { markdownToSpeech, markdownToSpeechEn, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
@@ -35,12 +33,11 @@ import {
   Box,
   LayoutGrid,
   CircleHelp,
+  BookOpen,
   ShoppingBag,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
-// Pied de page du carrousel : « menu » = bouton flottant qui déploie les liens ; « bar » = ancienne bande de liens (gardée pour comparer)
-const FOOTER_STYLE: "menu" | "bar" = "menu";
 
 // Import de la scène 3D unifiée continue
 const Unified3DScene = dynamic(() => import("@/components/Unified3DScene"), {
@@ -237,6 +234,26 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   const [reducedMotion, setReducedMotion] = useState<boolean>(false);
   const [webglOk, setWebglOk] = useState<boolean>(true);
   const [showHelp, setShowHelp] = useState<boolean>(false);
+  // Installation de l'application : Chrome/Android/ordinateur proposent un bouton, Safari (iOS) demande un geste manuel
+  const [installEvent, setInstallEvent] = useState<{ prompt: () => Promise<void> } | null>(null);
+  const [iosInstall, setIosInstall] = useState<boolean>(false);
+  useEffect(() => {
+    const onPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallEvent(e as unknown as { prompt: () => Promise<void> });
+    };
+    const onInstalled = () => setInstallEvent(null);
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    const ua = navigator.userAgent;
+    const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
+    setIosInstall(ios && !standalone);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
   // Vue par défaut : mosaïque sur téléphone, carrousel 3D ailleurs (on peut toujours basculer)
   const [phone, setPhone] = useState<boolean>(false);
   const [modeResolved, setModeResolved] = useState<boolean>(false);
@@ -864,7 +881,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
   return (
     <>
-    <div className="relative w-full h-dvh overflow-hidden print:hidden bg-[radial-gradient(ellipse_at_50%_38%,#FFFEFB_0%,#F7F5F0_52%,#EAE4D6_100%)] text-stone-900 flex flex-col font-sans select-none">
+    <div className="relative w-full h-dvh overflow-hidden pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] print:hidden bg-[radial-gradient(ellipse_at_50%_38%,#FFFEFB_0%,#F7F5F0_52%,#EAE4D6_100%)] text-stone-900 flex flex-col font-sans select-none">
       {/* Liens d'évitement : visibles uniquement quand ils reçoivent le focus clavier */}
       <nav
         aria-label={t.skipNav}
@@ -1022,7 +1039,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             onClick={() => setShowHelp(true)}
             aria-label={t.help}
             title={t.help}
-            className="hidden sm:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
           >
             <CircleHelp className="w-4 h-4" />
           </button>
@@ -1182,18 +1199,16 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 <span>{isDeckSpread ? t.spreadOn : t.spreadOff}</span>
               </button>
 
-              {FOOTER_STYLE === "menu" && (
-                <ResourcesMenu lang={lang} />
-              )}
+              {/* Règles du jeu : le seul lien utile ici, les autres sont dans la barre du haut */}
+              <a
+                href={asset(paths.rules(lang))}
+                className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-white/95 text-stone-800 border border-stone-300 hover:bg-stone-50 transition flex items-center gap-2 shadow-lg backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+              >
+                <BookOpen className="w-4 h-4 text-[#1b5d78]" />
+                <span>{t.rules}</span>
+              </a>
               </div>
             </div>
-              {FOOTER_STYLE === "bar" && (
-              <ResourcesNav
-                lang={lang}
-                compact
-                className="max-w-5xl rounded-xl bg-white/80 px-3 py-1.5 backdrop-blur-md [@media(max-height:620px)]:hidden"
-              />
-              )}
             </div>
           </div>
         )}
@@ -1509,6 +1524,21 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 </a>
               </li>
               <li>{t.helpMosaic}</li>
+              {installEvent && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      installEvent.prompt();
+                      setInstallEvent(null);
+                    }}
+                    className="min-h-[40px] rounded-xl bg-[#1b5d78] px-4 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                  >
+                    {t.installApp}
+                  </button>
+                </li>
+              )}
+              {!installEvent && iosInstall && <li>{t.installIos}</li>}
             </ul>
           </div>
         </div>

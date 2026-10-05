@@ -68,6 +68,8 @@ interface UiText {
   helpRules: string;
   helpRulesLink: string;
   helpMosaic: string;
+  installApp: string;
+  installIos: string;
   liveCard: (num: number, title: string, fam: string) => string;
   liveFamily: (n: string) => string;
   liveDeck: string;
@@ -208,6 +210,8 @@ const fr: UiText = {
   ],
   helpRules: "Règles :",
   helpRulesLink: "lire les règles du jeu et le détail des 42 cartes",
+  installApp: "Installer l’application sur cet appareil",
+  installIos: "Installer : dans Safari, touchez Partager puis « Sur l’écran d’accueil ».",
   helpMosaic: "Mosaïque : le bouton « Mosaïque » affiche les 42 cartes d'un coup, sans animation.",
   liveCard: (num, title, fam) =>
     `Carte ${num} sur 6 sélectionnée : ${title}, famille ${fam}. Flèches gauche et droite pour changer de carte.`,
@@ -360,6 +364,8 @@ const en: UiText = {
   ],
   helpRules: "Rules:",
   helpRulesLink: "read the rules of the game and the details of the 42 cards",
+  installApp: "Install the app on this device",
+  installIos: "To install: in Safari, tap Share, then “Add to Home Screen”.",
   helpMosaic: "Mosaic: the “Mosaic” button shows all 42 cards at once, with no animation.",
   liveCard: (num, title, fam) =>
     `Card ${num} of 6 selected: ${title}, ${fam} family. Left and right arrows to change card.`,

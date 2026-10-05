@@ -24,6 +24,8 @@ export function rootMetadata(lang: Lang): Metadata {
     description: t.siteDescription,
     keywords: t.seoKeywords,
     applicationName: t.siteName,
+    manifest: asset(lang === "fr" ? "/manifest.webmanifest" : "/en/manifest.webmanifest"),
+    appleWebApp: { capable: true, title: t.siteNameShort, statusBarStyle: "default" },
     alternates: alternates("/", "/en/", lang),
     icons: {
       icon: [

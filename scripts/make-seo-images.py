@@ -32,6 +32,11 @@ for size, name in [(192, "icon-192.png"), (512, "icon-512.png"), (180, "apple-to
     paste_fit(bg, logo, (m, m, size - m, size - m))
     bg.save(ROOT / "public/icons" / name, optimize=True)
 
+# Icône « maskable » (Android découpe l'icône en cercle ou squircle) : logo dans la zone sûre centrale (≈ 60 %)
+mask = Image.new("RGB", (512, 512), BG)
+paste_fit(mask, logo, (102, 102, 410, 410))
+mask.save(ROOT / "public/icons/icon-maskable-512.png", optimize=True)
+
 
 def wrap(draw, text, font, width):
     lines, cur = [], ""
