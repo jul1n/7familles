@@ -8,6 +8,9 @@ import { getContent, paths, type Lang } from "@/lib/content";
 import { UI, type UiText } from "@/lib/ui";
 import MosaicView from "@/components/MosaicView";
 import GameIntro from "@/components/GameIntro";
+import SearchDialog from "@/components/SearchDialog";
+import { trackEvent, trackView } from "@/lib/analytics";
+import { absoluteUrl } from "@/lib/site";
 import PrintSheets from "@/components/PrintSheets";
 import AgencyCredit from "@/components/AgencyCredit";
 import { markdownToSpeech, markdownToSpeechEn, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
@@ -34,6 +37,8 @@ import {
   LayoutGrid,
   CircleHelp,
   BookOpen,
+  Search,
+  Share2,
   ShoppingBag,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -80,9 +85,11 @@ function CardActions({
   canSpeak,
   onToggleSpeak,
   onPrint,
+  onShare,
   t,
 }: {
   t: UiText;
+  onShare: () => void;
   isSpeaking: boolean;
   canSpeak: boolean;
   onToggleSpeak: () => void;
@@ -106,6 +113,10 @@ function CardActions({
           {isSpeaking ? t.stop : t.listen}
         </button>
       )}
+      <button onClick={onShare} className={`${btn} bg-white text-stone-700 border-stone-200 hover:bg-stone-50`}>
+        <Share2 className="w-4 h-4" />
+        {t.share}
+      </button>
       <button onClick={onPrint} className={`${btn} bg-white text-stone-700 border-stone-200 hover:bg-stone-50`}>
         <Printer className="w-4 h-4" />
         {t.print}
@@ -234,6 +245,21 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   const [reducedMotion, setReducedMotion] = useState<boolean>(false);
   const [webglOk, setWebglOk] = useState<boolean>(true);
   const [showHelp, setShowHelp] = useState<boolean>(false);
+  const [showSearch, setShowSearch] = useState<boolean>(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Raccourcis de recherche : « / » ou Ctrl/Cmd + K (hors champ de saisie)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target instanceof HTMLElement && e.target.isContentEditable);
+      if ((e.key === "/" && !typing && !e.ctrlKey && !e.metaKey) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k")) {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   // Installation de l'application : Chrome/Android/ordinateur proposent un bouton, Safari (iOS) demande un geste manuel
   const [installEvent, setInstallEvent] = useState<{ prompt: () => Promise<void> } | null>(null);
   const [iosInstall, setIosInstall] = useState<boolean>(false);
@@ -242,7 +268,10 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       e.preventDefault();
       setInstallEvent(e as unknown as { prompt: () => Promise<void> });
     };
-    const onInstalled = () => setInstallEvent(null);
+    const onInstalled = () => {
+      setInstallEvent(null);
+      trackEvent("evt/installation");
+    };
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
     const ua = navigator.userAgent;
@@ -570,6 +599,36 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     setViewMode("3d");
   };
 
+  // Résultat de recherche : ouvre la carte comme depuis la mosaïque ou le carrousel, selon la vue d'où l'on vient
+  const openCardFromSearch = (card: CardData) => {
+    setShowSearch(false);
+    if (viewMode === "mosaic") {
+      openCardFromMosaic(card);
+    } else {
+      setSelectedFamilyId(card.familyId);
+      setSelectedCardId(card.id);
+      setSheetState("collapsed");
+    }
+  };
+
+  // Partage : feuille de partage du téléphone, sinon copie du lien de la fiche (page statique avec image de partage)
+  const shareCard = async (card: CardData) => {
+    const url = absoluteUrl(paths.card(lang, card.id));
+    trackEvent("evt/partage");
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${card.title} – ${card.familyName}`, text: card.shortDescription, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setToast(t.shareCopied);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToast(null), 2200);
+    } catch {
+      /* partage annulé par la personne : rien à faire */
+    }
+  };
+
   // Fermer la carte : retour à la mosaïque si on en vient, sinon à la famille
   const closeCard = () => {
     if (fromMosaic) {
@@ -594,6 +653,10 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     setHoveredCardId(null);
     setViewMode(mode);
   };
+
+  useEffect(() => {
+    if (selectedCardId) trackView(paths.card(lang, selectedCardId), CARDS.find((c) => c.id === selectedCardId)?.title);
+  }, [selectedCardId, lang, CARDS]);
 
   useEffect(() => {
     stopSpeaking();
@@ -1033,6 +1096,17 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             {t.switchLang}
           </a>
 
+          {/* Recherche dans les cartes (sur téléphone : bouton de la mosaïque) */}
+          <button
+            type="button"
+            onClick={() => setShowSearch(true)}
+            aria-label={t.search}
+            title={`${t.search} ( / )`}
+            className="hidden sm:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+
           {/* Aide : gestes et raccourcis */}
           <button
             type="button"
@@ -1091,6 +1165,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         {viewMode === "mosaic" && <MosaicView
             onOpenCard={openCardFromMosaic}
             notice={!webglOk ? t.mosaicNotice : undefined}
+            onSearch={() => setShowSearch(true)}
             lang={lang}
           />}
 
@@ -1338,6 +1413,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                     canSpeak={canSpeak}
                     onToggleSpeak={toggleSpeak}
                     onPrint={() => setPrintCards({ cards: [currentCard], booklet: false })}
+                      onShare={() => shareCard(currentCard)}
                     t={t}
                   />
 
@@ -1456,6 +1532,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                       canSpeak={canSpeak}
                       onToggleSpeak={toggleSpeak}
                       onPrint={() => setPrintCards({ cards: [currentCard], booklet: false })}
+                      onShare={() => shareCard(currentCard)}
                     t={t}
                     />
                   </div>
@@ -1483,6 +1560,13 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         </>
         )}
       </main>
+
+      {showSearch && <SearchDialog cards={CARDS} lang={lang} onPick={openCardFromSearch} onClose={() => setShowSearch(false)} />}
+      {toast && (
+        <div role="status" className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-stone-900 px-4 py-2 text-xs font-semibold text-white shadow-lg print:hidden">
+          {toast}
+        </div>
+      )}
 
       {/* 3. MODALE DU MODE ÉDITION DE DÉVELOPPEMENT */}
       {showHelp && (

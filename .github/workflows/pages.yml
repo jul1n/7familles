@@ -30,6 +30,8 @@ jobs:
       - run: pnpm build
         env:
           NEXT_PUBLIC_BASE_PATH: /7familles
+          # Code du compteur GoatCounter (https://<code>.goatcounter.com) : variable de dépôt, vide = pas de statistiques
+          NEXT_PUBLIC_GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out

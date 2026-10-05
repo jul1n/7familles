@@ -5,16 +5,18 @@ import type { CardData } from "@/data/cards";
 import { getContent, paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { asset, thumb } from "@/lib/asset";
+import { Search } from "lucide-react";
 import ResourcesNav from "@/components/ResourcesNav";
 
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
+  onSearch: () => void;
   notice?: string; // ex. : affichage 3D indisponible sur cet appareil
   lang?: Lang;
 }
 
 // Vue « mosaïque » : les 42 cartes côte à côte, regroupées par famille, cliquables.
-export default function MosaicView({ onOpenCard, notice, lang = "fr" }: MosaicViewProps) {
+export default function MosaicView({ onOpenCard, onSearch, notice, lang = "fr" }: MosaicViewProps) {
   const t = UI[lang];
   const { FAMILIES, CARDS } = getContent(lang);
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
@@ -38,6 +40,14 @@ export default function MosaicView({ onOpenCard, notice, lang = "fr" }: MosaicVi
           aria-label={t.filterByFamily}
           className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-6xl mx-auto"
         >
+          <button
+            onClick={onSearch}
+            aria-label={t.search}
+            className="flex min-h-[40px] flex-shrink-0 items-center gap-1.5 rounded-xl border border-[#1b5d78] bg-[#1b5d78] px-3.5 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+          >
+            <Search className="h-4 w-4" aria-hidden />
+            {t.search}
+          </button>
           <button
             onClick={() => setActiveFamilyId(null)}
             aria-pressed={activeFamilyId === null}

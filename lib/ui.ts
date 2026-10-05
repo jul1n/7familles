@@ -69,6 +69,13 @@ interface UiText {
   helpRulesLink: string;
   helpMosaic: string;
   installApp: string;
+  search: string;
+  searchPlaceholder: string;
+  searchNone: string;
+  searchCount: (n: number) => string;
+  searchClose: string;
+  share: string;
+  shareCopied: string;
   installIos: string;
   liveCard: (num: number, title: string, fam: string) => string;
   liveFamily: (n: string) => string;
@@ -210,6 +217,13 @@ const fr: UiText = {
   ],
   helpRules: "Règles :",
   helpRulesLink: "lire les règles du jeu et le détail des 42 cartes",
+  search: "Rechercher",
+  searchPlaceholder: "Un mot, un barrage, un lieu…",
+  searchNone: "Aucune carte ne correspond. Essayez un autre mot.",
+  searchCount: (n) => `${n} carte${n > 1 ? "s" : ""} trouvée${n > 1 ? "s" : ""}`,
+  searchClose: "Fermer la recherche",
+  share: "Partager",
+  shareCopied: "Lien copié",
   installApp: "Installer l’application sur cet appareil",
   installIos: "Installer : dans Safari, touchez Partager puis « Sur l’écran d’accueil ».",
   helpMosaic: "Mosaïque : le bouton « Mosaïque » affiche les 42 cartes d'un coup, sans animation.",
@@ -364,6 +378,13 @@ const en: UiText = {
   ],
   helpRules: "Rules:",
   helpRulesLink: "read the rules of the game and the details of the 42 cards",
+  search: "Search",
+  searchPlaceholder: "A word, a dam, a place…",
+  searchNone: "No card matches. Try another word.",
+  searchCount: (n) => `${n} card${n > 1 ? "s" : ""} found`,
+  searchClose: "Close the search",
+  share: "Share",
+  shareCopied: "Link copied",
   installApp: "Install the app on this device",
   installIos: "To install: in Safari, tap Share, then “Add to Home Screen”.",
   helpMosaic: "Mosaic: the “Mosaic” button shows all 42 cards at once, with no animation.",
