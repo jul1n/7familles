@@ -272,6 +272,9 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   const [fromMosaic, setFromMosaic] = useState<boolean>(false);
+  // Copies lues par l'écouteur « Précédent » du navigateur (enregistré une seule fois)
+  const fromMosaicRef = useRef(false);
+  fromMosaicRef.current = fromMosaic;
 
   // État du Deck 3D (pile compacte vs éventail des 7 familles)
   const [isDeckSpread, setIsDeckSpread] = useState<boolean>(true);
@@ -619,6 +622,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       const fam = FAMILIES.find((f) => f.id === params.get("famille"));
       setSelectedCardId(card ? card.id : null);
       setSelectedFamilyId(card ? card.familyId : fam ? fam.id : null);
+      // « Précédent » après une carte ouverte depuis la mosaïque : on revient à la mosaïque, pas au carrousel
+      if (!card && !fam && fromMosaicRef.current) setViewMode("mosaic");
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -1068,7 +1073,6 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       >
         {viewMode === "mosaic" && <MosaicView
             onOpenCard={openCardFromMosaic}
-            onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })}
             notice={!webglOk ? t.mosaicNotice : undefined}
             lang={lang}
           />}
@@ -1179,7 +1183,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               </button>
 
               {FOOTER_STYLE === "menu" && (
-                <ResourcesMenu lang={lang} onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })} />
+                <ResourcesMenu lang={lang} />
               )}
               </div>
             </div>
@@ -1187,7 +1191,6 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               <ResourcesNav
                 lang={lang}
                 compact
-                onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })}
                 className="max-w-5xl rounded-xl bg-white/80 px-3 py-1.5 backdrop-blur-md [@media(max-height:620px)]:hidden"
               />
               )}
@@ -1399,7 +1402,12 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 </div>
               </div>
 
-              <div id="card-pedagogic-content" className="px-5 pb-6 overflow-y-auto flex-1">
+              <div
+                id="card-pedagogic-content"
+                className={`px-5 pb-6 overflow-y-auto flex-1 ${sheetState === "collapsed" ? "cursor-pointer" : ""}`}
+                // Deuxième appui, cette fois sur le texte : la fiche passe en plein écran
+                onClick={() => sheetState === "collapsed" && setSheetState("expanded")}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <span
                     className="text-[11px] font-bold px-2.5 py-0.5 rounded-full text-white shadow-sm"

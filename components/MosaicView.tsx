@@ -9,13 +9,12 @@ import ResourcesNav from "@/components/ResourcesNav";
 
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
-  onPrintAll: () => void;
   notice?: string; // ex. : affichage 3D indisponible sur cet appareil
   lang?: Lang;
 }
 
 // Vue « mosaïque » : les 42 cartes côte à côte, regroupées par famille, cliquables.
-export default function MosaicView({ onOpenCard, onPrintAll, notice, lang = "fr" }: MosaicViewProps) {
+export default function MosaicView({ onOpenCard, notice, lang = "fr" }: MosaicViewProps) {
   const t = UI[lang];
   const { FAMILIES, CARDS } = getContent(lang);
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
@@ -107,7 +106,7 @@ export default function MosaicView({ onOpenCard, onPrintAll, notice, lang = "fr"
           );
         })}
 
-        <ResourcesNav lang={lang} onPrintAll={onPrintAll} className="mt-10" />
+        <ResourcesNav lang={lang} className="mt-10" />
       </div>
     </div>
   );

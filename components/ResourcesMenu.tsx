@@ -1,17 +1,16 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { BookOpen, Printer, X } from "lucide-react";
+import { BookOpen, X } from "lucide-react";
 import { paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { asset } from "@/lib/asset";
-import { GLOBAL_LINKS, gameAuthors } from "@/lib/links";
-import { RESOURCE_LINKS, RESOURCE_LINKS_EN } from "@/lib/card-links";
-import AgencyCredit from "@/components/AgencyCredit";
+import { CFBR_URL, gameAuthors } from "@/lib/links";
+import { footerResources } from "@/lib/card-links";
 
 // Variante « menu flottant » du pied de page : un seul bouton, et les liens se déploient vers le haut en cascade.
 // L'ancienne bande de liens reste disponible dans ResourcesNav (voir FOOTER_STYLE dans Experience7Familles).
-export default function ResourcesMenu({ lang, onPrintAll }: { lang: Lang; onPrintAll: () => void }) {
+export default function ResourcesMenu({ lang }: { lang: Lang }) {
   const t = UI[lang];
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -31,7 +30,7 @@ export default function ResourcesMenu({ lang, onPrintAll }: { lang: Lang; onPrin
     };
   }, [open]);
 
-  const resources = lang === "fr" ? RESOURCE_LINKS : RESOURCE_LINKS_EN;
+  const resources = footerResources(lang);
   const link = "block rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#1b5d78] hover:bg-[#1b5d78]/10 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none";
   const heading = "px-2.5 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-stone-500";
   // Chaque ligne apparaît avec un léger décalage : effet de cascade à l'ouverture
@@ -66,32 +65,17 @@ export default function ResourcesMenu({ lang, onPrintAll }: { lang: Lang; onPrin
         ))}
 
         <p className={`${heading} ${row}`} style={step(i++)}>CFBR</p>
-        {GLOBAL_LINKS.map((l) => (
-          <div key={l.url} className={row} style={step(i++)}>
-            <a href={l.url} target="_blank" rel="noopener noreferrer" className={link}>
-              {lang === "en" && l.url.includes("barrages-cfbr") ? t.cfbrSite : l.label}
-            </a>
-          </div>
-        ))}
+        <div className={row} style={step(i++)}>
+          <a href={CFBR_URL} target="_blank" rel="noopener noreferrer" className={link}>
+            {t.cfbrSite}
+          </a>
+        </div>
 
         <p className={`${heading} ${row}`} style={step(i++)}>{t.rulesAuthors}</p>
         <div className={`px-2.5 pb-1 text-xs text-stone-600 ${row}`} style={step(i++)}>
-          <AgencyCredit lang={lang} className="font-medium" />
-          <p className="mt-1">{gameAuthors(lang).map((a) => a.name).join(" • ")}</p>
+          {gameAuthors(lang).map((a) => a.name).join(" • ")}
         </div>
 
-        <div className={row} style={step(i++)}>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              onPrintAll();
-            }}
-            className={`${link} mt-1 flex w-full items-center gap-2 border-t border-stone-200 pt-2 text-left`}
-          >
-            <Printer className="h-4 w-4" aria-hidden /> {t.printAll}
-          </button>
-        </div>
       </div>
 
       <button
