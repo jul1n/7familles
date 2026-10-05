@@ -73,6 +73,14 @@ body {
 }
 .mosaic-card { animation: mosaic-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+/* Quiz : points qui s'envolent, bonne réponse qui rebondit, mauvaise réponse qui se secoue */
+@keyframes quiz-gain { from { opacity: 1; transform: translateY(0) scale(0.8); } 30% { transform: translateY(-14px) scale(1.25); } to { opacity: 0; transform: translateY(-38px) scale(1); } }
+.quiz-gain { animation: quiz-gain 1100ms ease-out forwards; }
+@keyframes quiz-pop { 0% { transform: scale(1); } 40% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.quiz-right { animation: quiz-pop 420ms ease-out; }
+@keyframes quiz-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+.quiz-wrong { animation: quiz-shake 360ms ease-out; }
+
 /* Impression des fiches : une page A4 par carte, sans l'interface */
 @media print {
   html { font-size: 16px; }

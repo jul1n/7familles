@@ -9,8 +9,10 @@ import { UI, type UiText } from "@/lib/ui";
 import MosaicView from "@/components/MosaicView";
 import GameIntro from "@/components/GameIntro";
 import SearchDialog from "@/components/SearchDialog";
+import QuizDialog from "@/components/QuizDialog";
+import QuizPrint from "@/components/QuizPrint";
 import { trackEvent, trackView } from "@/lib/analytics";
-import { absoluteUrl } from "@/lib/site";
+import { QUIZ_ENABLED, absoluteUrl } from "@/lib/site";
 import PrintSheets from "@/components/PrintSheets";
 import AgencyCredit from "@/components/AgencyCredit";
 import { markdownToSpeech, markdownToSpeechEn, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
@@ -39,6 +41,7 @@ import {
   BookOpen,
   Search,
   Share2,
+  Trophy,
   ShoppingBag,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -246,6 +249,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   const [webglOk, setWebglOk] = useState<boolean>(true);
   const [showHelp, setShowHelp] = useState<boolean>(false);
   const [showSearch, setShowSearch] = useState<boolean>(false);
+  const [showQuiz, setShowQuiz] = useState<boolean>(false);
+  const [printQuiz, setPrintQuiz] = useState<boolean>(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Raccourcis de recherche : « / » ou Ctrl/Cmd + K (hors champ de saisie)
@@ -428,6 +433,19 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   const [canSpeak, setCanSpeak] = useState<boolean>(false);
   const manifest: Record<string, unknown> = lang === "fr" ? audioManifest : audioManifestEn;
   useEffect(() => setCanSpeak(speechSupported() || Object.keys(manifest).length > 0), [manifest]);
+
+  // PDF des 10 quiz : on monte la mise en page, puis on lance l'impression du navigateur (« Enregistrer au format PDF »)
+  useEffect(() => {
+    if (!printQuiz) return;
+    trackEvent("evt/quiz-pdf");
+    const finish = () => setPrintQuiz(false);
+    window.addEventListener("afterprint", finish, { once: true });
+    const t = setTimeout(() => window.print(), 400);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("afterprint", finish);
+    };
+  }, [printQuiz]);
 
   // Impression : une page par carte (la carte ouverte, ou les 42 depuis la mosaïque)
   const [printCards, setPrintCards] = useState<{ cards: CardData[]; booklet: boolean } | null>(null);
@@ -1096,6 +1114,19 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             {t.switchLang}
           </a>
 
+          {/* Quiz (sur téléphone : bouton de la mosaïque) */}
+          {QUIZ_ENABLED && (
+            <button
+              type="button"
+              onClick={() => setShowQuiz(true)}
+              aria-label={t.quiz.open}
+              title={t.quiz.open}
+              className="hidden sm:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-amber-600 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            >
+              <Trophy className="w-4 h-4" />
+            </button>
+          )}
+
           {/* Recherche dans les cartes (sur téléphone : bouton de la mosaïque) */}
           <button
             type="button"
@@ -1166,6 +1197,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             onOpenCard={openCardFromMosaic}
             notice={!webglOk ? t.mosaicNotice : undefined}
             onSearch={() => setShowSearch(true)}
+            onQuiz={QUIZ_ENABLED ? () => setShowQuiz(true) : undefined}
             lang={lang}
           />}
 
@@ -1561,6 +1593,21 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         )}
       </main>
 
+      {showQuiz && (
+        <QuizDialog
+          lang={lang}
+          cards={CARDS}
+          onClose={() => setShowQuiz(false)}
+          onPrint={() => {
+            setShowQuiz(false);
+            setPrintQuiz(true);
+          }}
+          onOpenCard={(card) => {
+            setShowQuiz(false);
+            openCardFromSearch(card);
+          }}
+        />
+      )}
       {showSearch && <SearchDialog cards={CARDS} lang={lang} onPick={openCardFromSearch} onClose={() => setShowSearch(false)} />}
       {toast && (
         <div role="status" className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-stone-900 px-4 py-2 text-xs font-semibold text-white shadow-lg print:hidden">
@@ -1746,6 +1793,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         </div>
       )}
     </div>
+    {printQuiz && <QuizPrint lang={lang} cards={CARDS} />}
     {printCards && <PrintSheets cards={printCards.cards} booklet={printCards.booklet} markdownFor={markdownFor} lang={lang} />}
     </>
   );

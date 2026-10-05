@@ -9,3 +9,6 @@ export const SITE_DESCRIPTION =
 
 // URL absolue d'un chemin du site (ex. "/carte/proprietaire/")
 export const absoluteUrl = (path: string) => `${SITE_URL}${path}`;
+
+// Quiz (bouton, fenêtre de jeu et PDF des 10 quiz) : mettre à false pour le masquer sans rien supprimer
+export const QUIZ_ENABLED = true;

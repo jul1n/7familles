@@ -5,18 +5,19 @@ import type { CardData } from "@/data/cards";
 import { getContent, paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { asset, thumb } from "@/lib/asset";
-import { Search } from "lucide-react";
+import { Search, Trophy } from "lucide-react";
 import ResourcesNav from "@/components/ResourcesNav";
 
 interface MosaicViewProps {
   onOpenCard: (card: CardData) => void;
   onSearch: () => void;
+  onQuiz?: () => void;
   notice?: string; // ex. : affichage 3D indisponible sur cet appareil
   lang?: Lang;
 }
 
 // Vue « mosaïque » : les 42 cartes côte à côte, regroupées par famille, cliquables.
-export default function MosaicView({ onOpenCard, onSearch, notice, lang = "fr" }: MosaicViewProps) {
+export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang = "fr" }: MosaicViewProps) {
   const t = UI[lang];
   const { FAMILIES, CARDS } = getContent(lang);
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
@@ -48,6 +49,16 @@ export default function MosaicView({ onOpenCard, onSearch, notice, lang = "fr" }
             <Search className="h-4 w-4" aria-hidden />
             {t.search}
           </button>
+          {onQuiz && (
+            <button
+              onClick={onQuiz}
+              aria-label={t.quiz.open}
+              className="flex min-h-[40px] flex-shrink-0 items-center gap-1.5 rounded-xl border border-amber-500 bg-amber-500 px-3.5 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:outline-none"
+            >
+              <Trophy className="h-4 w-4" aria-hidden />
+              {t.quiz.open}
+            </button>
+          )}
           <button
             onClick={() => setActiveFamilyId(null)}
             aria-pressed={activeFamilyId === null}

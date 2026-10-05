@@ -68,6 +68,34 @@ interface UiText {
   helpRules: string;
   helpRulesLink: string;
   helpMosaic: string;
+  quiz: {
+    open: string;
+    title: string;
+    intro: string;
+    rulesOfPoints: string;
+    start: string;
+    questionOf: (i: number, n: number) => string;
+    next: string;
+    seeResult: string;
+    correct: (gain: number, streak: number) => string;
+    wrong: (answer: string) => string;
+    correctShort: string;
+    wrongShort: string;
+    seeCard: (title: string) => string;
+    score: (n: number) => string;
+    pts: string;
+    rightCount: (right: number, n: number) => string;
+    verdict: (right: number) => string;
+    replay: string;
+    print: string;
+    printHint: string;
+    close: string;
+    pdfSubtitle: string;
+    pdfQuizN: (n: number) => string;
+    pdfNameScore: string;
+    pdfAnswers: string;
+    pdfAnswersHint: string;
+  };
   installApp: string;
   search: string;
   searchPlaceholder: string;
@@ -224,6 +252,34 @@ const fr: UiText = {
   searchClose: "Fermer la recherche",
   share: "Partager",
   shareCopied: "Lien copié",
+  quiz: {
+    open: "Quiz",
+    title: "Quiz des barrages",
+    intro: "5 questions tirées au hasard dans les fiches des 42 cartes. Une seule bonne réponse par question : à toi de jouer !",
+    rulesOfPoints: "10 points par bonne réponse, +5 de bonus pour chaque bonne réponse d'affilée : 100 points au maximum.",
+    start: "Commencer le quiz",
+    questionOf: (i, n) => `Question ${i} sur ${n}`,
+    next: "Question suivante",
+    seeResult: "Voir mon score",
+    correct: (gain, streak) => (streak > 1 ? `Bravo ! +${gain} points (série de ${streak})` : `Bravo ! +${gain} points`),
+    wrong: (a) => `Raté ! La bonne réponse : ${a}`,
+    correctShort: "bonne réponse",
+    wrongShort: "ta réponse, fausse",
+    seeCard: (t) => `Relire la carte « ${t} »`,
+    score: (n) => `Score : ${n} points`,
+    pts: "pts",
+    rightCount: (r, n) => `${r} bonne${r > 1 ? "s" : ""} réponse${r > 1 ? "s" : ""} sur ${n}`,
+    verdict: (r) => (r === 5 ? "Sans faute : tu es incollable sur les barrages !" : r >= 3 ? "Très bien ! Encore un essai pour le sans-faute ?" : "Pas mal ! Relis quelques cartes et retente ta chance."),
+    replay: "Rejouer avec d'autres questions",
+    print: "10 quiz à imprimer (PDF)",
+    printHint: "Un PDF de 10 quiz de 5 questions tirés au hasard, avec les réponses à la fin, pour jouer en famille ou en classe.",
+    close: "Fermer le quiz",
+    pdfSubtitle: "Quiz – Comité Français des Barrages et Réservoirs (1926–2026)",
+    pdfQuizN: (n) => `Quiz n° ${n}`,
+    pdfNameScore: "Prénom : ………………………  Score : …… / 5",
+    pdfAnswers: "Les réponses",
+    pdfAnswersHint: "Entre parenthèses : la carte du jeu à relire pour en savoir plus.",
+  },
   installApp: "Installer l’application sur cet appareil",
   installIos: "Installer : dans Safari, touchez Partager puis « Sur l’écran d’accueil ».",
   helpMosaic: "Mosaïque : le bouton « Mosaïque » affiche les 42 cartes d'un coup, sans animation.",
@@ -385,6 +441,34 @@ const en: UiText = {
   searchClose: "Close the search",
   share: "Share",
   shareCopied: "Link copied",
+  quiz: {
+    open: "Quiz",
+    title: "Dam quiz",
+    intro: "5 questions drawn at random from the fact sheets of the 42 cards. One right answer per question: your turn to play!",
+    rulesOfPoints: "10 points per right answer, +5 bonus for each right answer in a row: 100 points at most.",
+    start: "Start the quiz",
+    questionOf: (i, n) => `Question ${i} of ${n}`,
+    next: "Next question",
+    seeResult: "See my score",
+    correct: (gain, streak) => (streak > 1 ? `Well done! +${gain} points (streak of ${streak})` : `Well done! +${gain} points`),
+    wrong: (a) => `Missed! The right answer: ${a}`,
+    correctShort: "right answer",
+    wrongShort: "your answer, wrong",
+    seeCard: (t) => `Read the “${t}” card again`,
+    score: (n) => `Score: ${n} points`,
+    pts: "pts",
+    rightCount: (r, n) => `${r} right answer${r > 1 ? "s" : ""} out of ${n}`,
+    verdict: (r) => (r === 5 ? "Perfect score: you know your dams!" : r >= 3 ? "Very good! Another try for a perfect score?" : "Not bad! Read a few cards again and try your luck."),
+    replay: "Play again with other questions",
+    print: "10 printable quizzes (PDF)",
+    printHint: "A PDF of 10 quizzes of 5 random questions, with the answers at the end, to play with family or in class.",
+    close: "Close the quiz",
+    pdfSubtitle: "Quiz – French Committee on Large Dams (1926–2026)",
+    pdfQuizN: (n) => `Quiz no. ${n}`,
+    pdfNameScore: "Name: ………………………  Score: …… / 5",
+    pdfAnswers: "The answers",
+    pdfAnswersHint: "In brackets: the card of the game to read again to learn more.",
+  },
   installApp: "Install the app on this device",
   installIos: "To install: in Safari, tap Share, then “Add to Home Screen”.",
   helpMosaic: "Mosaic: the “Mosaic” button shows all 42 cards at once, with no animation.",
