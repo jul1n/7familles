@@ -109,6 +109,7 @@ export default function QuizDialog({
       setGain(null);
     } else {
       setPhase("end");
+      setGain(null);
       trackEvent("evt/quiz-fin");
       if (right >= 3 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         import("canvas-confetti").then(({ default: confetti }) => {
