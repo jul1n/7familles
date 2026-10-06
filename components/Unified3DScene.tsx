@@ -86,14 +86,19 @@ const CARD_H_PILE = 2.428;
 // portrait = paquet au-dessus de la boîte.
 function boxLayout(isPortrait: boolean) {
   return isPortrait
-    ? { pileU: 0, pileV: 1.6, boxU: 0, boxV: -1.5, f: 0.78, dy: 0.4 }
-    : { pileU: -1.3, pileV: 0.1, boxU: 1.3, boxV: 0, f: 1, dy: 0 };
+    ? { pileU: 0, pileV: 1.6, boxU: 0, boxV: -1.5, f: 0.78, dy: 0.4, centerV: 0.3 }
+    : { pileU: -1.3, pileV: 0.1, boxU: 1.3, boxV: 0, f: 1, dy: 0, centerV: 0 };
 }
 
 // Position de la boîte dans le repère du paquet, après réduction (f) et décalage (dy) propres à l'écran :
 // en portrait, l'ensemble est plus petit et remonté pour rester dans la zone libre entre les barres.
 function boxPlace(s: number, L: ReturnType<typeof boxLayout>) {
-  return { u: boxU(s, L) * L.f, v: L.boxV * L.f + L.dy };
+  return { u: boxU(s, L) * L.f, v: L.boxV * L.f + L.dy + boxLift(s, L) };
+}
+
+// Une fois les cartes rangées, la boîte remonte au centre de la page (en portrait ; en paysage elle est déjà à hauteur du centre)
+function boxLift(s: number, L: ReturnType<typeof boxLayout>) {
+  return (L.centerV - (L.boxV * L.f + L.dy)) * THREE.MathUtils.smoothstep(s, 0.75, 1) * (L.f === 1 ? 0 : 1);
 }
 
 // Une fois les cartes rangées, la boîte glisse vers le centre de la scène
@@ -116,7 +121,7 @@ function storedPose(s: number, L: ReturnType<typeof boxLayout>) {
   const k = THREE.MathUtils.smoothstep((s - 0.5) / 0.5, 0, 1);
   return {
     u: boxU(s, L) * L.f,
-    v: THREE.MathUtils.lerp(aboveV, L.boxV, k) * L.f + L.dy,
+    v: THREE.MathUtils.lerp(aboveV, L.boxV, k) * L.f + L.dy + boxLift(s, L),
     scale: (0.7 + 0.3 * k) * L.f,
   };
 }
@@ -997,6 +1002,7 @@ function GameBox({
   const spinGroupRef = useRef<THREE.Group>(null);
   const flapRef = useRef<THREE.Group>(null);
   const targetPos = useMemo(() => new THREE.Vector3(), []);
+  const extraSpin = useRef({ t: 0, running: false, prevS: 0 });
   const { size, gl } = useThree();
   const isPortrait = size.width < size.height;
   const reducedMotion = useMemo(
@@ -1034,6 +1040,18 @@ function GameBox({
     const r = rot.current;
     const spin = spinGroupRef.current;
     const needsUpright = active ? s < 0.999 : s > 0.001;
+    // Cartes rangées : la boîte fait un tour complet sur elle-même
+    const ex = extraSpin.current;
+    if (active && !reducedMotion && ex.prevS < 0.999 && s >= 0.999) {
+      ex.running = true;
+      ex.t = 0;
+    }
+    ex.prevS = s;
+    if (ex.running) {
+      ex.t += delta / 1.3;
+      if (ex.t >= 1 || !active) ex.running = false;
+    }
+    const extraAngle = ex.running ? 2 * Math.PI * THREE.MathUtils.smootherstep(ex.t, 0, 1) : 0;
     if (spin) {
       if (!r.dragging) {
         r.yaw += r.vYaw * delta;
@@ -1050,7 +1068,7 @@ function GameBox({
         }
       }
       r.pitch = THREE.MathUtils.clamp(r.pitch, -1.4, 1.4);
-      spin.rotation.set(r.pitch, r.yaw, 0);
+      spin.rotation.set(r.pitch, r.yaw + extraAngle, 0);
     }
 
     // Rabat : s'ouvre à l'approche des cartes, se referme une fois rangées
@@ -1063,6 +1081,7 @@ function GameBox({
   const startDrag = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     if (active ? boxProgressRef.current < 0.999 : boxProgressRef.current > 0.001) return; // cartes en mouvement
+    if (extraSpin.current.running) return;
     const r = rot.current;
     r.dragging = true;
     r.vYaw = 0;
