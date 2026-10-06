@@ -946,12 +946,18 @@ function PhysicalCard3D({
 
 // Boîte de jeu en 3D : visuels du gabarit d'impression (devant, arrière, tranches, dessus, dessous).
 // Opaque : les cartes rangées à l'intérieur disparaissent derrière ses parois.
+// Elle se fait tourner au doigt / à la souris (glisser), et son rabat s'ouvre pour laisser entrer les cartes.
+const FLAP_OPEN = -1.95; // rotation du rabat autour de l'arête arrière du dessus (rad)
+const FLAP_T = 0.012;
+
 function GameBox({
   visible,
+  active,
   onToggle,
   boxProgressRef,
 }: {
   visible: boolean;
+  active: boolean; // cartes en cours de rangement ou rangées : la boîte revient à l'endroit
   onToggle: () => void;
   boxProgressRef: React.MutableRefObject<number>;
 }) {
@@ -962,21 +968,35 @@ function GameBox({
       t.anisotropy = 8;
     });
   }, [textures]);
+  const topTexture = textures[BOX_FACES.indexOf("top")];
   const groupRef = useRef<THREE.Group>(null);
+  const spinRef = useRef<THREE.Group>(null);
+  const flapRef = useRef<THREE.Group>(null);
   const targetPos = useMemo(() => new THREE.Vector3(), []);
-  const { size } = useThree();
+  const rot = useRef({ yaw: 0, pitch: 0, vYaw: 0, vPitch: 0, dragging: false });
+  const { size, gl } = useThree();
   const isPortrait = size.width < size.height;
   const reducedMotion = useMemo(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     []
   );
 
+  // Le glisser doit faire tourner la boîte, pas faire défiler la page (tactile)
+  React.useEffect(() => {
+    const el = gl.domElement;
+    el.style.touchAction = visible ? "none" : "";
+    return () => {
+      el.style.touchAction = "";
+    };
+  }, [gl, visible]);
+
   useFrame((_, delta) => {
     const g = groupRef.current;
     if (!g) return;
+    const s = boxProgressRef.current;
     const L = boxLayout(isPortrait);
-    targetPos.set(boxU(boxProgressRef.current, L), L.boxV, 0).applyEuler(PILE_EULER);
-    // Apparition : la boîte arrive du bas en grandissant
+    targetPos.set(boxU(s, L), L.boxV, 0).applyEuler(PILE_EULER);
+    // Apparition : la boîte arrive du bas en grandissant, avec un léger dépassement
     const lam = 6 * (reducedMotion ? 3 : 1);
     const k = THREE.MathUtils.damp(g.scale.x, visible ? 1 : 0, lam, delta);
     g.scale.setScalar(k);
@@ -984,28 +1004,113 @@ function GameBox({
     g.position.x = targetPos.x;
     g.position.y = targetPos.y - (1 - k) * 1.2;
     g.position.z = targetPos.z;
+
+    // Rotation libre avec inertie ; remise à l'endroit pendant le rangement
+    const r = rot.current;
+    const spin = spinRef.current;
+    if (spin) {
+      if (!r.dragging) {
+        r.yaw += r.vYaw * delta;
+        r.pitch += r.vPitch * delta;
+        const friction = Math.exp(-3.2 * delta);
+        r.vYaw *= friction;
+        r.vPitch *= friction;
+        if (active || !visible) {
+          r.vYaw = 0;
+          r.vPitch = 0;
+          const nearest = Math.round(r.yaw / (2 * Math.PI)) * 2 * Math.PI;
+          r.yaw = THREE.MathUtils.damp(r.yaw, nearest, 5, delta);
+          r.pitch = THREE.MathUtils.damp(r.pitch, 0, 5, delta);
+        }
+      }
+      r.pitch = THREE.MathUtils.clamp(r.pitch, -1.4, 1.4);
+      spin.rotation.set(r.pitch, r.yaw, 0);
+    }
+
+    // Rabat : s'ouvre à l'approche des cartes, se referme une fois rangées
+    if (flapRef.current) {
+      const open = THREE.MathUtils.smoothstep(s, 0.02, 0.3) - THREE.MathUtils.smoothstep(s, 0.82, 1);
+      flapRef.current.rotation.x = FLAP_OPEN * open;
+    }
   });
+
+  const startDrag = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
+    const r = rot.current;
+    r.dragging = true;
+    r.vYaw = 0;
+    r.vPitch = 0;
+    let lastX = e.nativeEvent.clientX;
+    let lastY = e.nativeEvent.clientY;
+    let lastT = performance.now();
+    const onMove = (ev: PointerEvent) => {
+      const now = performance.now();
+      const dt = Math.max(0.008, (now - lastT) / 1000);
+      const dYaw = (ev.clientX - lastX) * 0.012;
+      const dPitch = (ev.clientY - lastY) * 0.008;
+      r.yaw += dYaw;
+      r.pitch += dPitch;
+      r.vYaw = dYaw / dt;
+      r.vPitch = dPitch / dt;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      lastT = now;
+    };
+    const onUp = () => {
+      r.dragging = false;
+      if (performance.now() - lastT > 90) {
+        r.vYaw = 0;
+        r.vPitch = 0;
+      }
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  };
 
   return (
     <group ref={groupRef} rotation={PILE_EULER} visible={false} scale={0.001}>
-      <mesh
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggle();
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={() => {
-          document.body.style.cursor = "";
-        }}
-      >
-        <boxGeometry args={[BOX_W, BOX_H, BOX_D]} />
-        {textures.map((map, i) => (
-          <meshStandardMaterial key={BOX_FACES[i]} attach={`material-${i}`} map={map} roughness={0.62} />
-        ))}
-      </mesh>
+      <group ref={spinRef}>
+        <mesh
+          onPointerDown={startDrag}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (e.delta < 6) onToggle(); // un simple clic range / sort les cartes, un glisser fait tourner
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = "grab";
+          }}
+          onPointerOut={() => {
+            document.body.style.cursor = "";
+          }}
+        >
+          <boxGeometry args={[BOX_W, BOX_H, BOX_D]} />
+          {textures.map((map, i) =>
+            BOX_FACES[i] === "top" ? (
+              // Dessus ouvert : l'intérieur de la boîte, le visuel est porté par le rabat
+              <meshStandardMaterial key="top" attach={`material-${i}`} color="#1f6f9f" roughness={0.8} />
+            ) : (
+              <meshStandardMaterial key={BOX_FACES[i]} attach={`material-${i}`} map={map} roughness={0.62} />
+            )
+          )}
+        </mesh>
+        {/* Rabat articulé sur l'arête arrière du dessus */}
+        <group ref={flapRef} position={[0, BOX_H / 2, -BOX_D / 2]}>
+          <mesh position={[0, FLAP_T / 2, BOX_D / 2]}>
+            <boxGeometry args={[BOX_W, FLAP_T, BOX_D]} />
+            <meshStandardMaterial attach="material-0" color="#3ea8e0" roughness={0.7} />
+            <meshStandardMaterial attach="material-1" color="#3ea8e0" roughness={0.7} />
+            <meshStandardMaterial attach="material-2" map={topTexture} roughness={0.62} />
+            <meshStandardMaterial attach="material-3" color="#8ccbee" roughness={0.8} />
+            <meshStandardMaterial attach="material-4" color="#3ea8e0" roughness={0.7} />
+            <meshStandardMaterial attach="material-5" color="#3ea8e0" roughness={0.7} />
+          </mesh>
+        </group>
+      </group>
     </group>
   );
 }
@@ -1146,7 +1251,12 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
             <DeckBlock visible={folded} boxProgressRef={boxProgressRef} />
             {boxWanted && (
               <Suspense fallback={null}>
-                <GameBox visible={folded} onToggle={props.onToggleBox} boxProgressRef={boxProgressRef} />
+                <GameBox
+                  visible={folded}
+                  active={props.isBoxed}
+                  onToggle={props.onToggleBox}
+                  boxProgressRef={boxProgressRef}
+                />
               </Suspense>
             )}
             {FAMILIES.map((family, fIdx) => {
