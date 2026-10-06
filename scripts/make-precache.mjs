@@ -14,6 +14,7 @@ const files = [
   ...list("cards/thumbs", [".webp"]),
   ...list("cards/thumbs/en", [".webp"]),
   ...list("box", [".webp"]),
+  ...list("box/en", [".webp"]),
   ...list("logos", [".png"]),
   ...list("icons", [".png"]),
   ...list("fonts", [".ttf"]),

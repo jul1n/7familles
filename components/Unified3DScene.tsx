@@ -79,6 +79,7 @@ const BOX_W = (BOX_H * 1085) / 1549;
 const BOX_D = (BOX_H * 345) / 1549;
 // Ordre des faces de BoxGeometry : +x (droite), -x (gauche), +y (dessus), -y (dessous), +z (devant), -z (arrière)
 const BOX_FACES = ["right", "left", "top", "bottom", "front", "back"] as const;
+const BOX_TEXT_FACES: readonly string[] = ["front", "back", "top", "bottom"];
 const BOX_DURATION = 1.5; // secondes pour ranger / sortir les cartes
 const CARD_H_PILE = 2.428;
 
@@ -966,6 +967,7 @@ function PhysicalCard3D({
 // Elle se fait tourner au doigt / à la souris (glisser), et son rabat s'ouvre pour laisser entrer les cartes.
 const FLAP_OPEN = -1.95; // rotation du rabat autour de l'arête arrière du dessus (rad)
 const FLAP_T = 0.012;
+const BOX_GROW = 0.6; // la boîte fermée est agrandie de 60 % (environ 2,5 fois la surface) ; plus, elle sortirait du cadre
 
 interface BoxSpin {
   yaw: number;
@@ -973,24 +975,30 @@ interface BoxSpin {
   vYaw: number;
   vPitch: number;
   dragging: boolean;
+  grow: number; // 0 = taille normale, 1 = boîte fermée agrandie
 }
 // Écart à la position droite (face devant, ouverture en haut)
 const spinError = (r: BoxSpin) => Math.abs(r.yaw - Math.round(r.yaw / (2 * Math.PI)) * 2 * Math.PI) + Math.abs(r.pitch);
 
 function GameBox({
+  lang,
   visible,
   active,
   onToggle,
   boxProgressRef,
   spinRef: rot,
 }: {
+  lang: Lang;
   visible: boolean;
   active: boolean; // cartes à ranger (ou rangées) : l'ouverture doit être en haut pour qu'elles entrent / sortent
   onToggle: () => void;
   boxProgressRef: React.MutableRefObject<number>;
   spinRef: React.MutableRefObject<BoxSpin>;
 }) {
-  const textures = useTexture(BOX_FACES.map((f) => asset(`/box/${f}.webp`)));
+  // Devant, arrière, dessus et dessous portent du texte : versions anglaises dans /box/en/ (scripts/make-box-en.py)
+  const textures = useTexture(
+    BOX_FACES.map((f) => asset(lang === "en" && BOX_TEXT_FACES.includes(f) ? `/box/en/${f}.webp` : `/box/${f}.webp`))
+  );
   useMemo(() => {
     textures.forEach((t) => {
       t.colorSpace = THREE.SRGBColorSpace;
@@ -1003,6 +1011,7 @@ function GameBox({
   const flapRef = useRef<THREE.Group>(null);
   const targetPos = useMemo(() => new THREE.Vector3(), []);
   const extraSpin = useRef({ t: 0, running: false, prevS: 0 });
+  const appearRef = useRef(0);
   const { size, gl } = useThree();
   const isPortrait = size.width < size.height;
   const reducedMotion = useMemo(
@@ -1028,8 +1037,11 @@ function GameBox({
     targetPos.set(place.u, place.v, 0).applyEuler(PILE_EULER);
     // Apparition : la boîte arrive du bas en grandissant
     const lam = 6 * (reducedMotion ? 3 : 1);
-    const k = THREE.MathUtils.damp(g.scale.x / L.f, visible ? 1 : 0, lam, delta);
-    g.scale.setScalar(k * L.f);
+    const k = THREE.MathUtils.damp(appearRef.current, visible ? 1 : 0, lam, delta);
+    appearRef.current = k;
+    // Boîte fermée (cartes cachées) : elle grandit pour occuper l'écran, et redevient normale avant la sortie des cartes
+    rot.current.grow = THREE.MathUtils.damp(rot.current.grow, active && s >= 0.999 ? 1 : 0, 3.5 * (reducedMotion ? 3 : 1), delta);
+    g.scale.setScalar(k * L.f * (1 + BOX_GROW * rot.current.grow));
     g.visible = k > 0.02;
     g.position.x = targetPos.x;
     g.position.y = targetPos.y - (1 - k) * 1.2;
@@ -1180,7 +1192,7 @@ function BoxController({
     const target = active ? 1 : 0;
     const p = progressRef.current;
     // Les cartes ne partent (ou ne sortent) que lorsque la boîte est redressée
-    if (Math.abs(p - (active ? 0 : 1)) < 0.0005 && spinError(spinRef.current) > 0.08) return;
+    if (Math.abs(p - (active ? 0 : 1)) < 0.0005 && (spinError(spinRef.current) > 0.08 || spinRef.current.grow > 0.02)) return;
     progressRef.current = p + Math.max(-step, Math.min(step, target - p));
   });
   return null;
@@ -1269,7 +1281,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
   const props = { ...rawProps, setHoveredCardId };
   // Boîte : visible quand le paquet est rassemblé ; textures chargées au premier rassemblement
   const boxProgressRef = useRef(0);
-  const boxSpinRef = useRef<BoxSpin>({ yaw: 0, pitch: 0, vYaw: 0, vPitch: 0, dragging: false });
+  const boxSpinRef = useRef<BoxSpin>({ yaw: 0, pitch: 0, vYaw: 0, vPitch: 0, dragging: false, grow: 0 });
   const folded = rawProps.currentStage === "deck" && !rawProps.isDeckSpread;
   const [boxWanted, setBoxWanted] = useState(false);
   React.useEffect(() => {
@@ -1303,6 +1315,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
             {boxWanted && (
               <Suspense fallback={null}>
                 <GameBox
+                  lang={lang}
                   visible={folded}
                   active={props.isBoxed}
                   onToggle={props.onToggleBox}
