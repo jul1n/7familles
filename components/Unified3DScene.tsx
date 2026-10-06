@@ -86,8 +86,14 @@ const CARD_H_PILE = 2.428;
 // portrait = paquet au-dessus de la boîte.
 function boxLayout(isPortrait: boolean) {
   return isPortrait
-    ? { pileU: 0, pileV: 1.6, boxU: 0, boxV: -1.5 }
-    : { pileU: -1.3, pileV: 0.1, boxU: 1.3, boxV: 0 };
+    ? { pileU: 0, pileV: 1.6, boxU: 0, boxV: -1.5, f: 0.78, dy: 0.4 }
+    : { pileU: -1.3, pileV: 0.1, boxU: 1.3, boxV: 0, f: 1, dy: 0 };
+}
+
+// Position de la boîte dans le repère du paquet, après réduction (f) et décalage (dy) propres à l'écran :
+// en portrait, l'ensemble est plus petit et remonté pour rester dans la zone libre entre les barres.
+function boxPlace(s: number, L: ReturnType<typeof boxLayout>) {
+  return { u: boxU(s, L) * L.f, v: L.boxV * L.f + L.dy };
 }
 
 // Une fois les cartes rangées, la boîte glisse vers le centre de la scène
@@ -102,13 +108,17 @@ function storedPose(s: number, L: ReturnType<typeof boxLayout>) {
   if (s < 0.5) {
     const k = THREE.MathUtils.smoothstep(s / 0.5, 0, 1);
     return {
-      u: THREE.MathUtils.lerp(L.pileU, boxU(s, L), k),
-      v: THREE.MathUtils.lerp(L.pileV, aboveV, k),
-      scale: 1 - 0.3 * Math.sin(Math.PI * k), // léger recul pendant le déplacement : le paquet reste dans le cadre
+      u: THREE.MathUtils.lerp(L.pileU, boxU(s, L), k) * L.f,
+      v: THREE.MathUtils.lerp(L.pileV, aboveV, k) * L.f + L.dy,
+      scale: (1 - 0.3 * Math.sin(Math.PI * k)) * L.f, // léger recul pendant le déplacement : le paquet reste dans le cadre
     };
   }
   const k = THREE.MathUtils.smoothstep((s - 0.5) / 0.5, 0, 1);
-  return { u: boxU(s, L), v: THREE.MathUtils.lerp(aboveV, L.boxV, k), scale: 0.7 + 0.3 * k };
+  return {
+    u: boxU(s, L) * L.f,
+    v: THREE.MathUtils.lerp(aboveV, L.boxV, k) * L.f + L.dy,
+    scale: (0.7 + 0.3 * k) * L.f,
+  };
 }
 
 function DeckBlock({ visible, boxProgressRef }: { visible: boolean; boxProgressRef: React.MutableRefObject<number> }) {
@@ -171,7 +181,7 @@ function DeckBlock({ visible, boxProgressRef }: { visible: boolean; boxProgressR
     opacityRef.current = THREE.MathUtils.damp(opacityRef.current, visible ? 1 : 0, 8, delta);
     const op = opacityRef.current;
     if (groupRef.current) {
-      groupRef.current.visible = op > 0.01;
+      groupRef.current.visible = op > 0.01 && boxProgressRef.current < 0.999; // rangé : caché dans la boîte
       // Le bloc suit le paquet : à côté de la boîte, puis glisse à l'intérieur
       const pose = storedPose(boxProgressRef.current, boxLayout(isPortrait));
       targetPos.set(pose.u, pose.v, 0).applyEuler(PILE_EULER);
@@ -800,7 +810,9 @@ function PhysicalCard3D({
       currentStage !== "deck" && !isCardInSelectedFamily ? 0 : 1;
     opacityRef.current = THREE.MathUtils.damp(opacityRef.current, targetOpacity, 5 * motionScale, delta);
     const op = opacityRef.current;
-    meshRef.current.visible = op > 0.01; // ne rend plus les cartes invisibles
+    // Cartes rangées : cachées dans la boîte (elles ne tournent pas avec elle)
+    const storedInBox = currentStage === "deck" && !isDeckSpread && boxProgressRef.current >= 0.999;
+    meshRef.current.visible = op > 0.01 && !storedInBox;
     if (edgeMeshRef.current) edgeMeshRef.current.visible = !(currentStage === "deck" && !isDeckSpread);
     if (edgeMatRef.current) edgeMatRef.current.opacity = op;
     if (frontMatRef.current) frontMatRef.current.opacity = op;
@@ -950,16 +962,28 @@ function PhysicalCard3D({
 const FLAP_OPEN = -1.95; // rotation du rabat autour de l'arête arrière du dessus (rad)
 const FLAP_T = 0.012;
 
+interface BoxSpin {
+  yaw: number;
+  pitch: number;
+  vYaw: number;
+  vPitch: number;
+  dragging: boolean;
+}
+// Écart à la position droite (face devant, ouverture en haut)
+const spinError = (r: BoxSpin) => Math.abs(r.yaw - Math.round(r.yaw / (2 * Math.PI)) * 2 * Math.PI) + Math.abs(r.pitch);
+
 function GameBox({
   visible,
   active,
   onToggle,
   boxProgressRef,
+  spinRef: rot,
 }: {
   visible: boolean;
-  active: boolean; // cartes en cours de rangement ou rangées : la boîte revient à l'endroit
+  active: boolean; // cartes à ranger (ou rangées) : l'ouverture doit être en haut pour qu'elles entrent / sortent
   onToggle: () => void;
   boxProgressRef: React.MutableRefObject<number>;
+  spinRef: React.MutableRefObject<BoxSpin>;
 }) {
   const textures = useTexture(BOX_FACES.map((f) => asset(`/box/${f}.webp`)));
   useMemo(() => {
@@ -970,10 +994,9 @@ function GameBox({
   }, [textures]);
   const topTexture = textures[BOX_FACES.indexOf("top")];
   const groupRef = useRef<THREE.Group>(null);
-  const spinRef = useRef<THREE.Group>(null);
+  const spinGroupRef = useRef<THREE.Group>(null);
   const flapRef = useRef<THREE.Group>(null);
   const targetPos = useMemo(() => new THREE.Vector3(), []);
-  const rot = useRef({ yaw: 0, pitch: 0, vYaw: 0, vPitch: 0, dragging: false });
   const { size, gl } = useThree();
   const isPortrait = size.width < size.height;
   const reducedMotion = useMemo(
@@ -995,19 +1018,22 @@ function GameBox({
     if (!g) return;
     const s = boxProgressRef.current;
     const L = boxLayout(isPortrait);
-    targetPos.set(boxU(s, L), L.boxV, 0).applyEuler(PILE_EULER);
-    // Apparition : la boîte arrive du bas en grandissant, avec un léger dépassement
+    const place = boxPlace(s, L);
+    targetPos.set(place.u, place.v, 0).applyEuler(PILE_EULER);
+    // Apparition : la boîte arrive du bas en grandissant
     const lam = 6 * (reducedMotion ? 3 : 1);
-    const k = THREE.MathUtils.damp(g.scale.x, visible ? 1 : 0, lam, delta);
-    g.scale.setScalar(k);
+    const k = THREE.MathUtils.damp(g.scale.x / L.f, visible ? 1 : 0, lam, delta);
+    g.scale.setScalar(k * L.f);
     g.visible = k > 0.02;
     g.position.x = targetPos.x;
     g.position.y = targetPos.y - (1 - k) * 1.2;
     g.position.z = targetPos.z;
 
-    // Rotation libre avec inertie ; remise à l'endroit pendant le rangement
+    // Rotation libre avec inertie. Les cartes ne suivent pas : elles sont cachées une fois rangées, et la boîte
+    // n'est remise à l'endroit que pour les faire entrer ou sortir (le trajet attend qu'elle soit droite)
     const r = rot.current;
-    const spin = spinRef.current;
+    const spin = spinGroupRef.current;
+    const needsUpright = active ? s < 0.999 : s > 0.001;
     if (spin) {
       if (!r.dragging) {
         r.yaw += r.vYaw * delta;
@@ -1015,7 +1041,7 @@ function GameBox({
         const friction = Math.exp(-3.2 * delta);
         r.vYaw *= friction;
         r.vPitch *= friction;
-        if (active || !visible) {
+        if (needsUpright || !visible) {
           r.vYaw = 0;
           r.vPitch = 0;
           const nearest = Math.round(r.yaw / (2 * Math.PI)) * 2 * Math.PI;
@@ -1036,6 +1062,7 @@ function GameBox({
 
   const startDrag = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
+    if (active ? boxProgressRef.current < 0.999 : boxProgressRef.current > 0.001) return; // cartes en mouvement
     const r = rot.current;
     r.dragging = true;
     r.vYaw = 0;
@@ -1073,7 +1100,7 @@ function GameBox({
 
   return (
     <group ref={groupRef} rotation={PILE_EULER} visible={false} scale={0.001}>
-      <group ref={spinRef}>
+      <group ref={spinGroupRef}>
         <mesh
           onPointerDown={startDrag}
           onClick={(e) => {
@@ -1119,9 +1146,11 @@ function GameBox({
 function BoxController({
   active,
   progressRef,
+  spinRef,
 }: {
   active: boolean;
   progressRef: React.MutableRefObject<number>;
+  spinRef: React.MutableRefObject<BoxSpin>;
 }) {
   const reducedMotion = useMemo(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -1131,6 +1160,8 @@ function BoxController({
     const step = Math.min(delta, 1 / 20) / (BOX_DURATION / (reducedMotion ? 3 : 1));
     const target = active ? 1 : 0;
     const p = progressRef.current;
+    // Les cartes ne partent (ou ne sortent) que lorsque la boîte est redressée
+    if (Math.abs(p - (active ? 0 : 1)) < 0.0005 && spinError(spinRef.current) > 0.08) return;
     progressRef.current = p + Math.max(-step, Math.min(step, target - p));
   });
   return null;
@@ -1219,6 +1250,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
   const props = { ...rawProps, setHoveredCardId };
   // Boîte : visible quand le paquet est rassemblé ; textures chargées au premier rassemblement
   const boxProgressRef = useRef(0);
+  const boxSpinRef = useRef<BoxSpin>({ yaw: 0, pitch: 0, vYaw: 0, vPitch: 0, dragging: false });
   const folded = rawProps.currentStage === "deck" && !rawProps.isDeckSpread;
   const [boxWanted, setBoxWanted] = useState(false);
   React.useEffect(() => {
@@ -1240,7 +1272,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
         onPointerMissed={() => props.onBack()}
       >
         <ResponsiveController currentStage={props.currentStage} />
-        <BoxController active={folded && props.isBoxed} progressRef={boxProgressRef} />
+        <BoxController active={folded && props.isBoxed} progressRef={boxProgressRef} spinRef={boxSpinRef} />
         <ambientLight intensity={1.7} color="#fffcf5" />
         <directionalLight position={[5, 10, 6]} intensity={1.8} color="#fffbf5" />
         <directionalLight position={[-5, -2, -3]} intensity={0.5} color="#e2e8f0" />
@@ -1256,6 +1288,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
                   active={props.isBoxed}
                   onToggle={props.onToggleBox}
                   boxProgressRef={boxProgressRef}
+                  spinRef={boxSpinRef}
                 />
               </Suspense>
             )}
