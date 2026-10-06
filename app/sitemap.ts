@@ -6,9 +6,11 @@ import { absoluteUrl } from "@/lib/site";
 export const dynamic = "force-static";
 
 // Chaque page existe en français et en anglais : les deux versions se référencent (hreflang)
+const BUILT_AT = new Date();
 const entry = (fr: string, en: string, priority: number, changeFrequency: "monthly" | "yearly"): MetadataRoute.Sitemap =>
   [fr, en].map((url) => ({
     url: absoluteUrl(url),
+    lastModified: BUILT_AT,
     changeFrequency,
     priority,
     alternates: { languages: { fr: absoluteUrl(fr), en: absoluteUrl(en) } },

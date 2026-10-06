@@ -6,7 +6,9 @@ declare global {
 }
 
 // Compteur du CFBR (https://cfbr.goatcounter.com) ; la variable NEXT_PUBLIC_GOATCOUNTER_CODE permet d'en utiliser un autre
-export const ANALYTICS_CODE = process.env.NEXT_PUBLIC_GOATCOUNTER_CODE || "cfbr";
+// Valeur « off » : aucun compteur.
+const CODE = process.env.NEXT_PUBLIC_GOATCOUNTER_CODE || "cfbr";
+export const ANALYTICS_CODE = CODE === "off" ? undefined : CODE;
 
 // Une page vue dans l'application (ex. : ouverture d'une fiche, qui ne recharge pas la page)
 export function trackView(path: string, title?: string) {

@@ -48,11 +48,16 @@ export function rootMetadata(lang: Lang): Metadata {
   };
 }
 
+// Titres abrégés pour les fiches dont le nom complet dépasse la longueur affichée dans les résultats de recherche
+const SEO_TITLE: Record<string, Record<Lang, string>> = {
+  "types-step": { fr: "STEP : stockage par pompage", en: "Pumped storage (PSH)" },
+};
+
 export function cardMetadata(lang: Lang, id: string): Metadata {
   const card = getContent(lang).CARDS.find((c) => c.id === id);
   if (!card) return {};
   const t = UI[lang];
-  const title = `${card.title} – ${card.familyName}`;
+  const title = `${SEO_TITLE[id]?.[lang] ?? card.title} – ${card.familyName}`;
   return {
     title,
     description: card.shortDescription,
@@ -96,7 +101,7 @@ export function rulesMetadata(lang: Lang): Metadata {
   const description =
     lang === "fr"
       ? "Règles du jeu des 7 familles des barrages : matériel, but du jeu, déroulement d’une partie, fin de partie, liste des 42 cartes, présentation du CFBR et des auteurs."
-      : "Rules of the 7 Families of Dams, a card game similar to Happy Families (Quartett): contents, goal, how to play, end of the game, the list of the 42 cards, and the CFBR and authors of the game.";
+      : "Rules of the 7 Families of Dams, a card game similar to Happy Families (Quartett): contents, goal, how to play, the 42 cards, the CFBR and the authors.";
   return {
     title: t.rulesTitle,
     description,

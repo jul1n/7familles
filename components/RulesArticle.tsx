@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { getContent, paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
+import LegalFooter from "@/components/LegalFooter";
 import { asset } from "@/lib/asset";
 import GameIntro from "@/components/GameIntro";
 import { BIMBAMBOUM, CFBR_CONTACT_URL, CFBR_URL, gameAuthors, getCopyText } from "@/lib/links";
@@ -43,7 +44,7 @@ export default function RulesArticle({ lang = "fr" }: { lang?: Lang }) {
         </Link>
         <Link
           href={paths.home(lang)}
-          className="inline-flex min-h-[40px] items-center rounded-xl bg-[#1b5d78] px-4 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+          className="inline-flex min-h-[44px] items-center rounded-xl bg-[#1b5d78] px-4 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
         >
           {t.discover}
         </Link>
@@ -124,7 +125,7 @@ export default function RulesArticle({ lang = "fr" }: { lang?: Lang }) {
               href={RULES_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-[40px] items-center rounded-xl border border-[#1b5d78]/20 bg-[#1b5d78]/10 px-4 text-sm font-semibold text-[#1b5d78] focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+              className="inline-flex min-h-[44px] items-center rounded-xl border border-[#1b5d78]/20 bg-[#1b5d78]/10 px-4 text-sm font-semibold text-[#1b5d78] focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
             >
               {t.rulesSite}
             </a>
@@ -137,7 +138,7 @@ export default function RulesArticle({ lang = "fr" }: { lang?: Lang }) {
               href={CFBR_CONTACT_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-[40px] items-center rounded-xl bg-[#1b5d78] px-4 text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+              className="inline-flex min-h-[44px] items-center rounded-xl bg-[#1b5d78] px-4 text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
             >
               {t.contactCfbr}
             </a>
@@ -176,6 +177,7 @@ export default function RulesArticle({ lang = "fr" }: { lang?: Lang }) {
           </ul>
         </article>
       </main>
+      <LegalFooter lang={lang} />
     </div>
   );
 }

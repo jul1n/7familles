@@ -6,6 +6,8 @@ import { asset } from "@/lib/asset";
 import { cardLinks, otherLanguageTerm } from "@/lib/links";
 import { paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
+import { textOnCream } from "@/lib/color";
+import LegalFooter from "@/components/LegalFooter";
 
 // Page de lecture « simple » d'une carte : texte complet, indexable, sans la scène 3D.
 // Sert aussi de version accessible et de lien partageable (la scène s'ouvre via ?carte=<id>).
@@ -30,7 +32,7 @@ export default function StaticArticle({ card, siblings, lang = "fr" }: { card: C
         </Link>
         <Link
           href={`${paths.home(lang)}?carte=${card.id}`}
-          className="inline-flex min-h-[40px] items-center rounded-xl bg-[#1b5d78] px-4 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+          className="inline-flex min-h-[44px] items-center rounded-xl bg-[#1b5d78] px-4 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
         >
           {t.seeCard3d}
         </Link>
@@ -49,7 +51,7 @@ export default function StaticArticle({ card, siblings, lang = "fr" }: { card: C
         </div>
 
         <article>
-          <p className="text-sm font-semibold" style={{ color: card.familyColor }}>
+          <p className="text-sm font-semibold" style={{ color: textOnCream(card.familyColor) }}>
             <Link href={paths.family(lang, card.familyId)} className="underline-offset-2 hover:underline">
               {t.familyOf(card.familyName)}
             </Link>{" "}
@@ -60,6 +62,7 @@ export default function StaticArticle({ card, siblings, lang = "fr" }: { card: C
           <p className="mt-4 rounded-xl border border-stone-200 bg-[#F5F2EB] p-4 text-base font-medium leading-relaxed text-stone-800">
             {card.shortDescription}
           </p>
+          <h2 className="sr-only">{t.cardSheetHeading}</h2>
           <div className="card-prose mt-4">
             <ReactMarkdown>{body}</ReactMarkdown>
           </div>
@@ -73,7 +76,7 @@ export default function StaticArticle({ card, siblings, lang = "fr" }: { card: C
                     href={l.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-[36px] items-center rounded-lg border border-[#1b5d78]/20 bg-[#1b5d78]/10 px-3 text-xs font-semibold text-[#1b5d78] focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+                    className="inline-flex min-h-[44px] items-center rounded-lg border border-[#1b5d78]/20 bg-[#1b5d78]/10 px-3 text-xs font-semibold text-[#1b5d78] focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
                   >
                     {l.label}
                   </a>
@@ -99,6 +102,7 @@ export default function StaticArticle({ card, siblings, lang = "fr" }: { card: C
           </nav>
         </article>
       </main>
+      <LegalFooter lang={lang} />
     </div>
   );
 }

@@ -149,6 +149,8 @@ interface UiText {
   rulesQrAlt: string;
   rulesImagesNote: string;
   cfbrSite: string;
+  legal: string;
+  cardSheetHeading: string;
   prevNextNav: string;
   famNavLabel: string;
   sitemapNav: string;
@@ -339,6 +341,8 @@ const fr: UiText = {
   rulesQrAlt: "QR code vers la page du jeu sur le site du CFBR",
   rulesImagesNote: "",
   cfbrSite: "Site du CFBR",
+  legal: "Mentions légales et données personnelles (site du CFBR)",
+  cardSheetHeading: "Fiche pédagogique",
   prevNextNav: "Cartes de la famille",
   famNavLabel: "Toutes les fiches du jeu",
   sitemapNav: "Toutes les fiches du jeu",
@@ -368,7 +372,7 @@ const en: UiText = {
   siteName: "The 7 Families of Dams",
   siteNameShort: "7 Families",
   siteDescription:
-    "A dam card game in the spirit of Happy Families (Quartett), by the French Committee on Large Dams (CFBR, 1926–2026): collect 7 families of 6 cards and explore 42 illustrated cards with their educational fact sheets. English edition of the website.",
+    "A dam card game in the spirit of Happy Families (Quartett) by the French Committee on Large Dams (CFBR, 1926–2026): 7 families, 42 illustrated cards and fact sheets.",
   seoKeywords: [
     "Happy Families",
     "Happy Families card game",
@@ -540,6 +544,8 @@ const en: UiText = {
   rulesImagesNote:
     "Note: the illustrations printed on the cards are in French; this website translates the texts, the fact sheets and the audio.",
   cfbrSite: "CFBR website",
+  legal: "Legal notice and personal data (CFBR website, in French)",
+  cardSheetHeading: "Educational fact sheet",
   prevNextNav: "Cards of the family",
   famNavLabel: "All the game sheets",
   sitemapNav: "All the game sheets",

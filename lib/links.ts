@@ -8,6 +8,8 @@ export interface ExternalLink {
 }
 
 export const CFBR_URL = "https://www.barrages-cfbr.eu/";
+// Mentions légales et données personnelles : page de référence du site du CFBR (où le jeu sera hébergé à terme)
+export const LEGAL_URL = "https://www.barrages-cfbr.eu/Mentions-legales.html";
 export const CFBR_CONTACT_URL = "https://www.barrages-cfbr.eu/Contactez-nous.html";
 export const GET_COPY_TEXT =
   "Le jeu est vendu à prix coûtant et n’a fait l’objet que d’une diffusion en petite quantité. Contactez le CFBR pour savoir où et comment vous en procurer un exemplaire.";
