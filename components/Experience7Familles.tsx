@@ -30,6 +30,8 @@ import {
   ChevronUp,
   Compass,
   Box,
+  Package,
+  PackageOpen,
   LayoutGrid,
   CircleHelp,
   BookOpen,
@@ -131,6 +133,12 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
   // État du Deck 3D (pile compacte vs éventail des 7 familles)
   const [isDeckSpread, setIsDeckSpread] = useState<boolean>(true);
+  // Paquet rassemblé : cartes rangées dans la boîte (modèle 3D) ou posées à côté
+  const [isBoxed, setIsBoxed] = useState<boolean>(false);
+  const toggleDeckSpread = () => {
+    setIsBoxed(false);
+    setIsDeckSpread((prev) => !prev);
+  };
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   // Position du carrousel dans une ref (lue par la scène 3D à chaque frame) : pas de re-rendu React
   // à chaque pixel de défilement. Seul l'index actif déclenche un rendu.
@@ -669,7 +677,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         if (currentStage === "card") {
           setIsFlipped((prev) => !prev);
         } else if (currentStage === "deck") {
-          setIsDeckSpread((prev) => !prev);
+          toggleDeckSpread();
         }
       } else if (e.key === "Enter") {
         if (currentStage === "deck") {
@@ -985,6 +993,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             hoveredCardId={hoveredCardId}
             setHoveredCardId={setHoveredCardId}
             isDeckSpread={isDeckSpread}
+            isBoxed={isBoxed}
+            onToggleBox={() => setIsBoxed((prev) => !prev)}
             deckScrollRef={deckScrollRef}
           />
         </div>
@@ -1047,13 +1057,25 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               <div className="flex items-center gap-3">
               {/* Bouton éventail / paquet */}
               <button
-                onClick={() => setIsDeckSpread(!isDeckSpread)}
+                onClick={toggleDeckSpread}
                 className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-white/95 text-stone-800 border border-stone-300 hover:bg-stone-50 transition flex items-center gap-2 shadow-lg backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
                 aria-label={isDeckSpread ? t.spreadOn : t.spreadOff}
               >
                 <Compass className="w-4 h-4 text-cyan-600" />
                 <span>{isDeckSpread ? t.spreadOn : t.spreadOff}</span>
               </button>
+
+              {/* Boîte de jeu : visible quand le paquet est rassemblé */}
+              {!isDeckSpread && (
+                <button
+                  onClick={() => setIsBoxed((prev) => !prev)}
+                  className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-white/95 text-stone-800 border border-stone-300 hover:bg-stone-50 transition flex items-center gap-2 shadow-lg backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                  aria-pressed={isBoxed}
+                >
+                  {isBoxed ? <PackageOpen className="w-4 h-4 text-cyan-600" /> : <Package className="w-4 h-4 text-cyan-600" />}
+                  <span>{isBoxed ? t.boxOut : t.boxIn}</span>
+                </button>
+              )}
 
               {/* Règles du jeu : le seul lien utile ici, les autres sont dans la barre du haut */}
               <a

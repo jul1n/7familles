@@ -46,6 +46,8 @@ interface UiText {
   centerFamily: (n: string) => string;
   spreadOn: string;
   spreadOff: string;
+  boxIn: string;
+  boxOut: string;
   backToFamilies: string;
   backToFamiliesShort: string;
   familyLabel: (n: string) => string;
@@ -229,6 +231,8 @@ const fr: UiText = {
   centerFamily: (n) => `Centrer la famille ${n}`,
   spreadOn: "Rassembler le paquet",
   spreadOff: "Déployer en éventail",
+  boxIn: "Ranger dans la boîte",
+  boxOut: "Sortir les cartes de la boîte",
   backToFamilies: "Revenir aux 7 familles",
   backToFamiliesShort: "Revenir à la vue des 7 familles",
   familyLabel: (n) => `Famille ${n}`,
@@ -430,6 +434,8 @@ const en: UiText = {
   centerFamily: (n) => `Center the ${n} family`,
   spreadOn: "Gather the deck",
   spreadOff: "Fan out the decks",
+  boxIn: "Put the cards in the box",
+  boxOut: "Take the cards out of the box",
   backToFamilies: "Back to the 7 families",
   backToFamiliesShort: "Back to the view of the 7 families",
   familyLabel: (n) => `${n} family`,

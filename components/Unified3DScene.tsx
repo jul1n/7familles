@@ -21,6 +21,8 @@ interface Unified3DSceneProps {
   hoveredCardId: string | null;
   setHoveredCardId: (id: string | null) => void;
   isDeckSpread: boolean;
+  isBoxed: boolean; // paquet rassemblé rangé dans la boîte de jeu
+  onToggleBox: () => void;
   deckScrollRef: React.MutableRefObject<number>; // Défilement horizontal (survol souris / tactile), lu à chaque frame
 }
 
@@ -68,9 +70,56 @@ const PILE_COUNT = 42;
 const PILE_SPACING = 0.0075;
 const PILE_THICKNESS = PILE_COUNT * PILE_SPACING;
 const PILE_EULER = new THREE.Euler(-0.55, 0.45, 0);
+// Vitesse de suivi des cartes du paquet rassemblé (le bloc de tranche et la boîte la partagent)
+const PILE_LAMBDA = 5;
 
-function DeckBlock({ visible }: { visible: boolean }) {
+// Boîte de jeu : proportions du gabarit d'impression (face 1085 × 1549 px, tranche 345 px), à l'échelle des cartes
+const BOX_H = 2.72;
+const BOX_W = (BOX_H * 1085) / 1549;
+const BOX_D = (BOX_H * 345) / 1549;
+// Ordre des faces de BoxGeometry : +x (droite), -x (gauche), +y (dessus), -y (dessous), +z (devant), -z (arrière)
+const BOX_FACES = ["right", "left", "top", "bottom", "front", "back"] as const;
+const BOX_DURATION = 1.5; // secondes pour ranger / sortir les cartes
+const CARD_H_PILE = 2.428;
+
+// Positions (u, v) dans le plan du paquet : paysage = paquet à gauche, boîte à droite ;
+// portrait = paquet au-dessus de la boîte.
+function boxLayout(isPortrait: boolean) {
+  return isPortrait
+    ? { pileU: 0, pileV: 1.6, boxU: 0, boxV: -1.5 }
+    : { pileU: -1.3, pileV: 0.1, boxU: 1.3, boxV: 0 };
+}
+
+// Une fois les cartes rangées, la boîte glisse vers le centre de la scène
+function boxU(s: number, L: ReturnType<typeof boxLayout>) {
+  return THREE.MathUtils.lerp(L.boxU, 0, THREE.MathUtils.smoothstep(s, 0.75, 1));
+}
+
+// Trajet du paquet vers la boîte (s : 0 = posé à côté, 1 = rangé) : il se place au-dessus de l'ouverture,
+// puis glisse vers le bas. Même repère que le paquet (inclinaison PILE_EULER).
+function storedPose(s: number, L: ReturnType<typeof boxLayout>) {
+  const aboveV = Math.max(L.boxV + BOX_H / 2 + CARD_H_PILE / 2 + 0.12, L.boxV);
+  if (s < 0.5) {
+    const k = THREE.MathUtils.smoothstep(s / 0.5, 0, 1);
+    return {
+      u: THREE.MathUtils.lerp(L.pileU, boxU(s, L), k),
+      v: THREE.MathUtils.lerp(L.pileV, aboveV, k),
+      scale: 1 - 0.3 * Math.sin(Math.PI * k), // léger recul pendant le déplacement : le paquet reste dans le cadre
+    };
+  }
+  const k = THREE.MathUtils.smoothstep((s - 0.5) / 0.5, 0, 1);
+  return { u: boxU(s, L), v: THREE.MathUtils.lerp(aboveV, L.boxV, k), scale: 0.7 + 0.3 * k };
+}
+
+function DeckBlock({ visible, boxProgressRef }: { visible: boolean; boxProgressRef: React.MutableRefObject<number> }) {
   const groupRef = useRef<THREE.Group>(null);
+  const targetPos = useMemo(() => new THREE.Vector3(), []);
+  const { size } = useThree();
+  const isPortrait = size.width < size.height;
+  const reducedMotion = useMemo(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    []
+  );
   const capMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const sideMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const opacityRef = useRef(0);
@@ -121,7 +170,17 @@ function DeckBlock({ visible }: { visible: boolean }) {
   useFrame((_, delta) => {
     opacityRef.current = THREE.MathUtils.damp(opacityRef.current, visible ? 1 : 0, 8, delta);
     const op = opacityRef.current;
-    if (groupRef.current) groupRef.current.visible = op > 0.01;
+    if (groupRef.current) {
+      groupRef.current.visible = op > 0.01;
+      // Le bloc suit le paquet : à côté de la boîte, puis glisse à l'intérieur
+      const pose = storedPose(boxProgressRef.current, boxLayout(isPortrait));
+      targetPos.set(pose.u, pose.v, 0).applyEuler(PILE_EULER);
+      const lam = PILE_LAMBDA * (reducedMotion ? 3 : 1);
+      groupRef.current.position.x = THREE.MathUtils.damp(groupRef.current.position.x, targetPos.x, lam, delta);
+      groupRef.current.position.y = THREE.MathUtils.damp(groupRef.current.position.y, targetPos.y, lam, delta);
+      groupRef.current.position.z = THREE.MathUtils.damp(groupRef.current.position.z, targetPos.z, lam, delta);
+      groupRef.current.scale.setScalar(THREE.MathUtils.damp(groupRef.current.scale.x, pose.scale, lam, delta));
+    }
     if (capMatRef.current) capMatRef.current.opacity = op;
     if (sideMatRef.current) sideMatRef.current.opacity = op;
   });
@@ -281,6 +340,7 @@ function PhysicalCard3D({
   hoveredFamilyIndex,
   setHoveredCardId,
   isDeckSpread,
+  boxProgressRef,
   deckScrollRef,
   loadAll,
 }: {
@@ -298,6 +358,7 @@ function PhysicalCard3D({
   hoveredFamilyIndex: number;
   setHoveredCardId: (id: string | null) => void;
   isDeckSpread: boolean;
+  boxProgressRef: React.MutableRefObject<number>;
   deckScrollRef: React.MutableRefObject<number>;
   loadAll: boolean;
 }) {
@@ -323,7 +384,7 @@ function PhysicalCard3D({
       qFlip: new THREE.Quaternion(),
       yAxis: new THREE.Vector3(0, 1, 0),
       pileEuler: new THREE.Euler(),
-      pileNormal: new THREE.Vector3(),
+      pileOffset: new THREE.Vector3(),
     }),
     []
   );
@@ -466,10 +527,13 @@ function PhysicalCard3D({
         const off = (stackK - (PILE_COUNT - 1) / 2) * PILE_SPACING;
         const pileRotZ = jitter.rotZ * 0.2;
         tmp.pileEuler.set(PILE_EULER.x, PILE_EULER.y, pileRotZ);
-        tmp.pileNormal.set(0, 0, 1).applyEuler(tmp.pileEuler);
-        targetX = jitter.offsetX * 0.25 + tmp.pileNormal.x * off;
-        targetY = jitter.offsetY * 0.25 + tmp.pileNormal.y * off;
-        targetZ = tmp.pileNormal.z * off;
+        // Position dans le repère du paquet : (u, v) vers la boîte, off le long de l'épaisseur
+        const pose = storedPose(boxProgressRef.current, boxLayout(isPortrait));
+        tmp.pileOffset.set(pose.u, pose.v, off).applyEuler(tmp.pileEuler);
+        targetX = jitter.offsetX * 0.25 + tmp.pileOffset.x;
+        targetY = jitter.offsetY * 0.25 + tmp.pileOffset.y;
+        targetZ = tmp.pileOffset.z;
+        targetScale = pose.scale;
         targetRotX = PILE_EULER.x;
         targetRotY = PILE_EULER.y;
         targetRotZ = pileRotZ;
@@ -706,7 +770,13 @@ function PhysicalCard3D({
     // Trajectoire pilotée par une progression -> suivi serré ; sinon -> décalage (stagger) par carte,
     // la carte du dessus part en premier et les suivantes la rattrapent (effet d'éventail qui se déploie).
     const baseLambda = (5 - indexInFamily * 0.4 - familyIndex * 0.05) * motionScale;
-    const lambdaTarget = sp > 0.001 || hp > 0.001 || ep > 0.001 ? 12 * motionScale : baseLambda;
+    // Paquet rassemblé : vitesse unique, pour que les cartes restent alignées avec le bloc de tranche
+    const lambdaTarget =
+      currentStage === "deck" && !isDeckSpread
+        ? PILE_LAMBDA * motionScale
+        : sp > 0.001 || hp > 0.001 || ep > 0.001
+          ? 12 * motionScale
+          : baseLambda;
     lambdaRef.current = THREE.MathUtils.damp(lambdaRef.current, lambdaTarget, 8, delta);
     const lam = lambdaRef.current;
 
@@ -874,6 +944,93 @@ function PhysicalCard3D({
   );
 }
 
+// Boîte de jeu en 3D : visuels du gabarit d'impression (devant, arrière, tranches, dessus, dessous).
+// Opaque : les cartes rangées à l'intérieur disparaissent derrière ses parois.
+function GameBox({
+  visible,
+  onToggle,
+  boxProgressRef,
+}: {
+  visible: boolean;
+  onToggle: () => void;
+  boxProgressRef: React.MutableRefObject<number>;
+}) {
+  const textures = useTexture(BOX_FACES.map((f) => asset(`/box/${f}.webp`)));
+  useMemo(() => {
+    textures.forEach((t) => {
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 8;
+    });
+  }, [textures]);
+  const groupRef = useRef<THREE.Group>(null);
+  const targetPos = useMemo(() => new THREE.Vector3(), []);
+  const { size } = useThree();
+  const isPortrait = size.width < size.height;
+  const reducedMotion = useMemo(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    []
+  );
+
+  useFrame((_, delta) => {
+    const g = groupRef.current;
+    if (!g) return;
+    const L = boxLayout(isPortrait);
+    targetPos.set(boxU(boxProgressRef.current, L), L.boxV, 0).applyEuler(PILE_EULER);
+    // Apparition : la boîte arrive du bas en grandissant
+    const lam = 6 * (reducedMotion ? 3 : 1);
+    const k = THREE.MathUtils.damp(g.scale.x, visible ? 1 : 0, lam, delta);
+    g.scale.setScalar(k);
+    g.visible = k > 0.02;
+    g.position.x = targetPos.x;
+    g.position.y = targetPos.y - (1 - k) * 1.2;
+    g.position.z = targetPos.z;
+  });
+
+  return (
+    <group ref={groupRef} rotation={PILE_EULER} visible={false} scale={0.001}>
+      <mesh
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = "";
+        }}
+      >
+        <boxGeometry args={[BOX_W, BOX_H, BOX_D]} />
+        {textures.map((map, i) => (
+          <meshStandardMaterial key={BOX_FACES[i]} attach={`material-${i}`} map={map} roughness={0.62} />
+        ))}
+      </mesh>
+    </group>
+  );
+}
+
+// Avancement du rangement (0 = cartes posées à côté de la boîte, 1 = rangées), à vitesse constante.
+function BoxController({
+  active,
+  progressRef,
+}: {
+  active: boolean;
+  progressRef: React.MutableRefObject<number>;
+}) {
+  const reducedMotion = useMemo(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    []
+  );
+  useFrame((_, delta) => {
+    const step = Math.min(delta, 1 / 20) / (BOX_DURATION / (reducedMotion ? 3 : 1));
+    const target = active ? 1 : 0;
+    const p = progressRef.current;
+    progressRef.current = p + Math.max(-step, Math.min(step, target - p));
+  });
+  return null;
+}
+
 // Barre de progression du chargement initial (affichée une seule fois)
 function LoadingBar({ lang }: { lang: Lang }) {
   const { progress } = useProgress();
@@ -955,6 +1112,13 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
     []
   );
   const props = { ...rawProps, setHoveredCardId };
+  // Boîte : visible quand le paquet est rassemblé ; textures chargées au premier rassemblement
+  const boxProgressRef = useRef(0);
+  const folded = rawProps.currentStage === "deck" && !rawProps.isDeckSpread;
+  const [boxWanted, setBoxWanted] = useState(false);
+  React.useEffect(() => {
+    if (folded) setBoxWanted(true);
+  }, [folded]);
   const lang: Lang = rawProps.lang ?? "fr";
   const { FAMILIES, CARDS } = useMemo(() => getContent(lang), [lang]);
 
@@ -971,6 +1135,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
         onPointerMissed={() => props.onBack()}
       >
         <ResponsiveController currentStage={props.currentStage} />
+        <BoxController active={folded && props.isBoxed} progressRef={boxProgressRef} />
         <ambientLight intensity={1.7} color="#fffcf5" />
         <directionalLight position={[5, 10, 6]} intensity={1.8} color="#fffbf5" />
         <directionalLight position={[-5, -2, -3]} intensity={0.5} color="#e2e8f0" />
@@ -978,7 +1143,12 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
 
         <Float speed={reduceMotion ? 0 : 1.1} rotationIntensity={reduceMotion ? 0 : 0.06} floatIntensity={reduceMotion ? 0 : 0.12}>
           <group position={[0, 0, 0]}>
-            <DeckBlock visible={props.currentStage === "deck" && !props.isDeckSpread} />
+            <DeckBlock visible={folded} boxProgressRef={boxProgressRef} />
+            {boxWanted && (
+              <Suspense fallback={null}>
+                <GameBox visible={folded} onToggle={props.onToggleBox} boxProgressRef={boxProgressRef} />
+              </Suspense>
+            )}
             {FAMILIES.map((family, fIdx) => {
               const famCards = CARDS.filter((c) => c.familyId === family.id);
               const hoveredFamilyCard = props.hoveredCardId
@@ -1013,6 +1183,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
                   hoveredFamilyIndex={hoveredFamilyIndex}
                   setHoveredCardId={props.setHoveredCardId}
                   isDeckSpread={props.isDeckSpread}
+                  boxProgressRef={boxProgressRef}
                   deckScrollRef={props.deckScrollRef}
                   loadAll={loadAll}
                 />
