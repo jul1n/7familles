@@ -39,10 +39,10 @@ export default function AgencyCredit({ className = "", placement = "top", align 
         role="tooltip"
         className={`absolute ${horizontal} ${vertical} z-50 w-72 max-w-[85vw] opacity-0 invisible transition-[opacity,visibility] duration-150 group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible`}
       >
-        <span className="block rounded-xl bg-stone-900 px-3.5 py-3 text-left text-[11px] font-medium leading-snug text-white shadow-xl not-italic">
+        <span className="block rounded-xl bg-stone-900 px-3.5 py-3 text-left text-xs font-medium leading-snug text-white shadow-xl not-italic">
           <strong className="block text-xs mb-1">{BIMBAMBOUM.name}</strong>
           {lang === "fr" ? BIMBAMBOUM.description : UI.en.agencyDesc}
-          <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold">
+          <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold">
             <a
               href={BIMBAMBOUM.linkedin}
               target="_blank"

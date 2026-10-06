@@ -5,47 +5,43 @@ import { asset } from "@/lib/asset";
 import dynamic from "next/dynamic";
 import type { CardData } from "@/data/cards";
 import { getContent, paths, type Lang } from "@/lib/content";
-import { UI, type UiText } from "@/lib/ui";
+import { UI } from "@/lib/ui";
 import MosaicView from "@/components/MosaicView";
-import GameIntro from "@/components/GameIntro";
 import SearchDialog from "@/components/SearchDialog";
 import QuizDialog from "@/components/QuizDialog";
+import HelpDialog from "@/components/HelpDialog";
+import { useInstallPrompt } from "@/lib/use-install-prompt";
 import QuizPrint from "@/components/QuizPrint";
 import { trackEvent, trackView } from "@/lib/analytics";
+import { badgeColors } from "@/lib/color";
 import { QUIZ_ENABLED, absoluteUrl } from "@/lib/site";
 import PrintSheets from "@/components/PrintSheets";
 import AgencyCredit from "@/components/AgencyCredit";
+import { CardActions, EnglishTerm, GetCopyButton, MoreLinks } from "@/components/CardWidgets";
 import { markdownToSpeech, markdownToSpeechEn, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import audioManifest from "@/data/audio-manifest.json";
 import audioManifestEn from "@/data/audio-manifest-en.json";
-import { ARCHITECTES_URL, CFBR_CONTACT_URL, cardLinks, getCopyText, otherLanguageTerm } from "@/lib/links";
+import { ARCHITECTES_URL, LEGAL_URL, cardLinks, otherLanguageTerm } from "@/lib/links";
 import {
-  Layers,
-  ExternalLink,
-  Volume2,
-  Square,
   Printer,
   Edit3,
   ChevronLeft,
   ChevronRight,
-  Download,
-  Upload,
-  Copy,
-  Check,
   ChevronUp,
-  X,
   Compass,
   Box,
   LayoutGrid,
   CircleHelp,
   BookOpen,
   Search,
-  Share2,
   Trophy,
-  ShoppingBag,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
+
+// Éditeur Markdown : chargé en développement seulement, le code n'est pas inclus dans le site publié
+const DevEditor =
+  process.env.NODE_ENV === "development" ? dynamic(() => import("@/components/DevEditor"), { ssr: false }) : null;
 
 // Import de la scène 3D unifiée continue
 const Unified3DScene = dynamic(() => import("@/components/Unified3DScene"), {
@@ -58,180 +54,6 @@ const Unified3DScene = dynamic(() => import("@/components/Unified3DScene"), {
   ),
 });
 
-// Liens « en savoir plus » vers des pages externes (nouvel onglet)
-function MoreLinks({ links, t }: { links: { label: string; url: string }[]; t: UiText }) {
-  return (
-    <nav aria-label={t.moreLinks} className="pt-4 border-t border-stone-200">
-      <h3 className="text-xs font-bold uppercase tracking-wide text-stone-600 mb-2">{t.moreLinks}</h3>
-      <ul className="flex flex-wrap gap-2">
-        {links.map((l) => (
-          <li key={l.url}>
-            <a
-              href={l.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg text-xs font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 hover:bg-[#1b5d78]/15 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
-            >
-              {l.label}
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
-// Actions de la fiche : écouter le texte à voix haute, imprimer la fiche
-function CardActions({
-  isSpeaking,
-  canSpeak,
-  onToggleSpeak,
-  onPrint,
-  onShare,
-  t,
-}: {
-  t: UiText;
-  onShare: () => void;
-  isSpeaking: boolean;
-  canSpeak: boolean;
-  onToggleSpeak: () => void;
-  onPrint: () => void;
-}) {
-  const btn =
-    "inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-xl text-xs font-semibold border transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none";
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {canSpeak && (
-        <button
-          onClick={onToggleSpeak}
-          aria-pressed={isSpeaking}
-          className={`${btn} ${
-            isSpeaking
-              ? "bg-[#1b5d78] text-white border-[#1b5d78]"
-              : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
-          }`}
-        >
-          {isSpeaking ? <Square className="w-3.5 h-3.5" /> : <Volume2 className="w-4 h-4" />}
-          {isSpeaking ? t.stop : t.listen}
-        </button>
-      )}
-      <button onClick={onShare} className={`${btn} bg-white text-stone-700 border-stone-200 hover:bg-stone-50`}>
-        <Share2 className="w-4 h-4" />
-        {t.share}
-      </button>
-      <button onClick={onPrint} className={`${btn} bg-white text-stone-700 border-stone-200 hover:bg-stone-50`}>
-        <Printer className="w-4 h-4" />
-        {t.print}
-      </button>
-    </div>
-  );
-}
-
-// Bouton « Se procurer le jeu » : infobulle au survol, au focus et au clic, lien vers la page contact du CFBR
-function GetCopyButton({ t, lang }: { t: UiText; lang: Lang }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div
-      className="group relative"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
-      }}
-      onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
-    >
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-controls="get-copy-pop"
-        title={t.getCopyLabel}
-        className="min-h-[40px] px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
-      >
-        <ShoppingBag className="w-4 h-4" />
-        <span className="hidden lg:inline">{t.getCopy}</span>
-        <span className="sr-only lg:hidden">{t.getCopy}</span>
-      </button>
-      <div
-        id="get-copy-pop"
-        role="region"
-        aria-label={t.getCopyLabel}
-        className={`absolute right-0 top-full z-50 mt-2 w-72 rounded-xl bg-stone-900 p-3 text-left text-xs font-medium leading-snug text-white shadow-lg transition-opacity duration-200 ${
-          open ? "opacity-100" : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100"
-        }`}
-      >
-        <p>{getCopyText(lang)}</p>
-        <a
-          href={CFBR_CONTACT_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-white px-3 font-semibold text-[#1b5d78] focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
-        >
-          {t.contactCfbr}
-          <ExternalLink className="w-3 h-3" />
-        </a>
-      </div>
-    </div>
-  );
-}
-
-// Drapeaux (SVG : les emojis de drapeaux ne s'affichent pas sous Windows) : Royaume-Uni sur le site français,
-// France sur le site anglais
-function FrFlag({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 60 40" className={className} role="img" aria-label="French flag">
-      <rect width="20" height="40" fill="#0055A4" />
-      <rect x="20" width="20" height="40" fill="#fff" />
-      <rect x="40" width="20" height="40" fill="#EF4135" />
-    </svg>
-  );
-}
-
-function UKFlag({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 60 40" className={className} role="img" aria-label="Drapeau du Royaume-Uni">
-      <clipPath id="uk-clip">
-        <rect width="60" height="40" />
-      </clipPath>
-      <g clipPath="url(#uk-clip)">
-        <rect width="60" height="40" fill="#012169" />
-        <path d="M0 0L60 40M60 0L0 40" stroke="#fff" strokeWidth="8" />
-        <path d="M0 0L60 40M60 0L0 40" stroke="#C8102E" strokeWidth="3" />
-        <path d="M30 0V40M0 20H60" stroke="#fff" strokeWidth="13" />
-        <path d="M30 0V40M0 20H60" stroke="#C8102E" strokeWidth="7" />
-      </g>
-    </svg>
-  );
-}
-
-// Terme anglais de la carte, en fin de fiche
-function EnglishTerm({ term, wiki, t, lang }: { term?: string; wiki?: { label: string; url: string }; t: UiText; lang: Lang }) {
-  if (!term) return null;
-  return (
-    <p className="pt-4 border-t border-stone-200 text-sm text-stone-700">
-      {lang === "fr" ? (
-        <UKFlag className="inline-block w-5 h-[14px] rounded-[2px] shadow-sm mr-2 align-[-2px]" />
-      ) : (
-        <FrFlag className="inline-block w-5 h-[14px] rounded-[2px] shadow-sm mr-2 align-[-2px]" />
-      )}
-      <span className="text-xs font-bold uppercase tracking-wide text-stone-600 mr-2">{t.inOtherLang}</span>
-      {wiki ? (
-        <a
-          href={wiki.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          lang={lang === "fr" ? "en" : "fr"}
-          title={wiki.label}
-          className="font-semibold text-[#1b5d78] underline decoration-dotted underline-offset-2 hover:decoration-solid"
-        >
-          {term}
-        </a>
-      ) : (
-        <span lang={lang === "fr" ? "en" : "fr"} className="font-semibold">{term}</span>
-      )}
-    </p>
-  );
-}
-
 export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   const t = UI[lang];
   const otherLang: Lang = lang === "fr" ? "en" : "fr";
@@ -243,7 +65,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
   // Mode d'affichage : scène 3D ou mosaïque des 42 cartes côte à côte
-  const [viewMode, setViewMode] = useState<"3d" | "mosaic">("3d");
+  const [viewMode, setViewMode] = useState<"3d" | "mosaic">("mosaic");
   // Préférence « réduire les animations » et disponibilité de WebGL : sans l'un ou l'autre, on propose la mosaïque
   const [reducedMotion, setReducedMotion] = useState<boolean>(false);
   const [webglOk, setWebglOk] = useState<boolean>(true);
@@ -265,29 +87,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  // Installation de l'application : Chrome/Android/ordinateur proposent un bouton, Safari (iOS) demande un geste manuel
-  const [installEvent, setInstallEvent] = useState<{ prompt: () => Promise<void> } | null>(null);
-  const [iosInstall, setIosInstall] = useState<boolean>(false);
-  useEffect(() => {
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstallEvent(e as unknown as { prompt: () => Promise<void> });
-    };
-    const onInstalled = () => {
-      setInstallEvent(null);
-      trackEvent("evt/installation");
-    };
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    window.addEventListener("appinstalled", onInstalled);
-    const ua = navigator.userAgent;
-    const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-    const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
-    setIosInstall(ios && !standalone);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
-  }, []);
+  const { canInstall, install, iosHint } = useInstallPrompt();
   // Vue par défaut : mosaïque sur téléphone, carrousel 3D ailleurs (on peut toujours basculer)
   const [phone, setPhone] = useState<boolean>(false);
   const [modeResolved, setModeResolved] = useState<boolean>(false);
@@ -310,8 +110,10 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     const wantedFamily = FAMILIES.find((f) => f.id === params.get("famille"));
     const isPhone = window.matchMedia("(max-width: 767px)").matches;
     setPhone(isPhone);
-    if (!ok || ((mq.matches || isPhone) && !wanted && !wantedFamily)) {
-      setViewMode("mosaic");
+    // La mosaïque est la vue de départ (elle est dans le HTML statique : affichage immédiat sur téléphone) ;
+    // le carrousel 3D la remplace sur les écrans larges, sauf si WebGL manque ou si les animations sont réduites
+    if (ok && (!(mq.matches || isPhone) || wanted || wantedFamily)) {
+      setViewMode("3d");
     }
     setModeResolved(true);
     if (ok && wanted) {
@@ -476,10 +278,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
   // Mode Édition de développement
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editTab, setEditTab] = useState<"write" | "preview">("write");
   const [customMarkdownMap, setCustomMarkdownMap] = useState<Record<string, string>>({});
-  const [copiedNotice, setCopiedNotice] = useState<boolean>(false);
-  const [saveStatus, setSaveStatus] = useState<string>("Enregistré automatiquement");
 
   // Détermination de l'étape courante pour la transition 3D continue
   const currentStage: "deck" | "family" | "card" = selectedCardId
@@ -488,8 +287,10 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     ? "family"
     : "deck";
 
-  // Chargement des modifications locales (localStorage)
+  // Modifications locales de l'éditeur (développement uniquement : le site publié n'y touche pas, plusieurs sites
+  // partagent l'origine jul1n.github.io et pourraient écrire dans le même localStorage)
   useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
     try {
       const saved = localStorage.getItem("7familles_markdown_edits");
       if (saved) {
@@ -525,18 +326,6 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     ? customMarkdownMap[currentCard.id] ?? currentCard.contentMarkdown
     : "";
 
-  const handleUpdateMarkdown = (newMd: string) => {
-    if (!currentCard) return;
-    const updated = { ...customMarkdownMap, [currentCard.id]: newMd };
-    setCustomMarkdownMap(updated);
-    setSaveStatus("Modifications enregistrées");
-    try {
-      localStorage.setItem("7familles_markdown_edits", JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-  };
-
   const toggleSpeak = () => {
     if (isSpeaking) {
       stopSpeaking();
@@ -562,51 +351,6 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   };
 
   const markdownFor = (card: CardData) => customMarkdownMap[card.id] ?? card.contentMarkdown;
-
-  const handleCopyMarkdown = () => {
-    navigator.clipboard.writeText(currentMarkdown);
-    setCopiedNotice(true);
-    setTimeout(() => setCopiedNotice(false), 2000);
-  };
-
-  const handleExportAll = () => {
-    const exportData = CARDS.map((c) => ({
-      id: c.id,
-      familyId: c.familyId,
-      title: c.title,
-      markdown: customMarkdownMap[c.id] ?? c.contentMarkdown,
-    }));
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "7familles_contenus_pedagogiques.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target?.result as string);
-        const map: Record<string, string> = { ...customMarkdownMap };
-        parsed.forEach((item: { id: string; markdown: string }) => {
-          map[item.id] = item.markdown;
-        });
-        setCustomMarkdownMap(map);
-        localStorage.setItem("7familles_markdown_edits", JSON.stringify(map));
-        alert("Importation réussie des contenus pédagogiques !");
-      } catch {
-        alert("Erreur lors de la lecture du fichier JSON.");
-      }
-    };
-    reader.readAsText(file);
-  };
 
   // Clic sur une carte de la mosaïque : on l'ouvre dans la fiche 3D, avec retour possible vers la mosaïque
   const openCardFromMosaic = (card: CardData) => {
@@ -970,14 +714,14 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       >
         <a
           href="#contenu"
-          className="min-h-[40px] inline-flex items-center rounded-lg bg-[#1b5d78] px-3 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+          className="min-h-[44px] inline-flex items-center rounded-lg bg-[#1b5d78] px-3 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
         >
           {t.skipToContent}
         </a>
         <button
           type="button"
           onClick={() => switchViewMode("mosaic")}
-          className="min-h-[40px] rounded-lg border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+          className="min-h-[44px] rounded-lg border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
         >
           {t.skipToMosaic}
         </button>
@@ -1021,7 +765,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               <span
                 id="cfbr-logo-tip"
                 role="tooltip"
-                className="pointer-events-none absolute left-0 top-full mt-2 z-50 w-64 rounded-xl bg-stone-900 px-3 py-2 text-left text-[11px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+                className="pointer-events-none absolute left-0 top-full mt-2 z-50 w-64 rounded-xl bg-stone-900 px-3 py-2 text-left text-xs font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
               >
                 {t.logoTip}
               </span>
@@ -1034,11 +778,11 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                   <span className="sm:hidden">{t.siteNameShort}</span>
                   <span className="hidden sm:inline">{t.siteName}</span>
                 </h1>
-                <span className="hidden lg:inline-flex whitespace-nowrap items-center text-[11px] font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
+                <span className="hidden lg:inline-flex whitespace-nowrap items-center text-xs font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
                   1926–2026
                 </span>
               </div>
-              <p className="text-[11px] text-stone-600 hidden md:block">
+              <p className="text-xs text-stone-600 hidden md:block">
                 {t.subtitle}
               </p>
             </div>
@@ -1073,7 +817,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
           <div
             role="group"
             aria-label={t.displayMode}
-            className="flex h-10 flex-shrink-0 items-center gap-0.5 rounded-xl bg-white/95 border border-stone-200/90 p-0.5 shadow-xs"
+            className="flex h-11 flex-shrink-0 items-center gap-0.5 rounded-xl bg-white/95 border border-stone-200/90 p-0.5 shadow-xs"
           >
             {([
               { mode: "3d", label: t.carousel, Icon: Box, hint: t.carouselHint },
@@ -1086,7 +830,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 aria-pressed={viewMode === mode}
                 aria-label={label}
                 title={hint}
-                className={`h-9 px-2.5 sm:px-3 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none ${
+                className={`h-10 px-2.5 sm:px-3 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none ${
                   viewMode === mode ? "bg-[#1b5d78] text-white shadow-sm" : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
@@ -1107,9 +851,9 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               e.preventDefault();
               window.location.href = asset(paths.home(otherLang)) + window.location.search;
             }}
-            aria-label={t.switchLangLabel}
+            aria-label={`${t.switchLang} – ${t.switchLangLabel}`}
             title={t.switchLangLabel}
-            className="h-10 min-w-10 flex-shrink-0 px-2 inline-flex items-center justify-center rounded-xl bg-white/95 hover:bg-white text-xs font-bold text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            className="h-11 min-w-11 flex-shrink-0 px-2 inline-flex items-center justify-center rounded-xl bg-white/95 hover:bg-white text-xs font-bold text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
           >
             {t.switchLang}
           </a>
@@ -1121,7 +865,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               onClick={() => setShowQuiz(true)}
               aria-label={t.quiz.open}
               title={t.quiz.open}
-              className="hidden sm:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-amber-600 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+              className="hidden sm:flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-amber-600 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
             >
               <Trophy className="w-4 h-4" />
             </button>
@@ -1133,7 +877,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             onClick={() => setShowSearch(true)}
             aria-label={t.search}
             title={`${t.search} ( / )`}
-            className="hidden sm:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            className="hidden sm:flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
           >
             <Search className="w-4 h-4" />
           </button>
@@ -1144,7 +888,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             onClick={() => setShowHelp(true)}
             aria-label={t.help}
             title={t.help}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
           >
             <CircleHelp className="w-4 h-4" />
           </button>
@@ -1154,7 +898,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             onClick={() => setPrintCards({ cards: CARDS, booklet: true })}
             title={t.printAllHint}
             aria-label={t.printAll}
-            className="min-h-[40px] px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            className="min-h-[44px] px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
           >
             <Printer className="w-4 h-4" />
             <span className="hidden md:inline">{t.print}</span>
@@ -1164,7 +908,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
           {process.env.NODE_ENV === "development" && (
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
+            className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
               isEditing
                 ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
                 : "bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs"
@@ -1193,13 +937,18 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {viewMode === "mosaic" && <MosaicView
-            onOpenCard={openCardFromMosaic}
-            notice={!webglOk ? t.mosaicNotice : undefined}
-            onSearch={() => setShowSearch(true)}
-            onQuiz={QUIZ_ENABLED ? () => setShowQuiz(true) : undefined}
-            lang={lang}
-          />}
+        {viewMode === "mosaic" && (
+          // Avant le choix de la vue, la mosaïque reste invisible sur écran large pour éviter un éclair avant la 3D
+          <div className={`contents ${modeResolved ? "" : "md:invisible"}`}>
+            <MosaicView
+              onOpenCard={openCardFromMosaic}
+              notice={!webglOk ? t.mosaicNotice : undefined}
+              onSearch={() => setShowSearch(true)}
+              onQuiz={QUIZ_ENABLED ? () => setShowQuiz(true) : undefined}
+              lang={lang}
+            />
+          </div>
+        )}
 
         {viewMode === "3d" && modeResolved && (
         <>
@@ -1276,7 +1025,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                       key={fam.id}
                       data-deck-idx={idx}
                       onClick={() => (isCentered ? setSelectedFamilyId(fam.id) : setDeckScrollOffset(3 - idx))}
-                      className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
+                      className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                         isCentered
                           ? "bg-stone-900 text-white shadow-sm border border-stone-900 scale-105"
                           : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
@@ -1315,6 +1064,14 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 <span>{t.rules}</span>
               </a>
               </div>
+              <a
+                href={LEGAL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[44px] items-center rounded-lg bg-white/70 px-3 text-xs font-medium text-stone-700 underline underline-offset-2 backdrop-blur-md focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none [@media(max-height:620px)]:hidden"
+              >
+                {t.legal}
+              </a>
             </div>
             </div>
           </div>
@@ -1359,7 +1116,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                     setSelectedCardId(c.id);
                     setSheetState("collapsed");
                   }}
-                  className="min-h-[40px] rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                  className="min-h-[44px] rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
                 >
                   {c.num}. {c.title}
                 </button>
@@ -1367,7 +1124,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             </nav>
 
             {/* Aide tactile : les noms des cartes sont affichés sous chacune d'elles */}
-            <p className="hidden pointer-coarse:block self-center text-center text-[11px] font-medium text-stone-600 px-3 py-1 rounded-full bg-white/80 backdrop-blur-md border border-stone-200/80">
+            <p className="hidden pointer-coarse:block self-center text-center text-xs font-medium text-stone-600 px-3 py-1 rounded-full bg-white/80 backdrop-blur-md border border-stone-200/80">
               {t.touchFamilyHint}
             </p>
           </div>
@@ -1415,12 +1172,12 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
             {/* Expérience Desktop : Panneau Pédagogique droit sticky */}
             <div className="hidden md:flex flex-col flex-1 h-full border-l border-stone-200/80 bg-white/80 backdrop-blur-xl overflow-hidden z-20 shadow-xl">
-              <div className="p-4 md:p-5 flex-1 overflow-y-auto">
+              <div tabIndex={0} role="region" aria-label={currentCard.title} className="p-4 md:p-5 flex-1 overflow-y-auto focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1b5d78] focus-visible:outline-none">
                 <div className="max-w-3xl mx-auto space-y-4">
                   <div className="flex items-center justify-between">
                     <span
-                      className="px-3.5 py-1 rounded-full text-xs font-bold text-white shadow-sm"
-                      style={{ backgroundColor: currentCard.familyColor }}
+                      className="px-3.5 py-1 rounded-full text-xs font-bold shadow-sm"
+                      style={badgeColors(currentCard.familyColor)}
                     >
                       {currentCard.familyName} • {t.cardNo(currentCard.num).charAt(0).toUpperCase() + t.cardNo(currentCard.num).slice(1)}
                     </span>
@@ -1513,7 +1270,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 onTouchEnd={handleSheetTouchEnd}
               >
                 <div className="w-12 h-1.5 rounded-full bg-stone-300 mb-2" />
-                <div className="flex items-center gap-1 text-[11px] font-semibold text-stone-600">
+                <div className="flex items-center gap-1 text-xs font-semibold text-stone-600">
                   <span>
                     {sheetState === "expanded" ? t.sheetLessShort : t.sheetMoreShort}
                   </span>
@@ -1527,19 +1284,22 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
               <div
                 id="card-pedagogic-content"
-                className={`px-5 pb-6 overflow-y-auto flex-1 ${sheetState === "collapsed" ? "cursor-pointer" : ""}`}
+                tabIndex={0}
+                role="region"
+                aria-label={currentCard.title}
+                className={`px-5 pb-6 overflow-y-auto flex-1 ${sheetState === "collapsed" ? "cursor-pointer" : ""} focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1b5d78] focus-visible:outline-none`}
                 // Deuxième appui, cette fois sur le texte : la fiche passe en plein écran
                 onClick={() => sheetState === "collapsed" && setSheetState("expanded")}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span
-                    className="text-[11px] font-bold px-2.5 py-0.5 rounded-full text-white shadow-sm"
-                    style={{ backgroundColor: currentCard.familyColor }}
+                    className="text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm"
+                    style={badgeColors(currentCard.familyColor)}
                   >
                     {currentCard.familyName} • {lang === "fr" ? "n°" : "no. "}{currentCard.num}
                   </span>
                   {currentCard.period && (
-                    <span className="text-[11px] text-stone-600">
+                    <span className="text-xs text-stone-600">
                       {currentCard.period}
                     </span>
                   )}
@@ -1576,11 +1336,11 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                     <MoreLinks links={cardLinks(currentCard, lang)} t={t} />
                     <div className="mt-4"><EnglishTerm term={otherLanguageTerm(currentCard, lang)?.term} wiki={otherLanguageTerm(currentCard, lang)?.wiki} t={t} lang={lang} /></div>
                     {currentCard.credits && (
-                      <div className="mt-4 pt-4 border-t border-stone-200 text-[11px] text-stone-600 italic">
+                      <div className="mt-4 pt-4 border-t border-stone-200 text-xs text-stone-600 italic">
                         {t.creditPhoto} : {currentCard.credits}
                       </div>
                     )}
-                    <p className="mt-2 text-[11px] text-stone-600 italic">
+                    <p className="mt-2 text-xs text-stone-600 italic">
                       <AgencyCredit lang={lang} />
                     </p>
                   </div>
@@ -1616,181 +1376,17 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       )}
 
       {/* 3. MODALE DU MODE ÉDITION DE DÉVELOPPEMENT */}
-      {showHelp && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/40 p-4 print:hidden"
-          onClick={() => setShowHelp(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="help-title"
-            className="w-full max-w-md rounded-2xl bg-white p-5 text-stone-800 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.key === "Escape" && setShowHelp(false)}
-          >
-            <div className="flex items-center justify-between">
-              <h2 id="help-title" className="text-base font-bold text-stone-900">{t.helpTitle}</h2>
-              <button
-                type="button"
-                autoFocus
-                onClick={() => setShowHelp(false)}
-                aria-label={t.helpClose}
-                className="h-9 w-9 rounded-lg hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <GameIntro lang={lang} className="mt-3 text-sm leading-snug text-stone-800" />
-            <ul className="mt-3 space-y-2 text-sm leading-snug">
-              {t.helpItems.map((it) => (
-                <li key={it.k}>
-                  <strong>{it.k}</strong> {it.v}
-                </li>
-              ))}
-              <li>
-                <strong>{t.helpRules}</strong>{" "}
-                <a href={asset(paths.rules(lang))} className="font-semibold text-[#1b5d78] underline">
-                  {t.helpRulesLink}
-                </a>
-              </li>
-              <li>{t.helpMosaic}</li>
-              {installEvent && (
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      installEvent.prompt();
-                      setInstallEvent(null);
-                    }}
-                    className="min-h-[40px] rounded-xl bg-[#1b5d78] px-4 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
-                  >
-                    {t.installApp}
-                  </button>
-                </li>
-              )}
-              {!installEvent && iosInstall && <li>{t.installIos}</li>}
-            </ul>
-          </div>
-        </div>
-      )}
+      {showHelp && <HelpDialog lang={lang} canInstall={canInstall} iosHint={iosHint} onInstall={install} onClose={() => setShowHelp(false)} />}
 
-      {isEditing && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="edit-dialog-title"
-          className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center p-3 md:p-6"
-        >
-          <div className="bg-white border border-stone-300 w-full max-w-4xl h-[88vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden text-stone-900">
-            <div className="px-5 py-3.5 border-b border-stone-200 bg-stone-50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-amber-600" />
-                <h3 id="edit-dialog-title" className="text-sm font-bold text-stone-900">
-                  Éditeur Markdown • {currentCard ? currentCard.title : "Sélectionnez une carte"}
-                </h3>
-                <span className="text-xs text-emerald-600 font-medium ml-3 hidden sm:inline">
-                  {saveStatus}
-                </span>
-              </div>
-              <button
-                onClick={() => setIsEditing(false)}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
-                aria-label="Fermer la boîte de dialogue d'édition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="px-5 py-2.5 bg-stone-50/80 border-b border-stone-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div role="tablist" aria-label="Modes de rédaction" className="flex items-center gap-2">
-                <button
-                  role="tab"
-                  aria-selected={editTab === "write"}
-                  onClick={() => setEditTab("write")}
-                  className={`min-h-[40px] px-3.5 py-1.5 rounded-lg font-semibold transition focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
-                    editTab === "write"
-                      ? "bg-amber-600 text-white shadow-sm"
-                      : "text-stone-600 hover:text-stone-950"
-                  }`}
-                >
-                  Édition
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={editTab === "preview"}
-                  onClick={() => setEditTab("preview")}
-                  className={`min-h-[40px] px-3.5 py-1.5 rounded-lg font-semibold transition focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
-                    editTab === "preview"
-                      ? "bg-amber-600 text-white shadow-sm"
-                      : "text-stone-600 hover:text-stone-950"
-                  }`}
-                >
-                  Aperçu
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleCopyMarkdown}
-                  className="min-h-[40px] px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1.5 transition border border-stone-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
-                  title="Copier le Markdown de cette carte"
-                  aria-label="Copier le Markdown de la carte"
-                >
-                  {copiedNotice ? (
-                    <Check className="w-4 h-4 text-emerald-600" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                  <span>{copiedNotice ? "Copié !" : "Copier"}</span>
-                </button>
-
-                <button
-                  onClick={handleExportAll}
-                  className="min-h-[40px] px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1.5 transition border border-stone-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
-                  title="Exporter les 42 cartes en JSON"
-                  aria-label="Exporter les 42 cartes en format JSON"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Exporter tout (JSON)</span>
-                </button>
-
-                <label className="min-h-[40px] px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1.5 cursor-pointer transition border border-stone-200 focus-within:ring-2 focus-within:ring-amber-500">
-                  <Upload className="w-4 h-4" />
-                  <span>Importer</span>
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleImportJson}
-                    className="hidden"
-                    aria-label="Importer un fichier JSON de contenus"
-                  />
-                </label>
-              </div>
-            </div>
-
-            <div className="flex-1 p-4 overflow-hidden bg-stone-50/50">
-              {currentCard ? (
-                editTab === "write" ? (
-                  <textarea
-                    value={currentMarkdown}
-                    onChange={(e) => handleUpdateMarkdown(e.target.value)}
-                    className="w-full h-full bg-white text-stone-900 font-mono text-xs md:text-sm p-4 rounded-xl border border-stone-300 focus:border-amber-600 outline-none resize-none leading-relaxed shadow-inner"
-                    placeholder="Écrivez le contenu pédagogique au format Markdown..."
-                  />
-                ) : (
-                  <div className="w-full h-full bg-white p-6 rounded-xl border border-stone-300 overflow-y-auto prose prose-stone max-w-none text-xs md:text-sm shadow-inner">
-                    <ReactMarkdown>{currentMarkdown}</ReactMarkdown>
-                  </div>
-                )
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 text-sm">
-                  Veuillez d'abord sélectionner une carte dans le jeu pour modifier son texte.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {isEditing && DevEditor && (
+        <DevEditor
+          currentCard={currentCard}
+          currentMarkdown={currentMarkdown}
+          cards={CARDS}
+          map={customMarkdownMap}
+          onMapChange={setCustomMarkdownMap}
+          onClose={() => setIsEditing(false)}
+        />
       )}
     </div>
     {printQuiz && <QuizPrint lang={lang} cards={CARDS} />}

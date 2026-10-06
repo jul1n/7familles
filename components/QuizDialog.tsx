@@ -7,6 +7,7 @@ import type { Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { drawQuestions, getQuizBank, shuffleAnswers, type QuizQuestion } from "@/data/quiz";
 import { trackEvent } from "@/lib/analytics";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 const QUIZ_LENGTH = 5;
 const LETTERS = ["A", "B", "C", "D"];
@@ -99,6 +100,8 @@ export default function QuizDialog({
     const id = setInterval(() => setLiveBonus(speedBonus(performance.now() - startedAt.current)), 100);
     return () => clearInterval(id);
   }, [phase, timed, picked, idx]);
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box);
   const closeBtn = useRef<HTMLButtonElement>(null);
   const nextBtn = useRef<HTMLButtonElement>(null);
 
@@ -122,11 +125,11 @@ export default function QuizDialog({
     trackEvent("evt/quiz-debut");
   };
 
-  const answer = (i: number) => {
+  const answer = (i: number, at: number) => {
     if (picked !== null) return;
     setPicked(i);
     if (i === rounds[idx].correct) {
-      const speed = timed ? speedBonus(performance.now() - startedAt.current) : 0;
+      const speed = timed ? speedBonus(at - startedAt.current) : 0;
       const bonus = streakBonus(streak + 1);
       const n = BASE_POINTS + speed + bonus;
       setStreak(streak + 1);
@@ -164,6 +167,7 @@ export default function QuizDialog({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/40 p-3 print:hidden sm:p-6" onClick={onClose}>
       <div
+        ref={box}
         role="dialog"
         aria-modal="true"
         aria-labelledby="quiz-title"
@@ -212,7 +216,7 @@ export default function QuizDialog({
                 <input type="checkbox" checked={timed} onChange={(e) => toggleTimed(e.target.checked)} className="h-4 w-4 accent-[#1b5d78]" />
                 {t.timerToggle}
               </label>
-              <p className="mt-1 text-[11px] text-stone-500">{t.timerHint}</p>
+              <p className="mt-1 text-xs text-stone-500">{t.timerHint}</p>
               <div className="mt-5 flex flex-col items-center gap-2">
                 <button type="button" onClick={start} className={`${btn} bg-[#1b5d78] text-white`}>
                   {t.start}
@@ -224,7 +228,7 @@ export default function QuizDialog({
                 >
                   <FileDown className="h-4 w-4" aria-hidden /> {t.print}
                 </button>
-                <p className="max-w-xs text-[11px] text-stone-500">{t.printHint}</p>
+                <p className="max-w-xs text-xs text-stone-500">{t.printHint}</p>
               </div>
             </div>
           )}
@@ -262,7 +266,7 @@ export default function QuizDialog({
                     <li key={a}>
                       <button
                         type="button"
-                        onClick={() => answer(i)}
+                        onClick={(e) => answer(i, e.timeStamp)}
                         disabled={picked !== null}
                         aria-label={`${LETTERS[i]} : ${a}${picked !== null ? (isRight ? ` (${t.correctShort})` : i === picked ? ` (${t.wrongShort})` : "") : ""}`}
                         className={`flex w-full items-center gap-3 rounded-xl border-2 px-3 py-3 text-left text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none ${

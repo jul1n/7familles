@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { CardData } from "@/data/cards";
-import { getContent, paths, type Lang } from "@/lib/content";
+import { getContent, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { asset, printImg } from "@/lib/asset";
 import { ARCHITECTES_URL, BIMBAMBOUM, CFBR_URL, GLOBAL_LINKS, cardLinks, gameAuthors, otherLanguageTerm } from "@/lib/links";
@@ -34,14 +34,6 @@ function PartnerLogo({ file, name, className }: { file: string; name: string; cl
   if (failed) return <span className="text-lg font-extrabold text-stone-700">{name}</span>;
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={asset(`/logos/${file}`)} alt={name} className={className} onError={() => setFailed(true)} />;
-}
-
-function domainOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
 }
 
 // Numérotation des pages et marges. Les pages « bare » (couverture et 4e de couverture) n'ont ni logo ni numéro.

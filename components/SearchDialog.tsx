@@ -8,6 +8,7 @@ import { UI } from "@/lib/ui";
 import { thumb } from "@/lib/asset";
 import { searchCards } from "@/lib/search";
 import { trackEvent } from "@/lib/analytics";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 // Recherche plein texte dans les 42 cartes : s'ouvre depuis l'en-tête, la mosaïque ou la touche « / »
 export default function SearchDialog({
@@ -25,6 +26,8 @@ export default function SearchDialog({
   const [query, setQuery] = useState("");
   const hits = useMemo(() => searchCards(cards, query), [cards, query]);
   const input = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box);
   const tracked = useRef(false);
 
   useEffect(() => input.current?.focus(), []);
@@ -42,6 +45,7 @@ export default function SearchDialog({
       onClick={onClose}
     >
       <div
+        ref={box}
         role="dialog"
         aria-modal="true"
         aria-label={t.search}

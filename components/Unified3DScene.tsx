@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useState, Suspense } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useTexture, ContactShadows, Text, Float, useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import type { CardData } from "@/data/cards";
@@ -488,8 +488,8 @@ function PhysicalCard3D({
 
         let baseX = Math.sin(angle) * arcRadius + Math.sin(targetRotY) * stackOffset + jitter.offsetX;
         let baseZ = -Math.cos(angle) * (arcRadius * 0.42) + 2.0 + Math.cos(targetRotY) * stackOffset;
-        let baseY = Math.cos(effectiveFamilyPos * 0.25) * 0.2 + jitter.offsetY;
-        let baseScale = isPortrait ? 0.88 : 1.0;
+        const baseY = Math.cos(effectiveFamilyPos * 0.25) * 0.2 + jitter.offsetY;
+        const baseScale = isPortrait ? 0.88 : 1.0;
 
         // Évitement horizontal entre familles voisines au survol d'un paquet
         if (hoveredFamilyIndex >= 0 && hoveredFamilyIndex !== familyIndex) {
@@ -739,7 +739,7 @@ function PhysicalCard3D({
     if (fullBackMatRef.current) fullBackMatRef.current.opacity = op;
   });
 
-  const handleClick = (e: any) => {
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     if (currentStage === "deck") {
       onSelectFamily(card.familyId);
@@ -901,7 +901,7 @@ function LoadingBar({ lang }: { lang: Lang }) {
           style={{ width: `${Math.max(6, progress)}%` }}
         />
       </div>
-      <span className="text-[11px] font-medium text-stone-600">{lang === "fr" ? "Chargement des cartes…" : "Loading the cards…"} {Math.round(progress)} %</span>
+      <span className="text-xs font-medium text-stone-600">{lang === "fr" ? "Chargement des cartes…" : "Loading the cards…"} {Math.round(progress)} %</span>
     </div>
   );
 }

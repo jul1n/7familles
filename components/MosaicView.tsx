@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import type { CardData } from "@/data/cards";
-import { getContent, paths, type Lang } from "@/lib/content";
+import { getContent, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
-import { asset, thumb } from "@/lib/asset";
+import { thumb } from "@/lib/asset";
 import { Search, Trophy } from "lucide-react";
 import ResourcesNav from "@/components/ResourcesNav";
 
@@ -44,7 +44,7 @@ export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang 
           <button
             onClick={onSearch}
             aria-label={t.search}
-            className="flex min-h-[40px] flex-shrink-0 items-center gap-1.5 rounded-xl border border-[#1b5d78] bg-[#1b5d78] px-3.5 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+            className="flex min-h-[44px] flex-shrink-0 items-center gap-1.5 rounded-xl border border-[#1b5d78] bg-[#1b5d78] px-3.5 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
           >
             <Search className="h-4 w-4" aria-hidden />
             {t.search}
@@ -53,7 +53,7 @@ export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang 
             <button
               onClick={onQuiz}
               aria-label={t.quiz.open}
-              className="flex min-h-[40px] flex-shrink-0 items-center gap-1.5 rounded-xl border border-amber-500 bg-amber-500 px-3.5 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:outline-none"
+              className="flex min-h-[44px] flex-shrink-0 items-center gap-1.5 rounded-xl border border-amber-700 bg-amber-700 px-3.5 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:outline-none"
             >
               <Trophy className="h-4 w-4" aria-hidden />
               {t.quiz.open}
@@ -62,7 +62,7 @@ export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang 
           <button
             onClick={() => setActiveFamilyId(null)}
             aria-pressed={activeFamilyId === null}
-            className={`min-h-[40px] px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
+            className={`min-h-[44px] px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
               activeFamilyId === null
                 ? "bg-stone-900 text-white border-stone-900 shadow-sm"
                 : "bg-white/90 text-stone-600 border-stone-200 hover:text-stone-900 hover:bg-white"
@@ -75,7 +75,7 @@ export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang 
               key={fam.id}
               onClick={() => setActiveFamilyId(activeFamilyId === fam.id ? null : fam.id)}
               aria-pressed={activeFamilyId === fam.id}
-              className={`min-h-[40px] px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
+              className={`min-h-[44px] px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                 activeFamilyId === fam.id
                   ? "bg-stone-900 text-white border-stone-900 shadow-sm"
                   : "bg-white/90 text-stone-600 border-stone-200 hover:text-stone-900 hover:bg-white"
@@ -89,7 +89,7 @@ export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang 
       </div>
 
       <div className="px-4 md:px-8 pb-10 max-w-6xl mx-auto">
-        {families.map((fam) => {
+        {families.map((fam, famIndex) => {
           const cards = CARDS.filter((c) => c.familyId === fam.id);
           return (
             <section key={fam.id} className="mt-5" aria-label={t.familyLabel(fam.name)}>
@@ -112,7 +112,9 @@ export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang 
                     <img
                       src={thumb(card.frontImage)}
                       alt={t.cardAlt(card.num, card.title)}
-                      loading="lazy"
+                      // Les premières cartes (visibles sans défiler) sont chargées tout de suite : meilleur premier affichage
+                      loading={famIndex === 0 && i < 4 ? "eager" : "lazy"}
+                      fetchPriority={famIndex === 0 && i < 2 ? "high" : "auto"}
                       decoding="async"
                       draggable={false}
                       className="w-full h-auto aspect-[7/10] object-contain drop-shadow-[0_6px_10px_rgba(60,45,20,0.22)] transition duration-300 ease-out group-hover:-translate-y-1.5 group-hover:scale-[1.04] group-hover:drop-shadow-[0_14px_20px_rgba(60,45,20,0.3)] group-active:scale-[0.98]"

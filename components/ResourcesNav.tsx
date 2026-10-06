@@ -4,17 +4,15 @@ import React from "react";
 import { paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { asset } from "@/lib/asset";
-import { gameAuthors } from "@/lib/links";
+import { LEGAL_URL, gameAuthors } from "@/lib/links";
 
-// Pied de page : règles du jeu et auteurs (logos partenaires, impression et liens du CFBR sont déjà ailleurs), partagés par la mosaïque et le carrousel.
-// La variante « compact » tient en une bande discrète sous les pastilles du carrousel.
+// Pied de page de la mosaïque : règles du jeu, mentions légales du CFBR et auteurs (logos partenaires, impression
+// et liens du CFBR sont déjà dans la barre du haut).
 export default function ResourcesNav({
   lang,
-  compact = false,
   className = "",
 }: {
   lang: Lang;
-  compact?: boolean;
   className?: string;
 }) {
   const t = UI[lang];
@@ -22,11 +20,14 @@ export default function ResourcesNav({
   return (
     <nav aria-label={t.resources} className={`text-xs font-semibold text-[#1b5d78] ${className}`}>
       <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-        <a href={asset(paths.rules(lang))} className={link}>
+        <a href={asset(paths.rules(lang))} className={`${link} inline-flex min-h-[44px] items-center px-2`}>
           {t.rules}
         </a>
+        <a href={LEGAL_URL} target="_blank" rel="noopener noreferrer" className={`${link} inline-flex min-h-[44px] items-center px-2`}>
+          {t.legal}
+        </a>
         {/* Auteurs en une ligne discrète, pas sur téléphone */}
-        <span className="hidden text-[11px] font-medium text-stone-600 sm:inline">
+        <span className="hidden text-xs font-medium text-stone-600 sm:inline">
           {gameAuthors(lang).map((a) => a.name).join(" · ")}
         </span>
       </p>
