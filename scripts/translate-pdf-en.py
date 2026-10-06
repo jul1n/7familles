@@ -468,6 +468,15 @@ def do_card(page, xrefs, warn):
                 R.kill_text.append(kill_rect(s))
             pill = None if dl_ == 0 else next((d for d in drawings if d["fill"] == (1.0, 1.0, 1.0) and d["color"] == (1.0, 1.0, 1.0) and d["rect"].width < 80
                          and abs(d["rect"].x1 - old.x1) < 1.5 and old.y0 - 1 <= d["rect"].y0 and d["rect"].y1 <= old.y1 + 1), None)
+            if dl_ and pill is None:
+                # Pas de pastille blanche à élargir (légende posée sur la carte du monde, par exemple) :
+                # on réduit la taille du texte pour qu'il tienne dans la place de l'original, centré
+                f = max(0.8, old.width / total)
+                en_parts = [(t, round(sz * f, 2), rise) for t, sz, rise in en_parts]
+                total = sum(tw(t, "body", sz) for t, sz, _ in en_parts)
+                if total > old.width + 0.5:
+                    warn(f"légende trop large: {en_parts[0][0]!r}")
+                dl_ = 0.0
             if pill is not None:
                 c = (pill["rect"].x0 + pill["rect"].x1) / 2
                 R.kill_shapes.append(pill["rect"] + (-2.6, -2.6, 2.6, 2.6))

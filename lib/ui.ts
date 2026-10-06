@@ -72,12 +72,19 @@ interface UiText {
     open: string;
     title: string;
     intro: string;
-    rulesOfPoints: string;
+    rulesOfPoints: (timed: boolean) => string;
+    timerToggle: string;
+    timerHint: string;
+    speedLabel: string;
+    streakLabel: string;
+    fastLabel: string;
+    maxScore: (timed: boolean) => number;
     start: string;
     questionOf: (i: number, n: number) => string;
     next: string;
     seeResult: string;
-    correct: (gain: number, streak: number) => string;
+    correct: (gain: number) => string;
+    breakdown: (speed: number, streak: number) => string;
     wrong: (answer: string) => string;
     correctShort: string;
     wrongShort: string;
@@ -255,13 +262,23 @@ const fr: UiText = {
   quiz: {
     open: "Quiz",
     title: "Quiz des barrages",
-    intro: "5 questions tirées au hasard dans les fiches des 42 cartes. Une seule bonne réponse par question : à toi de jouer !",
-    rulesOfPoints: "10 points par bonne réponse, +5 de bonus pour chaque bonne réponse d'affilée : 100 points au maximum.",
+    intro: "5 questions tirées au hasard dans les fiches des 42 cartes. 4 réponses possibles, une seule est bonne : à toi de jouer !",
+    rulesOfPoints: (timed) =>
+      timed
+        ? "10 points par bonne réponse. Réponds vite pour gagner jusqu'à +10 de bonus de rapidité (le maximum en moins de 8 secondes, plus rien après 20 secondes), et +5 pour chaque bonne réponse d'affilée : 150 points au maximum."
+        : "10 points par bonne réponse, +5 de bonus pour chaque bonne réponse d'affilée : 100 points au maximum.",
+    timerToggle: "Chrono et bonus de rapidité",
+    timerHint: "Décoche pour jouer sans pression, à ton rythme.",
+    speedLabel: "rapidité",
+    streakLabel: "série",
+    fastLabel: "Éclair !",
+    maxScore: (timed) => (timed ? 150 : 100),
     start: "Commencer le quiz",
     questionOf: (i, n) => `Question ${i} sur ${n}`,
     next: "Question suivante",
     seeResult: "Voir mon score",
-    correct: (gain, streak) => (streak > 1 ? `Bravo ! +${gain} points (série de ${streak})` : `Bravo ! +${gain} points`),
+    correct: (gain) => `Bravo ! +${gain} points`,
+    breakdown: (speed, streak) => ["10", speed > 0 ? `+${speed} rapidité` : "", streak > 0 ? `+${streak} série` : ""].filter(Boolean).join(" "),
     wrong: (a) => `Raté ! La bonne réponse : ${a}`,
     correctShort: "bonne réponse",
     wrongShort: "ta réponse, fausse",
@@ -444,13 +461,23 @@ const en: UiText = {
   quiz: {
     open: "Quiz",
     title: "Dam quiz",
-    intro: "5 questions drawn at random from the fact sheets of the 42 cards. One right answer per question: your turn to play!",
-    rulesOfPoints: "10 points per right answer, +5 bonus for each right answer in a row: 100 points at most.",
+    intro: "5 questions drawn at random from the fact sheets of the 42 cards. 4 possible answers, only one is right: your turn to play!",
+    rulesOfPoints: (timed) =>
+      timed
+        ? "10 points per right answer. Answer fast to earn up to +10 speed bonus (full bonus within 8 seconds, nothing after 20 seconds), and +5 for each right answer in a row: 150 points at most."
+        : "10 points per right answer, +5 bonus for each right answer in a row: 100 points at most.",
+    timerToggle: "Timer and speed bonus",
+    timerHint: "Untick to play without pressure, at your own pace.",
+    speedLabel: "speed",
+    streakLabel: "streak",
+    fastLabel: "Lightning!",
+    maxScore: (timed) => (timed ? 150 : 100),
     start: "Start the quiz",
     questionOf: (i, n) => `Question ${i} of ${n}`,
     next: "Next question",
     seeResult: "See my score",
-    correct: (gain, streak) => (streak > 1 ? `Well done! +${gain} points (streak of ${streak})` : `Well done! +${gain} points`),
+    correct: (gain) => `Well done! +${gain} points`,
+    breakdown: (speed, streak) => ["10", speed > 0 ? `+${speed} speed` : "", streak > 0 ? `+${streak} streak` : ""].filter(Boolean).join(" "),
     wrong: (a) => `Missed! The right answer: ${a}`,
     correctShort: "right answer",
     wrongShort: "your answer, wrong",

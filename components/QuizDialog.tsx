@@ -9,7 +9,7 @@ import { drawQuestions, getQuizBank, shuffleAnswers, type QuizQuestion } from "@
 import { trackEvent } from "@/lib/analytics";
 
 const QUIZ_LENGTH = 5;
-const LETTERS = ["A", "B", "C"];
+const LETTERS = ["A", "B", "C", "D"];
 
 interface Round {
   q: QuizQuestion;
@@ -17,8 +17,16 @@ interface Round {
   correct: number;
 }
 
-// Points : 10 par bonne réponse, plus 5 de bonus pour chaque bonne réponse d'affilée après la première (100 au maximum)
-const pointsFor = (streak: number) => 10 + 5 * Math.max(0, streak - 1);
+// Points : 10 par bonne réponse, +5 pour chaque bonne réponse d'affilée après la première, et un bonus de rapidité
+// de 10 points (en moins de FAST_MS) qui baisse régulièrement jusqu'à 0 (à SLOW_MS). 150 points au maximum, 100 sans chrono.
+const BASE_POINTS = 10;
+const FULL_SPEED_BONUS = 10;
+const FAST_MS = 8000;
+const SLOW_MS = 20000;
+const speedBonus = (ms: number) =>
+  ms <= FAST_MS ? FULL_SPEED_BONUS : ms >= SLOW_MS ? 0 : Math.round((FULL_SPEED_BONUS * (SLOW_MS - ms)) / (SLOW_MS - FAST_MS));
+const streakBonus = (streak: number) => 5 * Math.max(0, streak - 1);
+const TIMER_KEY = "7familles-quiz-chrono";
 
 // Compteur qui défile jusqu'à sa nouvelle valeur
 function Counter({ value }: { value: number }) {
@@ -64,7 +72,33 @@ export default function QuizDialog({
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [right, setRight] = useState(0);
-  const [gain, setGain] = useState<{ n: number; key: number } | null>(null);
+  const [gain, setGain] = useState<{ n: number; speed: number; streak: number; key: number } | null>(null);
+  // Chrono : actif par défaut, désactivable pour jouer sans pression (choix gardé sur l'appareil)
+  const [timed, setTimed] = useState<boolean>(true);
+  const [liveBonus, setLiveBonus] = useState<number>(FULL_SPEED_BONUS);
+  const startedAt = useRef<number>(0);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(TIMER_KEY) === "off") setTimed(false);
+    } catch {
+      /* stockage indisponible : on garde la valeur par défaut */
+    }
+  }, []);
+  const toggleTimed = (v: boolean) => {
+    setTimed(v);
+    try {
+      localStorage.setItem(TIMER_KEY, v ? "on" : "off");
+    } catch {
+      /* sans conséquence */
+    }
+  };
+  // Le bonus se vide en direct tant que la question est ouverte
+  useEffect(() => {
+    if (phase !== "play" || !timed || picked !== null) return;
+    setLiveBonus(FULL_SPEED_BONUS);
+    const id = setInterval(() => setLiveBonus(speedBonus(performance.now() - startedAt.current)), 100);
+    return () => clearInterval(id);
+  }, [phase, timed, picked, idx]);
   const closeBtn = useRef<HTMLButtonElement>(null);
   const nextBtn = useRef<HTMLButtonElement>(null);
 
@@ -83,6 +117,7 @@ export default function QuizDialog({
     setStreak(0);
     setRight(0);
     setGain(null);
+    startedAt.current = performance.now();
     setPhase("play");
     trackEvent("evt/quiz-debut");
   };
@@ -91,11 +126,13 @@ export default function QuizDialog({
     if (picked !== null) return;
     setPicked(i);
     if (i === rounds[idx].correct) {
-      const n = pointsFor(streak + 1);
+      const speed = timed ? speedBonus(performance.now() - startedAt.current) : 0;
+      const bonus = streakBonus(streak + 1);
+      const n = BASE_POINTS + speed + bonus;
       setStreak(streak + 1);
       setRight(right + 1);
       setScore(score + n);
-      setGain({ n, key: idx });
+      setGain({ n, speed, streak: bonus, key: idx });
     } else {
       setStreak(0);
       setGain(null);
@@ -107,6 +144,7 @@ export default function QuizDialog({
       setIdx(idx + 1);
       setPicked(null);
       setGain(null);
+      startedAt.current = performance.now();
     } else {
       setPhase("end");
       setGain(null);
@@ -169,7 +207,12 @@ export default function QuizDialog({
           {phase === "intro" && (
             <div className="text-center">
               <p className="text-sm leading-relaxed text-stone-700">{t.intro}</p>
-              <p className="mt-2 text-xs text-stone-600">{t.rulesOfPoints}</p>
+              <p className="mt-2 text-xs text-stone-600">{t.rulesOfPoints(timed)}</p>
+              <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-800 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#1b5d78]">
+                <input type="checkbox" checked={timed} onChange={(e) => toggleTimed(e.target.checked)} className="h-4 w-4 accent-[#1b5d78]" />
+                {t.timerToggle}
+              </label>
+              <p className="mt-1 text-[11px] text-stone-500">{t.timerHint}</p>
               <div className="mt-5 flex flex-col items-center gap-2">
                 <button type="button" onClick={start} className={`${btn} bg-[#1b5d78] text-white`}>
                   {t.start}
@@ -193,7 +236,22 @@ export default function QuizDialog({
                   <span key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${i < idx || (i === idx && picked !== null) ? "bg-[#1b5d78]" : i === idx ? "bg-[#1b5d78]/40" : "bg-stone-200"}`} />
                 ))}
               </div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{t.questionOf(idx + 1, rounds.length)}</p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{t.questionOf(idx + 1, rounds.length)}</p>
+                {timed && picked === null && (
+                  <p className="text-xs font-extrabold tabular-nums text-amber-600" aria-hidden>
+                    ⚡ +{liveBonus}
+                  </p>
+                )}
+              </div>
+              {timed && (
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-stone-100" aria-hidden>
+                  <div
+                    className={`h-full rounded-full transition-[width] duration-100 ease-linear ${liveBonus >= 7 ? "bg-emerald-500" : liveBonus >= 3 ? "bg-amber-400" : "bg-rose-400"}`}
+                    style={{ width: `${picked === null ? liveBonus * 10 : 0}%` }}
+                  />
+                </div>
+              )}
               <h3 className="mt-1 text-lg font-bold leading-snug text-stone-900">{round.q.q}</h3>
 
               <ul className="mt-4 space-y-2">
@@ -231,8 +289,11 @@ export default function QuizDialog({
                 {picked !== null && (
                   <div>
                     <p className={`text-sm font-bold ${picked === round.correct ? "text-emerald-700" : "text-rose-700"}`}>
-                      {picked === round.correct ? t.correct(gain?.n ?? 0, streak) : t.wrong(round.answers[round.correct])}
+                      {picked === round.correct ? `${gain && timed && gain.speed >= FULL_SPEED_BONUS ? t.fastLabel + " " : ""}${t.correct(gain?.n ?? 0)}` : t.wrong(round.answers[round.correct])}
                     </p>
+                    {picked === round.correct && gain && (
+                      <p className="text-xs tabular-nums text-stone-600">{t.breakdown(gain.speed, gain.streak)}</p>
+                    )}
                     {card && (
                       <button
                         type="button"
@@ -257,7 +318,7 @@ export default function QuizDialog({
           {phase === "end" && (
             <div className="text-center">
               <p className="text-5xl font-black tabular-nums text-[#1b5d78]">
-                <Counter value={score} /> <span className="text-xl font-bold text-stone-500">/ 100</span>
+                <Counter value={score} /> <span className="text-xl font-bold text-stone-500">/ {t.maxScore(timed)}</span>
               </p>
               <p className="mt-2 text-sm font-bold text-stone-900">{t.rightCount(right, rounds.length)}</p>
               <p className="mt-1 text-sm text-stone-700">{t.verdict(right)}</p>

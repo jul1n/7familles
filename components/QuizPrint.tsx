@@ -7,7 +7,7 @@ import { UI } from "@/lib/ui";
 import { asset } from "@/lib/asset";
 import { drawPrintQuizzes, getQuizBank, shuffleAnswers } from "@/data/quiz";
 
-const LETTERS = ["A", "B", "C"];
+const LETTERS = ["A", "B", "C", "D"];
 
 // PDF des quiz : 10 quiz de 5 questions tirés au hasard (2 par page A4), puis les réponses.
 // S'imprime avec le navigateur (« Enregistrer au format PDF »), comme le dossier complet.
