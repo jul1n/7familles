@@ -1,10 +1,12 @@
 import { CARDS as FR_CARDS, type CardData } from "@/data/cards";
 import type { Lang } from "./content";
 import { CARD_LINKS } from "./card-links";
+import { CARD_LINKS_EN } from "./card-links-en";
 
 export interface ExternalLink {
   label: string;
   url: string;
+  secondary?: boolean; // référence secondaire (par exemple une page en français sur le site anglais)
 }
 
 export const CFBR_URL = "https://www.barrages-cfbr.eu/";
@@ -198,29 +200,42 @@ export function englishTerm(card: CardData): string | undefined {
   return CARD_REFS[card.id]?.en;
 }
 
-// Liens « pour aller plus loin » d'une carte : une sélection faite à la main (voir card-links.ts), sinon une
-// recherche Wikipédia sur le titre de la carte.
+// Pages ICOLD : la version anglaise du site n'a pas les mêmes noms de pages que la française
+const ICOLD_FR_TO_GB: Record<string, string> = {
+  "FR/barrages/technologie_des_barrages.asp": "GB/dams/technology_of_dams.asp",
+  "FR/barrages/securite_des_barrages.asp": "GB/dams/dams_safety.asp",
+  "FR/publications/e-dictionnaire.asp": "GB/publications/e-dictionnary.asp",
+  "FR/barrages/": "GB/dams/",
+};
+
+export function icoldEnglishUrl(url: string): string {
+  for (const [fr, gb] of Object.entries(ICOLD_FR_TO_GB)) if (url.includes(`icold-cigb.org/${fr}`)) return url.replace(fr, gb);
+  return url;
+}
+
+// Liens « pour aller plus loin » d'une carte : une sélection faite à la main (voir card-links.ts et
+// card-links-en.ts), sinon une recherche Wikipédia sur le titre de la carte.
+// Version anglaise : d'abord des sources en anglais (organismes des barrages, institutions, exploitants) puis la page
+// Wikipédia anglaise, puis les liens français en référence secondaire.
 export function cardLinks(card: CardData, lang: Lang = "fr"): ExternalLink[] {
   const fr = FR_CARDS.find((c) => c.id === card.id) ?? card;
   const links = CARD_LINKS[card.id] ?? [
     { label: "Wikipédia", url: `https://fr.wikipedia.org/w/index.php?search=${encodeURIComponent(fr.title)}` },
   ];
   if (lang === "fr") return links;
-  // Version anglaise : pages Wikipédia anglaises quand elles existent, pages ICOLD en anglais, libellés traduits
+  const out: ExternalLink[] = [...(CARD_LINKS_EN[card.id] ?? [])];
   const enWikiLink = englishWiki(card);
-  const out: ExternalLink[] = [];
-  let wikiDone = false;
+  if (enWikiLink) out.push(enWikiLink);
+  const seen = new Set(out.map((l) => l.url));
   for (const l of links) {
-    if (l.label.startsWith("Wikipédia")) {
-      if (enWikiLink && !wikiDone) {
-        out.push(enWikiLink);
-        wikiDone = true;
-      } else if (!enWikiLink) {
-        out.push({ label: translateLabel(l.label), url: l.url });
-      }
-      continue;
-    }
-    out.push({ label: translateLabel(l.label), url: l.url.replace("icold-cigb.org/FR/", "icold-cigb.org/GB/") });
+    const url = icoldEnglishUrl(l.url);
+    if (seen.has(url)) continue;
+    seen.add(url);
+    // Pages en français (CFBR, EDF, Légifrance, Wikipédia FR…) : référence secondaire ; pages ICOLD ou institutions
+    // internationales déjà en anglais (US Bureau of Reclamation, UNESCO en/…) : référence principale
+    const label = translateLabel(l.label);
+    const french = /\(in French\)|fr\.wikipedia\.org|\/fr\/|\/french\/|\.fr\/|\/FR\/|barrages-cfbr\.eu/i.test(`${label} ${url}`);
+    out.push({ label, url, secondary: french });
   }
   return out;
 }

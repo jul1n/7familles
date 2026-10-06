@@ -87,8 +87,8 @@ const CARD_H_PILE = 2.428;
 // portrait = paquet au-dessus de la boîte.
 function boxLayout(isPortrait: boolean) {
   return isPortrait
-    ? { pileU: 0, pileV: 1.6, boxU: 0, boxV: -1.5, f: 0.78, dy: 0.4, centerV: 0.3 }
-    : { pileU: -1.3, pileV: 0.1, boxU: 1.3, boxV: 0, f: 1, dy: 0, centerV: 0 };
+    ? { pileU: 0, pileV: 1.6, boxU: 0, boxV: -1.5, f: 0.78, dy: 0.4, centerV: 0.9 }
+    : { pileU: -1.3, pileV: 0.1, boxU: 1.3, boxV: 0, f: 1, dy: 0, centerV: 0.55 };
 }
 
 // Position de la boîte dans le repère du paquet, après réduction (f) et décalage (dy) propres à l'écran :
@@ -97,9 +97,9 @@ function boxPlace(s: number, L: ReturnType<typeof boxLayout>) {
   return { u: boxU(s, L) * L.f, v: L.boxV * L.f + L.dy + boxLift(s, L) };
 }
 
-// Une fois les cartes rangées, la boîte remonte au centre de la page (en portrait ; en paysage elle est déjà à hauteur du centre)
+// Une fois les cartes rangées, la boîte remonte (au centre de la page en portrait, un peu plus haut en paysage)
 function boxLift(s: number, L: ReturnType<typeof boxLayout>) {
-  return (L.centerV - (L.boxV * L.f + L.dy)) * THREE.MathUtils.smoothstep(s, 0.75, 1) * (L.f === 1 ? 0 : 1);
+  return (L.centerV - (L.boxV * L.f + L.dy)) * THREE.MathUtils.smoothstep(s, 0.75, 1);
 }
 
 // Une fois les cartes rangées, la boîte glisse vers le centre de la scène
@@ -967,7 +967,7 @@ function PhysicalCard3D({
 // Elle se fait tourner au doigt / à la souris (glisser), et son rabat s'ouvre pour laisser entrer les cartes.
 const FLAP_OPEN = -1.95; // rotation du rabat autour de l'arête arrière du dessus (rad)
 const FLAP_T = 0.012;
-const BOX_GROW = 0.6; // la boîte fermée est agrandie de 60 % (environ 2,5 fois la surface) ; plus, elle sortirait du cadre
+const BOX_GROW = 0.76; // la boîte fermée est agrandie de 76 % (environ 3 fois la surface)
 
 interface BoxSpin {
   yaw: number;

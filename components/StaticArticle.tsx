@@ -76,7 +76,11 @@ export default function StaticArticle({ card, siblings, lang = "fr" }: { card: C
                     href={l.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-[44px] items-center rounded-lg border border-[#1b5d78]/20 bg-[#1b5d78]/10 px-3 text-xs font-semibold text-[#1b5d78] focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+                    className={`inline-flex min-h-[44px] items-center rounded-lg border px-3 text-xs font-semibold focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none ${
+                      l.secondary
+                        ? "border-stone-300 bg-stone-100 text-stone-700"
+                        : "border-[#1b5d78]/20 bg-[#1b5d78]/10 text-[#1b5d78]"
+                    }`}
                   >
                     {l.label}
                   </a>

@@ -7,7 +7,7 @@ import type { UiText } from "@/lib/ui";
 import { CFBR_CONTACT_URL, getCopyText } from "@/lib/links";
 
 // Liens « en savoir plus » vers des pages externes (nouvel onglet)
-export function MoreLinks({ links, t }: { links: { label: string; url: string }[]; t: UiText }) {
+export function MoreLinks({ links, t }: { links: { label: string; url: string; secondary?: boolean }[]; t: UiText }) {
   return (
     <nav aria-label={t.moreLinks} className="pt-4 border-t border-stone-200">
       <h3 className="text-xs font-bold uppercase tracking-wide text-stone-600 mb-2">{t.moreLinks}</h3>
@@ -18,7 +18,11 @@ export function MoreLinks({ links, t }: { links: { label: string; url: string }[
               href={l.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-lg text-xs font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 hover:bg-[#1b5d78]/15 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+              className={`inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-lg text-xs font-semibold focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none ${
+                l.secondary
+                  ? "text-stone-700 bg-stone-100 border border-stone-300 hover:bg-stone-200"
+                  : "text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 hover:bg-[#1b5d78]/15"
+              }`}
             >
               {l.label}
               <ExternalLink className="w-3 h-3" />
