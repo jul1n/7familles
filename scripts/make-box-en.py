@@ -101,7 +101,7 @@ def make_front():
     erase_text_in_blob(arr, (560, 540), False, (45, 49, 113), roi=(520, 480, 1000, 700))
     erase_text_in_blob(arr, (400, 1345), True, WHITE, roi=(165, 1345, 440, 1455))
     img = Image.fromarray(arr).convert("RGB")
-    rotated_block(img, ["THE CFBR", "7 FAMILIES", "GAME"], (318, 312), 10, 88, NAVY, 90, 2)
+    rotated_block(img, ["THE CFBR", "HAPPY FAMILIES", "GAME"], (318, 312), 10, 68, NAVY, 82, 2)
     rotated_block(img, ["A GAME ABOUT THE", "WORLD OF DAMS & OTHER", "HYDRAULIC STRUCTURES"], (750, 570), -9, 40, WHITE, 52, 1)
     d = ImageDraw.Draw(img)
     put_lines(d, ["2 to 4 players", "15 to 20 min."], 0, 1375, 46, (31, 69, 123), 58, 1, align="left", x_left=172)
@@ -128,7 +128,7 @@ def make_back():
         d.rectangle((x0 - 6, y - 27, r, y + 27), fill=WHITE)
     # Textes
     f = font(100)
-    title = "THE CFBR 7 FAMILIES GAME"
+    title = "THE CFBR HAPPY FAMILIES GAME"
     size = fit_size(d, [title], 830, 100, 2)
     d.text((543, 170), title, font=font(size), fill=NAVY, anchor="mm", stroke_width=2, stroke_fill=NAVY)
     put_lines(d, ["Discover dams and other", "hydraulic structures!"], 0, 288, 58, BLUE, 68, 1, align="left", x_left=275)
