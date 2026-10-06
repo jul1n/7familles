@@ -374,10 +374,16 @@ def do_card(page, xrefs, warn):
             for d in strokes:
                 R.kill_shapes.append(d["rect"] + (-0.4, -1.6, 0.4, 1.6))
             offset = len(tl) - len(en)
+            # Cadre de la légende (carte du monde, de la France…) : l'onglet blanc du titre ne doit pas mordre dessus
+            box = next((d["rect"] for d in drawings if d["fill"] == (1.0, 1.0, 1.0) and d["rect"].x0 > 120 and d["rect"].width > 40
+                        and d["rect"].height > 30 and d["rect"].y0 > 150), None)
             for i, t in enumerate(en):
                 src = tl[i + offset]
                 size = 13.0
-                while tw(t, "head", size) > 181 and size > 9:
+                width_max, size_min = 181.0, 9.0
+                if box is not None and src["bbox"].y1 > box.y0:
+                    width_max, size_min = min(width_max, box.x0 - 11.3 - src["spans"][0]["bbox"].x0), 8.5
+                while tw(t, "head", size) > width_max and size > size_min:
                     size -= 0.25
                 R.text(src["spans"][0]["bbox"].x0, src["spans"][0]["origin"][1], t, "head", size, src["spans"][0]["color"], bold=True)
                 end_new = src["spans"][0]["bbox"].x0 + tw(t, "head", size)
@@ -389,7 +395,9 @@ def do_card(page, xrefs, warn):
                     x0s = stroke["rect"].x0
                     old_end = stroke["rect"].x1
                     text_end_old = src["bbox"].x1
-                    new_end = src["spans"][0]["bbox"].x0 + tw(t, "head", size) + (old_end - text_end_old)
+                    # Le souligné d'origine peut être plus court que le texte (titre sur deux lignes) : on le cale sur le texte
+                    extra = old_end - text_end_old if old_end >= text_end_old - 2 else 0.0
+                    new_end = src["spans"][0]["bbox"].x0 + tw(t, "head", size) + extra
                     k = (new_end - x0s) / (old_end - x0s)
                     R.draw.append(lambda d=stroke, x0s=x0s, k=k: redraw(page, d, lambda x: x0s + (x - x0s) * k))
 
