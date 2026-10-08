@@ -4,10 +4,10 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
 
 // Fenêtre modale : le focus clavier reste à l'intérieur (Tab et Maj+Tab font le tour de la fenêtre) et revient
 // sur l'élément qui l'avait ouverte à la fermeture.
-export function useFocusTrap(ref: RefObject<HTMLElement | null>) {
+export function useFocusTrap(ref: RefObject<HTMLElement | null>, enabled = true) {
   useEffect(() => {
     const node = ref.current;
-    if (!node) return;
+    if (!node || !enabled) return;
     const previous = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
@@ -29,5 +29,5 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>) {
       document.removeEventListener("keydown", onKey);
       previous?.focus?.();
     };
-  }, [ref]);
+  }, [ref, enabled]);
 }

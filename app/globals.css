@@ -127,3 +127,7 @@ body {
   .topbar-controls > button, .topbar-controls > .group > button, .topbar-controls > a { min-width: 40px; width: 40px; padding-left: 0; padding-right: 0; }
   .topbar-controls > [role="group"] button { width: 34px; padding-left: 0; padding-right: 0; justify-content: center; }
 }
+
+/* Three display modes must remain reachable on compact headers. */
+@media(max-width:600px){.topbar-brand{display:none}.topbar-controls{margin:auto}.topbar-controls > [role="group"] button{width:34px;padding-left:0;padding-right:0;justify-content:center}}
+@media(max-width:380px){.topbar-controls > [role="group"] button{width:28px}}

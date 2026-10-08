@@ -42,7 +42,9 @@ export function CardActions({
   onPrint,
   onShare,
   t,
+  iconOnly = false,
 }: {
+  iconOnly?: boolean;
   t: UiText;
   onShare: () => void;
   isSpeaking: boolean;
@@ -57,6 +59,8 @@ export function CardActions({
       {canSpeak && (
         <button
           onClick={onToggleSpeak}
+          aria-label={isSpeaking ? t.stop : t.listen}
+          title={isSpeaking ? t.stop : t.listen}
           aria-pressed={isSpeaking}
           className={`${btn} ${
             isSpeaking
@@ -65,16 +69,16 @@ export function CardActions({
           }`}
         >
           {isSpeaking ? <Square className="w-3.5 h-3.5" /> : <Volume2 className="w-4 h-4" />}
-          {isSpeaking ? t.stop : t.listen}
+          <span className={iconOnly ? "sr-only" : undefined}>{isSpeaking ? t.stop : t.listen}</span>
         </button>
       )}
-      <button onClick={onShare} className={`${btn} bg-white text-stone-700 border-stone-200 hover:bg-stone-50`}>
+      <button onClick={onShare} aria-label={t.share} title={t.share} className={`${btn} bg-white text-stone-700 border-stone-200 hover:bg-stone-50`}>
         <Share2 className="w-4 h-4" />
-        {t.share}
+        <span className={iconOnly ? "sr-only" : undefined}>{t.share}</span>
       </button>
-      <button onClick={onPrint} className={`${btn} bg-white text-stone-700 border-stone-200 hover:bg-stone-50`}>
+      <button onClick={onPrint} aria-label={t.print} title={t.print} className={`${btn} bg-white text-stone-700 border-stone-200 hover:bg-stone-50`}>
         <Printer className="w-4 h-4" />
-        {t.print}
+        <span className={iconOnly ? "sr-only" : undefined}>{t.print}</span>
       </button>
     </div>
   );

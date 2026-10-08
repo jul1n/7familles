@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import type { CardData } from "@/data/cards";
 import { getContent, paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
+import ExplorerView from "@/components/ExplorerView";
 import MosaicView from "@/components/MosaicView";
 import SearchDialog from "@/components/SearchDialog";
 import QuizDialog from "@/components/QuizDialog";
@@ -67,7 +68,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
   // Mode d'affichage : scène 3D ou mosaïque des 42 cartes côte à côte
-  const [viewMode, setViewMode] = useState<"3d" | "mosaic">("mosaic");
+  const [viewMode, setViewMode] = useState<"3d" | "mosaic" | "explorer">("mosaic");
   // Préférence « réduire les animations » et disponibilité de WebGL : sans l'un ou l'autre, on propose la mosaïque
   const [reducedMotion, setReducedMotion] = useState<boolean>(false);
   const [webglOk, setWebglOk] = useState<boolean>(true);
@@ -118,8 +119,9 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     if (ok && (!(mq.matches || isPhone) || wanted || wantedFamily)) {
       setViewMode("3d");
     }
+    if (params.get("vue") === "explorer") setViewMode("explorer");
     setModeResolved(true);
-    if (ok && wanted) {
+    if ((ok || params.get("vue") === "explorer") && wanted) {
       setSelectedFamilyId(wanted.familyId);
       setSelectedCardId(wanted.id);
     } else if (ok && wantedFamily) {
@@ -160,7 +162,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
   // Détection du survol gauche et droite pour faire défiler le carrousel 3D
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (selectedFamilyId || viewMode === "mosaic" || reducedMotion) {
+    if (selectedFamilyId || viewMode !== "3d" || reducedMotion) {
       hoverVelocityRef.current = 0;
       return;
     }
@@ -211,7 +213,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
   // Défilement à la molette / touchpad
   const handleWheel = (e: React.WheelEvent) => {
-    if (selectedFamilyId || viewMode === "mosaic") return;
+    if (selectedFamilyId || viewMode !== "3d") return;
     const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
     setDeckScrollOffset((prev) => Math.max(-3.0, Math.min(3.0, prev - delta * 0.0025)));
   };
@@ -417,12 +419,16 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     else if (selectedFamilyId) setSelectedFamilyId(null);
   };
 
-  const switchViewMode = (mode: "3d" | "mosaic") => {
+  const switchViewMode = (mode: "3d" | "mosaic" | "explorer") => {
     if (mode === viewMode) return;
     setSelectedCardId(null);
     setSelectedFamilyId(null);
     setHoveredCardId(null);
     setViewMode(mode);
+    const url = new URL(window.location.href);
+    if (mode === "explorer") url.searchParams.set("vue", "explorer");
+    else url.searchParams.delete("vue");
+    window.history.replaceState({}, "", url.pathname + url.search);
   };
 
   useEffect(() => {
@@ -474,7 +480,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       setSelectedCardId(card ? card.id : null);
       setSelectedFamilyId(card ? card.familyId : fam ? fam.id : null);
       // « Précédent » après une carte ouverte depuis la mosaïque : on revient à la mosaïque, pas au carrousel
-      if (!card && !fam && fromMosaicRef.current) setViewMode("mosaic");
+      if (params.get("vue") === "explorer") setViewMode("explorer");
+      else if (!card && !fam && fromMosaicRef.current) setViewMode("mosaic");
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -628,7 +635,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         return;
       }
 
-      if (viewMode === "mosaic" && e.key !== "Escape") return;
+      if (viewMode !== "3d" && e.key !== "Escape") return;
 
       // Espace et Entrée activent déjà les boutons, liens et onglets : on ne les détourne pas
       const onControl =
@@ -747,7 +754,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
       <header
         role="banner"
-        className="topbar h-16 shrink-0 gap-3 [@media(max-height:500px)]:h-12 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 z-40 transition-colors"
+        className={`${viewMode === "explorer" ? "hidden" : "flex"} topbar h-16 shrink-0 gap-3 [@media(max-height:500px)]:h-12 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 z-40 transition-colors`}
       >
         <div className="topbar-brand flex min-w-0 items-center gap-3">
           {/* Logo officiel CFBR & Titre avec retour accueil */}
@@ -831,6 +838,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             {([
               { mode: "3d", label: t.carousel, Icon: Box, hint: t.carouselHint },
               { mode: "mosaic", label: t.mosaic, Icon: LayoutGrid, hint: t.mosaicHint },
+              { mode: "explorer", label: lang === "fr" ? "Explorer" : "Explore", Icon: Compass, hint: lang === "fr" ? "Explorer : une nouvelle façon de découvrir les cartes" : "Explore: a new way to discover the cards" },
             ] as const).map(({ mode, label, Icon, hint }) => (
               <button
                 key={mode}
@@ -936,7 +944,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       <main
         id="contenu"
         role="main"
-        aria-label={t.mainLabel}
+        aria-label={viewMode === "explorer" ? (lang === "fr" ? "Explorer les cartes" : "Explore the cards") : t.mainLabel}
         className="flex-1 relative flex overflow-hidden touch-pan-y"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -947,6 +955,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        {viewMode === "explorer" && <ExplorerView lang={lang} cards={CARDS} families={FAMILIES} card={currentCard} onSelect={(card) => { setSelectedCardId(card?.id ?? null); setSelectedFamilyId(card?.familyId ?? null); }} onSwitch={switchViewMode} onQuiz={(familyId) => { setQuizFamilyId(familyId); setShowQuiz(true); }} isSpeaking={isSpeaking} canSpeak={canSpeak} onSpeak={toggleSpeak} onShare={() => currentCard && shareCard(currentCard)} onPrint={() => currentCard && setPrintCards({cards:[currentCard],booklet:false})} />}
         {/* Avant le choix de la vue, la mosaïque reste invisible sur écran large pour éviter un éclair avant la 3D */}
           <div className={viewMode === "mosaic" ? `contents ${modeResolved ? "" : "md:invisible"}` : "hidden"}>
             <MosaicView
