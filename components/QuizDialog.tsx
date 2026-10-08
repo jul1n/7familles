@@ -3,9 +3,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, FileDown, RotateCcw, Trophy, X } from "lucide-react";
 import type { CardData } from "@/data/cards";
-import type { Lang } from "@/lib/content";
+import { getContent, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import { drawQuestions, getQuizBank, shuffleAnswers, type QuizQuestion } from "@/data/quiz";
+import { quizBankForFamily } from "@/lib/quiz";
 import { trackEvent } from "@/lib/analytics";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 
@@ -54,18 +55,23 @@ function Counter({ value }: { value: number }) {
 export default function QuizDialog({
   lang,
   cards,
+  initialFamilyId = null,
   onOpenCard,
   onPrint,
   onClose,
 }: {
   lang: Lang;
   cards: CardData[];
+  initialFamilyId?: string | null;
   onOpenCard: (card: CardData) => void;
   onPrint: () => void;
   onClose: () => void;
 }) {
   const t = UI[lang].quiz;
   const bank = useMemo(() => getQuizBank(lang), [lang]);
+  const { FAMILIES } = getContent(lang);
+  const [familyId, setFamilyId] = useState<string | null>(initialFamilyId);
+  const familyBank = quizBankForFamily(bank, cards, familyId);
   const [phase, setPhase] = useState<"intro" | "play" | "end">("intro");
   const [rounds, setRounds] = useState<Round[]>([]);
   const [idx, setIdx] = useState(0);
@@ -74,13 +80,13 @@ export default function QuizDialog({
   const [streak, setStreak] = useState(0);
   const [right, setRight] = useState(0);
   const [gain, setGain] = useState<{ n: number; speed: number; streak: number; key: number } | null>(null);
-  // Chrono : actif par défaut, désactivable pour jouer sans pression (choix gardé sur l'appareil)
-  const [timed, setTimed] = useState<boolean>(true);
+  // Découverte par défaut ; le choix explicite du mode est gardé sur l’appareil.
+  const [timed, setTimed] = useState<boolean>(false);
   const [liveBonus, setLiveBonus] = useState<number>(FULL_SPEED_BONUS);
   const startedAt = useRef<number>(0);
   useEffect(() => {
     try {
-      if (localStorage.getItem(TIMER_KEY) === "off") setTimed(false);
+      setTimed(localStorage.getItem(TIMER_KEY) === "on");
     } catch {
       /* stockage indisponible : on garde la valeur par défaut */
     }
@@ -112,7 +118,7 @@ export default function QuizDialog({
   }, [picked]);
 
   const start = () => {
-    const drawn = drawQuestions(bank, QUIZ_LENGTH).map((q) => ({ q, ...shuffleAnswers(q) }));
+    const drawn = drawQuestions(familyBank, QUIZ_LENGTH).map((q) => ({ q, ...shuffleAnswers(q) }));
     setRounds(drawn);
     setIdx(0);
     setPicked(null);
@@ -212,10 +218,16 @@ export default function QuizDialog({
             <div className="text-center">
               <p className="text-sm leading-relaxed text-stone-700">{t.intro}</p>
               <p className="mt-2 text-xs text-stone-600">{t.rulesOfPoints(timed)}</p>
-              <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-800 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#1b5d78]">
-                <input type="checkbox" checked={timed} onChange={(e) => toggleTimed(e.target.checked)} className="h-4 w-4 accent-[#1b5d78]" />
-                {t.timerToggle}
+              <label className="mt-4 flex flex-col gap-1 text-left text-sm font-semibold">
+                {UI[lang].chooseFamily}
+                <select value={familyId ?? ""} onChange={(e) => setFamilyId(e.target.value || null)} className="min-h-[44px] rounded-xl border border-stone-300 bg-white px-3">
+                  <option value="">{t.allFamilies}</option>
+                  {FAMILIES.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
               </label>
+              <div role="group" aria-label={t.timerToggle} className="mt-3 grid grid-cols-2 gap-2">
+                {[false, true].map((v) => <button key={String(v)} type="button" aria-pressed={timed === v} onClick={() => toggleTimed(v)} className={`min-h-[44px] rounded-xl border px-3 text-sm font-bold focus-visible:ring-2 focus-visible:ring-[#1b5d78] ${timed === v ? "bg-[#1b5d78] text-white border-[#1b5d78]" : "bg-white border-stone-300"}`}>{v ? t.challenge : t.discovery}</button>)}
+              </div>
               <p className="mt-1 text-xs text-stone-500">{t.timerHint}</p>
               <div className="mt-5 flex flex-col items-center gap-2">
                 <button type="button" onClick={start} className={`${btn} bg-[#1b5d78] text-white`}>
@@ -241,7 +253,7 @@ export default function QuizDialog({
                 ))}
               </div>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{t.questionOf(idx + 1, rounds.length)}</p>
+                <p className="text-xs font-semibold text-stone-500">{t.questionOf(idx + 1, rounds.length)} · {FAMILIES.find((f) => f.id === familyId)?.name ?? t.allFamilies}</p>
                 {timed && picked === null && (
                   <p className="text-xs font-extrabold tabular-nums text-amber-600" aria-hidden>
                     ⚡ +{liveBonus}
@@ -330,6 +342,7 @@ export default function QuizDialog({
                 <button type="button" onClick={start} className={`${btn} inline-flex items-center gap-2 bg-[#1b5d78] text-white`}>
                   <RotateCcw className="h-4 w-4" aria-hidden /> {t.replay}
                 </button>
+                <button type="button" onClick={() => setPhase("intro")} className={`${btn} border border-stone-300`}>{t.changeOptions}</button>
                 <button
                   type="button"
                   onClick={onPrint}

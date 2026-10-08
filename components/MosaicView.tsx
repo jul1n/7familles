@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import type { CardData } from "@/data/cards";
 import { getContent, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
@@ -9,22 +9,30 @@ import { Search, Trophy } from "lucide-react";
 import ResourcesNav from "@/components/ResourcesNav";
 
 interface MosaicViewProps {
+  visible?: boolean;
   onOpenCard: (card: CardData) => void;
   onSearch: () => void;
-  onQuiz?: () => void;
+  onQuiz?: (familyId: string | null) => void;
   notice?: string; // ex. : affichage 3D indisponible sur cet appareil
   lang?: Lang;
 }
 
 // Vue « mosaïque » : les 42 cartes côte à côte, regroupées par famille, cliquables.
-export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang = "fr" }: MosaicViewProps) {
+export default function MosaicView({ visible = true, onOpenCard, onSearch, onQuiz, notice, lang = "fr" }: MosaicViewProps) {
   const t = UI[lang];
   const { FAMILIES, CARDS } = getContent(lang);
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
+  const scrollBox = useRef<HTMLDivElement>(null);
+  const savedScroll = useRef(0);
+  useLayoutEffect(() => {
+    if (visible && scrollBox.current) scrollBox.current.scrollTop = savedScroll.current;
+  }, [visible]);
   const families = activeFamilyId ? FAMILIES.filter((f) => f.id === activeFamilyId) : FAMILIES;
 
   return (
     <div
+      ref={scrollBox}
+      onScroll={(e) => { if (visible) savedScroll.current = e.currentTarget.scrollTop; }}
       className="absolute inset-0 overflow-y-auto overscroll-contain"
       role="region"
       aria-label={t.mosaicRegion}
@@ -51,7 +59,7 @@ export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang 
           </button>
           {onQuiz && (
             <button
-              onClick={onQuiz}
+              onClick={() => onQuiz?.(activeFamilyId)}
               aria-label={t.quiz.open}
               className="flex min-h-[44px] flex-shrink-0 items-center gap-1.5 rounded-xl border border-amber-700 bg-amber-700 px-3.5 text-xs font-semibold text-white focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:outline-none"
             >
@@ -59,33 +67,15 @@ export default function MosaicView({ onOpenCard, onSearch, onQuiz, notice, lang 
               {t.quiz.open}
             </button>
           )}
-          <button
-            onClick={() => setActiveFamilyId(null)}
-            aria-pressed={activeFamilyId === null}
-            className={`min-h-[44px] px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
-              activeFamilyId === null
-                ? "bg-stone-900 text-white border-stone-900 shadow-sm"
-                : "bg-white/90 text-stone-600 border-stone-200 hover:text-stone-900 hover:bg-white"
-            }`}
-          >
-            {t.allCards}
-          </button>
-          {FAMILIES.map((fam) => (
-            <button
-              key={fam.id}
-              onClick={() => setActiveFamilyId(activeFamilyId === fam.id ? null : fam.id)}
-              aria-pressed={activeFamilyId === fam.id}
-              className={`min-h-[44px] px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
-                activeFamilyId === fam.id
-                  ? "bg-stone-900 text-white border-stone-900 shadow-sm"
-                  : "bg-white/90 text-stone-600 border-stone-200 hover:text-stone-900 hover:bg-white"
-              }`}
-            >
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: fam.color }} />
-              {fam.name}
-            </button>
-          ))}
+
         </div>
+        <label className="flex max-w-6xl mx-auto mt-2 flex-col gap-1 text-xs font-semibold text-stone-700">
+          {t.chooseFamily}
+          <select value={activeFamilyId ?? ""} onChange={(e) => { savedScroll.current = 0; setActiveFamilyId(e.target.value || null); e.currentTarget.closest('[role="region"]')?.scrollTo({ top: 0 }); }} className="min-h-[44px] w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-stone-900 focus-visible:ring-2 focus-visible:ring-[#1b5d78]">
+            <option value="">{t.allCards}</option>
+            {FAMILIES.map((fam) => <option key={fam.id} value={fam.id}>{fam.name}</option>)}
+          </select>
+        </label>
       </div>
 
       <div className="px-4 md:px-8 pb-10 max-w-6xl mx-auto">

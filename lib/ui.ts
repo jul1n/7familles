@@ -62,6 +62,8 @@ interface UiText {
   sheetLabel: string;
   sheetExpand: string;
   sheetCollapse: string;
+  readSheet: string;
+  chooseFamily: string;
   sheetMoreShort: string;
   sheetLessShort: string;
   helpTitle: string;
@@ -75,6 +77,10 @@ interface UiText {
     title: string;
     intro: string;
     rulesOfPoints: (timed: boolean) => string;
+    discovery: string;
+    challenge: string;
+    allFamilies: string;
+    changeOptions: string;
     timerToggle: string;
     timerHint: string;
     speedLabel: string;
@@ -247,7 +253,9 @@ const fr: UiText = {
   sheetLabel: "Fiche pédagogique de la carte",
   sheetExpand: "Développer la fiche pédagogique",
   sheetCollapse: "Réduire la fiche pédagogique",
-  sheetMoreShort: "En savoir plus",
+  readSheet: "Lire la fiche",
+  chooseFamily: "Choisir une famille",
+  sheetMoreShort: "Lire la fiche",
   sheetLessShort: "Réduire",
   helpTitle: "Comment jouer ?",
   helpClose: "Fermer l'aide",
@@ -268,13 +276,17 @@ const fr: UiText = {
   quiz: {
     open: "Quiz",
     title: "Quiz des barrages",
-    intro: "5 questions tirées au hasard dans les fiches des 42 cartes. 4 réponses possibles, une seule est bonne : à toi de jouer !",
+    intro: "5 questions tirées au hasard dans toutes les familles ou dans celle de ton choix. 4 réponses possibles, une seule est bonne : à toi de jouer !",
     rulesOfPoints: (timed) =>
       timed
         ? "10 points par bonne réponse. Réponds vite pour gagner jusqu'à +10 de bonus de rapidité (le maximum en moins de 8 secondes, plus rien après 20 secondes), et +5 pour chaque bonne réponse d'affilée : 150 points au maximum."
         : "10 points par bonne réponse, +5 de bonus pour chaque bonne réponse d'affilée : 100 points au maximum.",
+    discovery: "Découverte",
+    challenge: "Défi",
+    allFamilies: "Toutes les familles",
+    changeOptions: "Changer de famille ou de mode",
     timerToggle: "Chrono et bonus de rapidité",
-    timerHint: "Décoche pour jouer sans pression, à ton rythme.",
+    timerHint: "Découverte : à ton rythme. Défi : bonus de rapidité, sans limite pour répondre.",
     speedLabel: "rapidité",
     streakLabel: "série",
     fastLabel: "Éclair !",
@@ -450,7 +462,9 @@ const en: UiText = {
   sheetLabel: "Educational fact sheet of the card",
   sheetExpand: "Expand the fact sheet",
   sheetCollapse: "Collapse the fact sheet",
-  sheetMoreShort: "Learn more",
+  readSheet: "Read the fact sheet",
+  chooseFamily: "Choose a family",
+  sheetMoreShort: "Read the fact sheet",
   sheetLessShort: "Collapse",
   helpTitle: "How to play?",
   helpClose: "Close the help",
@@ -471,13 +485,17 @@ const en: UiText = {
   quiz: {
     open: "Quiz",
     title: "Dam quiz",
-    intro: "5 questions drawn at random from the fact sheets of the 42 cards. 4 possible answers, only one is right: your turn to play!",
+    intro: "5 questions drawn at random from all families or a family of your choice. 4 possible answers, only one is right: your turn to play!",
     rulesOfPoints: (timed) =>
       timed
         ? "10 points per right answer. Answer fast to earn up to +10 speed bonus (full bonus within 8 seconds, nothing after 20 seconds), and +5 for each right answer in a row: 150 points at most."
         : "10 points per right answer, +5 bonus for each right answer in a row: 100 points at most.",
+    discovery: "Discovery",
+    challenge: "Challenge",
+    allFamilies: "All families",
+    changeOptions: "Change family or mode",
     timerToggle: "Timer and speed bonus",
-    timerHint: "Untick to play without pressure, at your own pace.",
+    timerHint: "Discovery: play at your own pace. Challenge: speed bonus, with no answer time limit.",
     speedLabel: "speed",
     streakLabel: "streak",
     fastLabel: "Lightning!",

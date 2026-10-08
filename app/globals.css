@@ -94,3 +94,36 @@ body {
   .print-sheet .card-prose li + li { margin-top: 0.12em; }
   .print-sheet img { break-inside: avoid; }
 }
+
+/* Compact header: keep partner artwork proportional and all actions reachable. */
+@media (max-width: 1600px) {
+  .topbar-action-label { display: none !important; }
+  .topbar-architectes { width: 32px; height: 32px; overflow: hidden; }
+  .topbar-architectes img { height: 32px; width: auto; }
+  .topbar-cfbr { max-height: 36px; }
+  .topbar-agency { width: 32px; height: 32px; }
+  .topbar-partners { gap: 8px; margin-left: 0; padding-left: 12px; }
+  .topbar-controls > button, .topbar-controls > .group > button { flex-shrink: 0; justify-content: center; min-width: 44px; padding-left: 10px; padding-right: 10px; }
+  .topbar-title { font-size: 14px; }
+}
+@media (max-width: 1100px) {
+  .topbar-full-title, .topbar-date, .topbar-subtitle { display: none !important; }
+  .topbar-short-title { display: inline !important; }
+  .topbar { padding-left: 12px; padding-right: 12px; gap: 8px; }
+  .topbar-brand, .topbar-brand > div { gap: 8px; }
+}
+@media (max-width: 600px) {
+  .topbar { padding-left: 4px; padding-right: 4px; gap: 4px; }
+  .topbar-title { display: none; }
+  .topbar-cfbr { width: 24px; height: 32px; object-fit: contain; }
+  .topbar-controls { gap: 2px; }
+  .topbar-brand, .topbar-brand > div { gap: 0; }
+}
+
+@media (max-width: 380px) {
+  .topbar-brand { flex-shrink: 0; }
+  .topbar-cfbr { width: 16px; }
+  .topbar-controls { gap: 1px; }
+  .topbar-controls > button, .topbar-controls > .group > button, .topbar-controls > a { min-width: 40px; width: 40px; padding-left: 0; padding-right: 0; }
+  .topbar-controls > [role="group"] button { width: 34px; padding-left: 0; padding-right: 0; justify-content: center; }
+}

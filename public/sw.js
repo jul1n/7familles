@@ -6,7 +6,7 @@
 // Le cache est plafonné (MAX_ENTRIES) : les entrées les plus anciennes qui ne font pas partie du préchargement
 // sont supprimées, ce qui évite l'accumulation des anciens fichiers de l'application à chaque mise à jour du site.
 // Changer VERSION force la reconstruction complète du cache.
-const VERSION = "v2";
+const VERSION = "v3";
 const CACHE = `7familles-${VERSION}`;
 const BASE = new URL(self.registration.scope).pathname.replace(/\/$/, ""); // "" ou "/7familles"
 const PAGES = ["/", "/en/", "/regles/", "/en/rules/"];

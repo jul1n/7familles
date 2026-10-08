@@ -73,6 +73,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   const [webglOk, setWebglOk] = useState<boolean>(true);
   const [showHelp, setShowHelp] = useState<boolean>(false);
   const [showSearch, setShowSearch] = useState<boolean>(false);
+  const [quizFamilyId, setQuizFamilyId] = useState<string | null>(null);
   const [showQuiz, setShowQuiz] = useState<boolean>(false);
   const [printQuiz, setPrintQuiz] = useState<boolean>(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -746,9 +747,9 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
       <header
         role="banner"
-        className="h-16 [@media(max-height:500px)]:h-12 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 z-40 transition-colors"
+        className="topbar h-16 shrink-0 gap-3 [@media(max-height:500px)]:h-12 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 z-40 transition-colors"
       >
-        <div className="flex items-center gap-3">
+        <div className="topbar-brand flex min-w-0 items-center gap-3">
           {/* Logo officiel CFBR & Titre avec retour accueil */}
           <div className="flex items-center gap-3">
           <button
@@ -767,7 +768,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               <img
                 src={asset("/cfbr-logo.png")}
                 alt=""
-                className="h-11 [@media(max-height:500px)]:h-9 w-auto object-contain"
+                className="topbar-cfbr h-11 [@media(max-height:500px)]:h-9 w-auto object-contain"
               />
               {/* Infobulle au survol du logo : lien du CFBR avec la CIGB / ICOLD */}
               <span
@@ -782,45 +783,45 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm md:text-base font-bold tracking-tight text-stone-900 leading-tight whitespace-nowrap">
-                  <span className="sm:hidden">{t.siteNameShort}</span>
-                  <span className="hidden sm:inline">{t.siteName}</span>
+                <h1 className="topbar-title text-sm md:text-base font-bold tracking-tight text-stone-900 leading-tight whitespace-nowrap">
+                  <span className="topbar-short-title sm:hidden">{t.siteNameShort}</span>
+                  <span className="topbar-full-title hidden sm:inline">{t.siteName}</span>
                 </h1>
-                <span className="hidden lg:inline-flex whitespace-nowrap items-center text-xs font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
+                <span className="topbar-date hidden lg:inline-flex whitespace-nowrap items-center text-xs font-semibold text-[#1b5d78] bg-[#1b5d78]/10 border border-[#1b5d78]/20 px-2 py-0.5 rounded-full">
                   1926–2026
                 </span>
               </div>
-              <p className="text-xs text-stone-600 hidden md:block">
+              <p className="topbar-subtitle text-xs text-stone-600 hidden md:block">
                 {t.subtitle}
               </p>
             </div>
           </div>
 
           {/* Partenaires : le logo renvoie directement vers leur site ou leur compte */}
-          <div className="hidden md:flex items-center gap-3 ml-2 pl-4 border-l border-stone-200">
+          <div className="topbar-partners hidden md:flex shrink-0 items-center gap-3 ml-2 pl-4 border-l border-stone-200">
             <a
               href={ARCHITECTES_URL}
               target="_blank"
               rel="noopener noreferrer"
               title="Les Architectes de l’Eau"
-              className="block rounded-lg focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+              className="topbar-architectes block shrink-0 rounded-lg focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={asset("/logos/architectes-de-leau.png")} alt="Les Architectes de l’Eau" className="h-8 w-auto" />
+              <img src={asset("/logos/architectes-de-leau.png")} alt="Les Architectes de l’Eau" className="h-8 w-auto max-w-none" />
             </a>
             <AgencyCredit placement="bottom" align="center" lang={lang}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={asset("/logos/hello-bim-bam-boum-small.png")}
                 alt="Hello Bim Bam Boum"
-                className="h-9 w-9 rounded-full"
+                className="topbar-agency h-9 w-9 rounded-full"
               />
             </AgencyCredit>
           </div>
         </div>
 
         {/* Contrôles supérieurs */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="topbar-controls flex shrink-0 items-center gap-1.5 sm:gap-2">
           {/* Choix du mode d'affichage : carrousel 3D ou toutes les cartes */}
           <div
             role="group"
@@ -843,7 +844,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 <Icon className="w-4 h-4" />
-                <span className={mode === "mosaic" ? "hidden sm:inline" : "hidden md:inline"}>{label}</span>
+                <span className={`topbar-action-label ${mode === "mosaic" ? "hidden sm:inline" : "hidden md:inline"}`}>{label}</span>
               </button>
             ))}
           </div>
@@ -870,7 +871,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
           {QUIZ_ENABLED && (
             <button
               type="button"
-              onClick={() => setShowQuiz(true)}
+              onClick={() => { setQuizFamilyId(null); setShowQuiz(true); }}
               aria-label={t.quiz.open}
               title={t.quiz.open}
               className="hidden sm:flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-amber-600 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
@@ -909,7 +910,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             className="min-h-[44px] px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
           >
             <Printer className="w-4 h-4" />
-            <span className="hidden md:inline">{t.print}</span>
+            <span className="topbar-action-label hidden md:inline">{t.print}</span>
           </button>
 
           {/* Outil d'édition des contenus : réservé au développement (absent du site publié) */}
@@ -921,10 +922,11 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
                 : "bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs"
             }`}
+            title={isEditing ? "Fermer le mode édition" : "Ouvrir le mode édition"}
             aria-label={isEditing ? "Fermer le mode édition" : "Ouvrir le mode édition"}
           >
             <Edit3 className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Mode Édition</span>
+            <span className="topbar-action-label hidden md:inline">Mode Édition</span>
           </button>
           )}
         </div>
@@ -945,18 +947,17 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {viewMode === "mosaic" && (
-          // Avant le choix de la vue, la mosaïque reste invisible sur écran large pour éviter un éclair avant la 3D
-          <div className={`contents ${modeResolved ? "" : "md:invisible"}`}>
+        {/* Avant le choix de la vue, la mosaïque reste invisible sur écran large pour éviter un éclair avant la 3D */}
+          <div className={viewMode === "mosaic" ? `contents ${modeResolved ? "" : "md:invisible"}` : "hidden"}>
             <MosaicView
+              visible={viewMode === "mosaic"}
               onOpenCard={openCardFromMosaic}
               notice={!webglOk ? t.mosaicNotice : undefined}
               onSearch={() => setShowSearch(true)}
-              onQuiz={QUIZ_ENABLED ? () => setShowQuiz(true) : undefined}
+              onQuiz={QUIZ_ENABLED ? (familyId) => { setQuizFamilyId(familyId); setShowQuiz(true); } : undefined}
               lang={lang}
             />
           </div>
-        )}
 
         {viewMode === "3d" && modeResolved && (
         <>
@@ -1258,10 +1259,10 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               id="card-pedagogic-sheet"
               className={`md:hidden absolute bottom-0 left-0 right-0 z-30 bg-[#FDFBF7]/98 border-t border-stone-200/90 backdrop-blur-2xl rounded-t-3xl transition-all duration-300 ease-out flex flex-col shadow-2xl text-stone-900 ${
                 sheetState === "collapsed"
-                  ? "h-32"
+                  ? "h-[260px] max-h-[60%]"
                   : sheetState === "intermediate"
                   ? "h-[55%]"
-                  : "h-[92%]"
+                  : "h-full rounded-none"
               }`}
             >
               <div
@@ -1272,19 +1273,17 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 aria-label={
                   sheetState === "expanded"
                     ? t.sheetCollapse
-                    : t.sheetExpand
+                    : t.readSheet
                 }
                 className="w-full pt-3.5 pb-2.5 min-h-[48px] flex flex-col items-center justify-center cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none rounded-t-3xl"
                 onClick={() => {
-                  if (sheetState === "collapsed") setSheetState("intermediate");
-                  else if (sheetState === "intermediate") setSheetState("expanded");
+                  if (sheetState !== "expanded") setSheetState("expanded");
                   else setSheetState("collapsed");
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    if (sheetState === "collapsed") setSheetState("intermediate");
-                    else if (sheetState === "intermediate") setSheetState("expanded");
+                    if (sheetState !== "expanded") setSheetState("expanded");
                     else setSheetState("collapsed");
                   }
                 }}
@@ -1304,14 +1303,22 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 </div>
               </div>
 
+              <div className="px-5 pb-3 shrink-0">
+                <CardActions
+                      isSpeaking={isSpeaking}
+                      canSpeak={canSpeak}
+                      onToggleSpeak={toggleSpeak}
+                      onPrint={() => setPrintCards({ cards: [currentCard], booklet: false })}
+                      onShare={() => shareCard(currentCard)}
+                    t={t}
+                    />
+                  </div>
               <div
                 id="card-pedagogic-content"
                 tabIndex={0}
                 role="region"
                 aria-label={currentCard.title}
-                className={`px-5 pb-6 overflow-y-auto flex-1 ${sheetState === "collapsed" ? "cursor-pointer" : ""} focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1b5d78] focus-visible:outline-none`}
-                // Deuxième appui, cette fois sur le texte : la fiche passe en plein écran
-                onClick={() => sheetState === "collapsed" && setSheetState("expanded")}
+                className={`px-5 pb-6 overflow-y-auto flex-1 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1b5d78] focus-visible:outline-none`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span
@@ -1339,18 +1346,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                   {currentCard.shortDescription}
                 </p>
 
-                {sheetState !== "collapsed" && (
-                  <div className="mt-4">
-                    <CardActions
-                      isSpeaking={isSpeaking}
-                      canSpeak={canSpeak}
-                      onToggleSpeak={toggleSpeak}
-                      onPrint={() => setPrintCards({ cards: [currentCard], booklet: false })}
-                      onShare={() => shareCard(currentCard)}
-                    t={t}
-                    />
-                  </div>
-                )}
+
 
                 {sheetState !== "collapsed" && (
                   <div className="mt-5 pt-4 border-t border-stone-200 card-prose card-prose-sm">
@@ -1379,6 +1375,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         <QuizDialog
           lang={lang}
           cards={CARDS}
+          initialFamilyId={quizFamilyId}
           onClose={() => setShowQuiz(false)}
           onPrint={() => {
             setShowQuiz(false);

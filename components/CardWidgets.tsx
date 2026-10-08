@@ -97,11 +97,11 @@ export function GetCopyButton({ t, lang }: { t: UiText; lang: Lang }) {
         aria-expanded={open}
         aria-controls="get-copy-pop"
         title={t.getCopyLabel}
+        aria-label={t.getCopy}
         className="min-h-[44px] px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
       >
         <ShoppingBag className="w-4 h-4" />
-        <span className="hidden lg:inline">{t.getCopy}</span>
-        <span className="sr-only lg:hidden">{t.getCopy}</span>
+        <span className="topbar-action-label hidden lg:inline">{t.getCopy}</span>
       </button>
       <div
         id="get-copy-pop"

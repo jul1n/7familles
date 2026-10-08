@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { quizBankForFamily } from "@/lib/quiz";
+import { getContent } from "@/lib/content";
 import { CARDS } from "@/data/cards";
 import { drawPrintQuizzes, drawQuestions, getQuizBank, shuffleAnswers } from "@/data/quiz";
 
@@ -68,4 +70,26 @@ describe("tirages", () => {
     expect(new Set(all.map((q) => q.id)).size).toBe(50);
     for (const quiz of quizzes) expect(new Set(quiz.map((q) => q.card)).size).toBe(5);
   });
+});
+
+describe("quiz par famille", () => {
+  for (const lang of ["fr", "en"] as const) {
+    const { CARDS: cards, FAMILIES } = getContent(lang);
+    const bank = getQuizBank(lang);
+    it(`${lang} : chaque famille fournit cinq cartes distinctes sans question hors famille`, () => {
+      for (const family of FAMILIES) {
+        const filtered = quizBankForFamily(bank, cards, family.id);
+        expect(filtered).toHaveLength(12);
+        const allowed = new Set(cards.filter((c) => c.familyId === family.id).map((c) => c.id));
+        for (let seed = 1; seed <= 20; seed++) {
+          const drawn = drawQuestions(filtered, 5, seeded(seed));
+          expect(drawn).toHaveLength(5);
+          expect(new Set(drawn.map((q) => q.card)).size).toBe(5);
+          expect(drawn.every((q) => allowed.has(q.card))).toBe(true);
+        }
+      }
+      expect(quizBankForFamily(bank, cards, null)).toHaveLength(84);
+      expect(quizBankForFamily(bank, cards, "unknown")).toEqual([]);
+    });
+  }
 });
