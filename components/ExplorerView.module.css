@@ -60,3 +60,36 @@
 
 .viewerAuto{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 12px;background:#f0f5e7;border:1px solid #d4e1c9;border-radius:15px;color:#356346;font-size:11px!important;font-weight:750!important;flex-shrink:0}.viewerAuto[aria-pressed=true]{background:#285d46;color:white;border-color:#285d46}
 @media(max-width:380px){.viewerAuto{padding:0 8px}.viewerAuto span{display:none}.viewerShare{display:none}}
+
+/* One transition driven by card identity, for both navigation and autoplay. */
+.transitionFrame{position:relative;display:grid;place-items:center;perspective:1400px;isolation:isolate}
+.transitionFrame>img{grid-area:1 / 1;height:auto;width:auto;max-height:67dvh;max-width:68vw;object-fit:contain;filter:drop-shadow(0 22px 28px #34532628);transform:rotate(-1.5deg);will-change:transform,opacity}
+.incomingCard{animation:card-arrive .6s cubic-bezier(.22,.8,.25,1) both;z-index:2}
+.outgoingCard{animation:card-depart .48s cubic-bezier(.4,0,.6,1) both;z-index:1;pointer-events:none}
+.changingLabel{animation:label-arrive .45s ease-out both}
+@keyframes card-arrive{0%{opacity:0;transform:translateX(calc(var(--slide-direction,1)*75px)) translateY(10px) rotateY(calc(var(--slide-direction,1)*-12deg)) rotate(calc(var(--slide-direction,1)*5deg)) scale(.95)}30%{opacity:1}100%{opacity:1;transform:translateX(0) translateY(0) rotateY(0) rotate(-1.5deg) scale(1)}}
+@keyframes card-depart{0%{opacity:1;transform:translateX(0) rotate(-1.5deg) scale(1)}100%{opacity:0;transform:translateX(calc(var(--slide-direction,1)*-65px)) translateY(-8px) rotateY(calc(var(--slide-direction,1)*12deg)) rotate(calc(var(--slide-direction,1)*-6deg)) scale(.94)}}
+@keyframes label-arrive{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){.transitionFrame>img{max-width:73vw;max-height:61dvh}}
+@media(max-height:600px){.transitionFrame>img{max-height:55dvh}}
+@media(prefers-reduced-motion:reduce){.incomingCard,.outgoingCard,.changingLabel{animation:none!important}.outgoingCard{display:none}.transitionFrame>img{transform:none;will-change:auto}}
+
+.inlineFrame>img{width:100%;height:auto;max-width:100%;max-height:none;border-radius:14px;filter:drop-shadow(0 16px 12px #23382430)}
+
+/* The shared audio analyser drives one smoothed value, without React rerenders. */
+.zoomOverlay{--voice-energy:0}
+.zoomDialog:before{transform:translate(-50%,-50%) scale(calc(1 + var(--voice-energy)*.07));border-color:color-mix(in srgb,var(--family) calc(23% + var(--voice-energy)*25%),transparent);box-shadow:0 0 0 calc(52px + var(--voice-energy)*16px) #ffffff30,0 0 0 calc(104px + var(--voice-energy)*29px) #ffffff20;will-change:transform}
+.zoomDialog:after{content:"";position:absolute;z-index:-2;pointer-events:none;top:46%;left:50%;width:min(65vw,660px);height:min(65vw,660px);border-radius:50%;transform:translate(-50%,-50%) scale(calc(1 + var(--voice-energy)*.13));background:radial-gradient(circle,color-mix(in srgb,var(--family) 18%,transparent),transparent 68%);filter:blur(20px);opacity:calc(.15 + var(--voice-energy)*.55);will-change:transform,opacity}
+.voiceActive .zoomListen{box-shadow:0 0 0 calc(2px + var(--voice-energy)*5px) #285d4610,0 5px 14px #264f3215}
+@media(prefers-reduced-motion:reduce){.zoomDialog:before{transform:translate(-50%,-50%);will-change:auto}.zoomDialog:after{display:none}.voiceActive .zoomListen{box-shadow:none}}
+
+/* Gather the introductory pair gently as the collection comes into view. */
+.heroListen{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:0;border:0;background:transparent;color:inherit;font-size:inherit!important;text-align:left}
+.heroListen:hover{color:#214c40;text-decoration:underline;text-underline-offset:4px}
+.heroArt{--hero-gather:0}
+.heroBack{transform:translateX(calc(var(--hero-gather)*24px)) rotate(calc(-15deg + var(--hero-gather)*7deg))}
+.heroFront{transform:translateX(calc(var(--hero-gather)*-30px)) rotate(calc(12deg - var(--hero-gather)*6deg))}
+.heroArt:hover .heroFront{transform:translateX(calc(var(--hero-gather)*-30px)) rotate(calc(6deg - var(--hero-gather)*3deg)) translateY(-8px)}
+@media(orientation:portrait){.heroArt{max-width:440px}.heroArt>img{height:clamp(250px,70vw,295px)}.heroArt{height:365px}.heroBack{left:5%}.heroFront{left:36%}}
+@media(orientation:portrait) and (max-width:380px){.heroArt>img{height:250px}.heroArt{height:325px}.heroFront{left:34%}}
+@media(prefers-reduced-motion:reduce){.heroBack{transform:rotate(-15deg)}.heroFront,.heroArt:hover .heroFront{transform:rotate(12deg)}}

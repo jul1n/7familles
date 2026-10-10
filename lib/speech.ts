@@ -123,6 +123,45 @@ export function bestFrenchVoice(): SpeechSynthesisVoice | undefined {
 let utterances: SpeechSynthesisUtterance[] = [];
 
 let audio: HTMLAudioElement | null = null;
+let meterContext: AudioContext | null = null;
+let meterAnalyser: AnalyserNode | null = null;
+let meterSamples: Uint8Array<ArrayBuffer> | null = null;
+let meterSource: MediaElementAudioSourceNode | null = null;
+let meterEnabled = false;
+
+// Optional audio-reactive decoration; unsupported browsers keep normal MP3 playback.
+export function enableAudioMeter() { meterEnabled = true; }
+export function audioLevel(): number {
+  if (!audio || audio.paused || !meterAnalyser || !meterSamples) return 0;
+  meterAnalyser.getByteTimeDomainData(meterSamples);
+  let sum = 0;
+  for (const sample of meterSamples) sum += ((sample - 128) / 128) ** 2;
+  return Math.min(1, Math.sqrt(sum / meterSamples.length) * 5);
+}
+function attachAudioMeter(element: HTMLAudioElement) {
+  if (!meterEnabled || typeof AudioContext === "undefined") return;
+  try {
+    meterContext ??= new AudioContext();
+    // Do not reroute sound through a suspended context: playback must stay reliable.
+    if (meterContext.state !== "running") {
+      void meterContext.resume().then(() => {
+        if (audio === element && meterContext?.state === "running") connectAudioMeter(element);
+      }).catch(() => undefined);
+    } else connectAudioMeter(element);
+  } catch { /* Audio remains on the native player. */ }
+}
+function connectAudioMeter(element: HTMLAudioElement) {
+  if (!meterContext) return;
+  try {
+    meterAnalyser ??= meterContext.createAnalyser();
+    meterAnalyser.fftSize = 512;
+    meterSamples ??= new Uint8Array(512);
+    meterSource = meterContext.createMediaElementSource(element);
+    meterSource.connect(meterContext.destination);
+    meterSource.connect(meterAnalyser);
+  } catch { /* Unsupported analysis must never interrupt native playback. */ }
+}
+
 
 export function stopSpeaking() {
   if (audio) {
@@ -130,6 +169,8 @@ export function stopSpeaking() {
     audio.onerror = null;
     audio.pause();
     audio = null;
+    meterSource?.disconnect();
+    meterSource = null;
   }
   if (!speechSupported()) return;
   utterances = [];
@@ -142,6 +183,7 @@ export function playAudio(url: string, onEnd: () => void, onFail: () => void) {
   stopSpeaking();
   const el = new Audio(url);
   audio = el;
+  attachAudioMeter(el);
   el.onended = onEnd;
   el.onerror = onFail;
   // Si la lecture a été arrêtée entre-temps, l'échec de play() est normal : on ne se rabat pas sur la synthèse
