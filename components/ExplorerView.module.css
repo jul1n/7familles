@@ -93,3 +93,36 @@
 @media(orientation:portrait){.heroArt{max-width:440px}.heroArt>img{height:clamp(250px,70vw,295px)}.heroArt{height:365px}.heroBack{left:5%}.heroFront{left:36%}}
 @media(orientation:portrait) and (max-width:380px){.heroArt>img{height:250px}.heroArt{height:325px}.heroFront{left:34%}}
 @media(prefers-reduced-motion:reduce){.heroBack{transform:rotate(-15deg)}.heroFront,.heroArt:hover .heroFront{transform:rotate(12deg)}}
+
+/* Let the upper illustration fill the reading backdrop as the story scrolls. */
+.readVisual{--read-zoom:0}
+.readCrop{display:block;overflow:hidden;border-radius:16px;isolation:isolate}
+.readCrop .inlineFrame{transform-origin:50% 18%;transform:scale(calc(1 + var(--read-zoom)*.38));will-change:transform}
+.zoomHint{right:-18px;bottom:24px;width:44px;height:44px;border:1px solid #d5e1d0;z-index:4;background:#fffffff2;box-shadow:0 5px 18px #18302320}
+@media(min-width:761px) and (max-width:1180px){.readGrid{grid-template-columns:minmax(320px,.95fr) minmax(0,1fr);gap:32px}.readVisual{padding:22px 24px}.interactiveCard{max-width:none}}
+@media(max-width:900px) and (orientation:portrait), (max-width:760px){
+  .readGrid{grid-template-columns:minmax(0,1fr);gap:0;isolation:isolate}
+  .readVisual{position:sticky;top:88px;max-width:560px;width:100%;padding:18px 24px 30px;margin:0 auto;z-index:0;align-self:start}
+  .interactiveCard{max-width:440px;width:100%;margin:18px auto 0}
+  .readVisual p{display:none}
+  .article{position:relative;z-index:1;margin-top:-90px;padding:26px 24px 30px;border:1px solid #ffffffb3;border-radius:24px;background:#faf9f5db;backdrop-filter:blur(6px);box-shadow:0 -10px 35px #2943230c}
+  .article h1{font-size:clamp(30px,4.6vw,43px)}
+  .readText{color:#344c3d}
+  .readText>p,.readText>ul,.readText>blockquote,.readText>h2{opacity:1}
+  .zoomHint{right:-18px;bottom:110px}
+}
+@media(max-width:480px){.readVisual{padding:15px 20px 25px;top:76px}.article{margin-top:-65px;padding:22px 18px}.zoomHint{right:-16px;bottom:85px}}
+/* A quick sideways shuffle with a tiny overshoot, like dealing a new card. */
+.zoomStage .incomingCard{animation:card-shuffle-in .42s cubic-bezier(.2,.8,.25,1) both}
+.zoomStage .outgoingCard{animation:card-shuffle-out .28s ease-in both}
+@keyframes card-shuffle-in{
+  0%{opacity:0;transform:translateX(calc(var(--slide-direction,1)*160px)) translateY(6px) rotate(calc(var(--slide-direction,1)*9deg)) scale(.96)}
+  25%{opacity:1}
+  72%{transform:translateX(calc(var(--slide-direction,1)*-12px)) translateY(-3px) rotate(-3deg) scale(1.015)}
+  100%{opacity:1;transform:translateX(0) translateY(0) rotate(-1.5deg) scale(1)}
+}
+@keyframes card-shuffle-out{
+  0%{opacity:1;transform:translateX(0) rotate(-1.5deg) scale(1)}
+  100%{opacity:0;transform:translateX(calc(var(--slide-direction,1)*-180px)) translateY(8px) rotate(calc(var(--slide-direction,1)*-10deg)) scale(.95)}
+}
+@media(prefers-reduced-motion:reduce){.readCrop .inlineFrame{transform:none;will-change:auto}.zoomStage .incomingCard,.zoomStage .outgoingCard{animation:none!important}}

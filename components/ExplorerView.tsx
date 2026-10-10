@@ -32,6 +32,24 @@ export default function ExplorerView({ lang, cards, families, card, onSelect, on
   const scroll = useRef<HTMLDivElement>(null);
   const listPosition = useRef(0);
   const heroArt = useRef<HTMLButtonElement>(null);
+  const readerVisual = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const node = scroll.current;
+    const visual = readerVisual.current;
+    if (!node || !visual || !card) return;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let frame = 0;
+    const update = () => {
+      const amount = motion.matches ? 0 : Math.min(1, node.scrollTop / Math.max(240, visual.clientHeight * .8));
+      visual.style.setProperty("--read-zoom", amount.toFixed(4));
+    };
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); };
+    update();
+    node.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    motion.addEventListener("change", schedule);
+    return () => { cancelAnimationFrame(frame); node.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); motion.removeEventListener("change", schedule); };
+  }, [card]);
   const [familyOrder, setFamilyOrder] = useState<string[]>([]);
   const [listenCardId, setListenCardId] = useState<string | null>(null);
   useEffect(() => {
@@ -195,10 +213,10 @@ export default function ExplorerView({ lang, cards, families, card, onSelect, on
         <div><button onClick={() => select(siblings[(idx - 1 + siblings.length) % siblings.length])} aria-label={t.prevCard}><ChevronLeft size={18} /></button><span>{idx + 1} / {siblings.length}</span><button onClick={() => select(siblings[(idx + 1) % siblings.length])} aria-label={t.nextCard}><ChevronRight size={18} /></button></div>
       </div>
       <div className={styles.readGrid}>
-        <aside className={styles.readVisual} style={{ "--family": card.familyColor } as React.CSSProperties}>
+        <aside ref={readerVisual} className={styles.readVisual} style={{ "--family": card.familyColor } as React.CSSProperties}>
           <span className={styles.eyebrow}>{card.familyName} / 0{card.num}</span>
           <button className={styles.interactiveCard} aria-label={fr ? "Agrandir l’illustration" : "Enlarge the illustration"} onClick={() => setZoomed(true)} onPointerMove={(e) => { if (e.pointerType !== "mouse" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; const rect = e.currentTarget.getBoundingClientRect(); const x = (e.clientX - rect.left) / rect.width; const y = (e.clientY - rect.top) / rect.height; e.currentTarget.style.setProperty("--tilt-x", (y * -14 + 7) + "deg"); e.currentTarget.style.setProperty("--tilt-y", (x * 14 - 7) + "deg"); e.currentTarget.style.setProperty("--light-x", (x * 100) + "%"); e.currentTarget.style.setProperty("--light-y", (y * 100) + "%"); }} onPointerLeave={(e) => { e.currentTarget.style.setProperty("--tilt-x", "0deg"); e.currentTarget.style.setProperty("--tilt-y", "0deg"); }}>
-            <span className={styles.artDepth} style={{ "--slide-direction": direction } as React.CSSProperties}><span className={`${styles.transitionFrame} ${styles.inlineFrame}`}>{outgoing && <img className={styles.outgoingCard} src={asset(outgoing.frontImage)} alt="" aria-hidden="true" />}<img key={card.id} className={outgoing ? styles.incomingCard : undefined} src={asset(card.frontImage)} alt={t.cardAlt(card.num,card.title)} /></span><span className={styles.artShine} /><span className={styles.zoomHint}><Maximize2 size={17} /></span></span>
+            <span className={styles.artDepth} style={{ "--slide-direction": direction } as React.CSSProperties}><span className={styles.readCrop}><span className={`${styles.transitionFrame} ${styles.inlineFrame}`}>{outgoing && <img className={styles.outgoingCard} src={asset(outgoing.frontImage)} alt="" aria-hidden="true" />}<img key={card.id} className={outgoing ? styles.incomingCard : undefined} src={asset(card.frontImage)} alt={t.cardAlt(card.num,card.title)} /></span></span><span className={styles.artShine} /><span className={styles.zoomHint}><Maximize2 size={17} /></span></span>
           </button>
           <p>{fr ? "Une carte. Une histoire. Un ouvrage à découvrir." : "One card. One story. A structure to discover."}</p>
         </aside>
