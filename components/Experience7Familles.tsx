@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { asset } from "@/lib/asset";
+import { deckHoverVelocity, deckDragOffset, clampDeckOffset } from "@/lib/deck-input";
 import dynamic from "next/dynamic";
 import type { CardData } from "@/data/cards";
 import { getContent, paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import ExplorerView from "@/components/ExplorerView";
 import MosaicView from "@/components/MosaicView";
+import CardViewer from "@/components/CardViewer";
 import SearchDialog from "@/components/SearchDialog";
 import QuizDialog from "@/components/QuizDialog";
 import HelpDialog from "@/components/HelpDialog";
@@ -38,6 +40,8 @@ import {
   BookOpen,
   Search,
   Trophy,
+  Play,
+  Pause,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -120,8 +124,9 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       setViewMode("3d");
     }
     if (params.get("vue") === "explorer") setViewMode("explorer");
+    if (params.get("vue") === "mosaic") { setViewMode("mosaic"); setFromMosaic(!!wanted); }
     setModeResolved(true);
-    if ((ok || params.get("vue") === "explorer") && wanted) {
+    if ((ok || params.get("vue") === "explorer" || params.get("vue") === "mosaic") && wanted) {
       setSelectedFamilyId(wanted.familyId);
       setSelectedCardId(wanted.id);
     } else if (ok && wantedFamily) {
@@ -147,98 +152,92 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   // à chaque pixel de défilement. Seul l'index actif déclenche un rendu.
   const deckScrollRef = useRef<number>(0);
   const [deckIdx, setDeckIdx] = useState<number>(3);
-  const setDeckScrollOffset = (next: number | ((prev: number) => number)) => {
-    const v = typeof next === "function" ? next(deckScrollRef.current) : next;
+  const setDeckScrollOffset = React.useCallback((next: number | ((prev: number) => number)) => {
+    const v = clampDeckOffset(typeof next === "function" ? next(deckScrollRef.current) : next);
     deckScrollRef.current = v;
     const idx = Math.round(3 - v);
     setDeckIdx((prev) => (prev === idx ? prev : idx));
-  };
+  }, []);
 
   // Vitesse de défilement continu au survol gauche/droite
   const hoverVelocityRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
+  const dragPointerRef = useRef<number | null>(null);
+  const dragStartYRef = useRef(0);
   const dragStartXRef = useRef<number>(0);
   const dragStartOffsetRef = useRef<number>(0);
-
-  // Détection du survol gauche et droite pour faire défiler le carrousel 3D
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (selectedFamilyId || viewMode !== "3d" || reducedMotion) {
-      hoverVelocityRef.current = 0;
-      return;
-    }
-    const width = window.innerWidth;
-    const x = e.clientX;
-    const ratio = x / width;
-
-    // Survol vers la droite (ratio > 0.68) : fait défiler pour révéler les familles de droite
-    if (ratio > 0.68) {
-      const factor = (ratio - 0.68) / 0.32; // 0 à 1
-      hoverVelocityRef.current = -factor * 2.4;
-    }
-    // Survol vers la gauche (ratio < 0.32) : fait défiler pour révéler les familles de gauche
-    else if (ratio < 0.32) {
-      const factor = (0.32 - ratio) / 0.32; // 0 à 1
-      hoverVelocityRef.current = factor * 2.4;
-    } else {
-      hoverVelocityRef.current = 0;
-    }
-  };
 
   const handleMouseLeave = () => {
     hoverVelocityRef.current = 0;
     isDraggingRef.current = false;
+    dragPointerRef.current = null;
   };
 
-  // Boucle de défilement continu au survol
+  const handleMouseMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (selectedFamilyId || viewMode !== "3d" || !isDeckSpread || reducedMotion || isDraggingRef.current || !(e.target instanceof Element) || !e.target.closest("canvas")) {
+      hoverVelocityRef.current = 0;
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    hoverVelocityRef.current = deckHoverVelocity(e.pointerType, e.clientX - rect.left, rect.width, window.matchMedia("(any-hover: hover) and (any-pointer: fine)").matches);
+  };
+
+  // The loop exists only while the deck can be navigated. Touch never sets its velocity.
   useEffect(() => {
-    let animId: number;
+    hoverVelocityRef.current = 0;
+    isDraggingRef.current = false;
+    dragPointerRef.current = null;
+    if (viewMode !== "3d" || selectedFamilyId || !isDeckSpread || reducedMotion) return;
+    let animId = 0;
     let lastTime = performance.now();
-
     const loop = (now: number) => {
-      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      const dt = Math.min((now - lastTime) / 1000, .1);
       lastTime = now;
-
-      if (!isDraggingRef.current && Math.abs(hoverVelocityRef.current) > 0.001) {
-        setDeckScrollOffset((prev) => {
-          const next = prev + hoverVelocityRef.current * dt;
-          return Math.max(-3.0, Math.min(3.0, next));
-        });
-      }
+      if (!isDraggingRef.current && Math.abs(hoverVelocityRef.current) > .001) setDeckScrollOffset(prev => prev + hoverVelocityRef.current * dt);
       animId = requestAnimationFrame(loop);
     };
-
     animId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animId);
-  }, []);
+    const stop = () => { hoverVelocityRef.current = 0; isDraggingRef.current = false; dragPointerRef.current = null; };
+    window.addEventListener("blur", stop);
+    document.addEventListener("visibilitychange", stop);
+    return () => { cancelAnimationFrame(animId); stop(); window.removeEventListener("blur", stop); document.removeEventListener("visibilitychange", stop); };
+  }, [viewMode, selectedFamilyId, isDeckSpread, reducedMotion, setDeckScrollOffset]);
 
-  // Défilement à la molette / touchpad
   const handleWheel = (e: React.WheelEvent) => {
-    if (selectedFamilyId || viewMode !== "3d") return;
+    if (selectedFamilyId || viewMode !== "3d" || !isDeckSpread) return;
+    hoverVelocityRef.current = 0;
     const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    setDeckScrollOffset((prev) => Math.max(-3.0, Math.min(3.0, prev - delta * 0.0025)));
+    setDeckScrollOffset(prev => prev - delta * .0025);
   };
 
-  // Glisser-déposer / swipe à la souris ou au doigt
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (selectedFamilyId || viewMode === "mosaic") return;
-    // Seule la scène (et non les boutons ou le panneau) fait défiler le carrousel
-    if (!(e.target as HTMLElement).closest("canvas")) return;
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    hoverVelocityRef.current = 0;
+    if (!e.isPrimary) { handleMouseLeave(); return; }
+    if (selectedFamilyId || viewMode !== "3d" || !isDeckSpread || e.button !== 0) return;
+    if (!(e.target instanceof Element) || !e.target.closest("canvas")) return;
+    if (e.pointerType === "touch" && (e.clientX < 24 || e.clientX > window.innerWidth - 24)) return;
     isDraggingRef.current = true;
+    dragPointerRef.current = e.pointerId;
     dragStartXRef.current = e.clientX;
+    dragStartYRef.current = e.clientY;
     dragStartOffsetRef.current = deckScrollRef.current;
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (selectedFamilyId || viewMode === "mosaic") return;
-    handleMouseMove(e as unknown as React.MouseEvent<HTMLDivElement>);
-    if (isDraggingRef.current) {
-      const diff = (e.clientX - dragStartXRef.current) / (window.innerWidth * 0.35);
-      setDeckScrollOffset(Math.max(-3.0, Math.min(3.0, dragStartOffsetRef.current + diff * 1.5)));
-    }
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) { handleMouseMove(e); return; }
+    hoverVelocityRef.current = 0;
+    if (e.pointerId !== dragPointerRef.current || selectedFamilyId || viewMode !== "3d" || !isDeckSpread) return;
+    const next = deckDragOffset(dragStartOffsetRef.current, e.clientX - dragStartXRef.current, e.clientY - dragStartYRef.current, e.currentTarget.clientWidth);
+    if (next === null) return;
+    // Capture after a real drag, so ordinary taps still reach the card in the canvas.
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.setPointerCapture(e.pointerId);
+    setDeckScrollOffset(next);
   };
 
-  const handlePointerUp = () => {
-    isDraggingRef.current = false;
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragPointerRef.current !== null && e.pointerId !== dragPointerRef.current) return;
+    handleMouseLeave();
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
   };
 
   // Écoute de la fiche à voix haute
@@ -285,6 +284,10 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   }, []);
 
   // Bottom sheet mobile (collapsed | intermediate | expanded)
+  const [familyAutoplay, setFamilyAutoplay] = useState(false);
+  const autoplaySeen = useRef(false);
+  const autoplayId = useRef<string | null>(null);
+  const speakCurrent = useRef<() => void>(() => {});
   const [sheetState, setSheetState] = useState<"collapsed" | "intermediate" | "expanded">("collapsed");
 
   // Mode Édition de développement
@@ -330,7 +333,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
   const activeFamily = FAMILIES.find((f) => f.id === selectedFamilyId) || null;
   const currentCard = CARDS.find((c) => c.id === selectedCardId) || null;
-  const familyCards = selectedFamilyId ? CARDS.filter((c) => c.familyId === selectedFamilyId) : [];
+  const familyCards = React.useMemo(() => selectedFamilyId ? CARDS.filter((c) => c.familyId === selectedFamilyId) : [], [selectedFamilyId, CARDS]);
 
   // Contenu markdown actif (édité ou original)
   const currentMarkdown = currentCard
@@ -363,13 +366,12 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
   const markdownFor = (card: CardData) => customMarkdownMap[card.id] ?? card.contentMarkdown;
 
-  // Clic sur une carte de la mosaïque : on l'ouvre dans la fiche 3D, avec retour possible vers la mosaïque
+  // La mosaïque conserve sa position pendant la consultation dans sa visionneuse.
   const openCardFromMosaic = (card: CardData) => {
     setSelectedFamilyId(card.familyId);
     setSelectedCardId(card.id);
     setSheetState("collapsed");
     setFromMosaic(true);
-    setViewMode("3d");
   };
 
   // Résultat de recherche : ouvre la carte comme depuis la mosaïque ou le carrousel, selon la vue d'où l'on vient
@@ -426,7 +428,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     setHoveredCardId(null);
     setViewMode(mode);
     const url = new URL(window.location.href);
-    if (mode === "explorer") url.searchParams.set("vue", "explorer");
+    if (mode !== "3d") url.searchParams.set("vue", mode);
     else url.searchParams.delete("vue");
     window.history.replaceState({}, "", url.pathname + url.search);
   };
@@ -441,6 +443,32 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     setIsFlipped(false);
     if (!selectedCardId) setFromMosaic(false);
   }, [selectedCardId]);
+
+  useEffect(() => { speakCurrent.current = toggleSpeak; });
+  useEffect(() => {
+    if (!familyAutoplay || viewMode !== "3d" || !currentCard || !canSpeak) {
+      autoplaySeen.current = false;
+      autoplayId.current = null;
+      return;
+    }
+    if (autoplayId.current !== currentCard.id) {
+      autoplaySeen.current = false;
+      const expected = currentCard.id;
+      const timer = setTimeout(() => {
+        autoplayId.current = expected;
+        speakCurrent.current();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    if (isSpeaking) autoplaySeen.current = true;
+    else if (autoplaySeen.current) {
+      autoplaySeen.current = false;
+      const index = familyCards.findIndex(c => c.id === currentCard.id);
+      if (index + 1 < familyCards.length) setSelectedCardId(familyCards[index + 1].id);
+      else setFamilyAutoplay(false);
+    }
+  }, [familyAutoplay, viewMode, currentCard, canSpeak, isSpeaking, familyCards]);
+  useEffect(() => { if (viewMode !== "3d" || !selectedCardId) setFamilyAutoplay(false); }, [viewMode, selectedCardId]);
 
   const handlePrevCard = () => {
     if (!currentCard || familyCards.length === 0) return;
@@ -466,12 +494,13 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     const params = new URLSearchParams(window.location.search);
     params.delete("carte");
     params.delete("famille");
+    if (viewMode === "3d") params.delete("vue"); else params.set("vue", viewMode);
     if (selectedCardId) params.set("carte", selectedCardId);
     else if (selectedFamilyId) params.set("famille", selectedFamilyId);
     const qs = params.toString();
     const next = window.location.pathname + (qs ? `?${qs}` : "");
     if (next !== window.location.pathname + window.location.search) window.history.pushState({}, "", next);
-  }, [selectedFamilyId, selectedCardId]);
+  }, [selectedFamilyId, selectedCardId, viewMode]);
   useEffect(() => {
     const onPop = () => {
       const params = new URLSearchParams(window.location.search);
@@ -481,6 +510,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       setSelectedFamilyId(card ? card.familyId : fam ? fam.id : null);
       // « Précédent » après une carte ouverte depuis la mosaïque : on revient à la mosaïque, pas au carrousel
       if (params.get("vue") === "explorer") setViewMode("explorer");
+      else if (params.get("vue") === "mosaic") { setViewMode("mosaic"); setFromMosaic(!!card); }
       else if (!card && !fam && fromMosaicRef.current) setViewMode("mosaic");
     };
     window.addEventListener("popstate", onPop);
@@ -520,6 +550,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   const touchSheetStartPosRef = useRef<{ y: number; time: number } | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    hoverVelocityRef.current = 0;
+    if (viewMode !== "3d") { touchStartPosRef.current = null; return; }
     // Les bords de l'écran sont réservés aux gestes du système (retour arrière sur iOS et Android)
     const x0 = e.touches[0]?.clientX ?? 100;
     if (x0 < 24 || x0 > window.innerWidth - 24) {
@@ -536,6 +568,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    hoverVelocityRef.current = 0;
+    if (viewMode !== "3d") { touchStartPosRef.current = null; return; }
     if (!touchStartPosRef.current) return;
     const endX = e.changedTouches[0]?.clientX ?? touchStartPosRef.current.x;
     const endY = e.changedTouches[0]?.clientY ?? touchStartPosRef.current.y;
@@ -566,12 +600,6 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
           handleNextCard();
         } else {
           handlePrevCard();
-        }
-      } else if (currentStage === "deck") {
-        if (deltaX < 0) {
-          setDeckScrollOffset((prev) => Math.max(-3.0, prev - 1.0));
-        } else {
-          setDeckScrollOffset((prev) => Math.min(3.0, prev + 1.0));
         }
       } else if (currentStage === "family") {
         if (deltaX < 0) {
@@ -946,20 +974,23 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         role="main"
         aria-label={viewMode === "explorer" ? (lang === "fr" ? "Explorer les cartes" : "Explore the cards") : t.mainLabel}
         className="flex-1 relative flex overflow-hidden touch-pan-y"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        onPointerLeave={handleMouseLeave}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onLostPointerCapture={handlePointerUp}
+        onTouchCancel={() => { handleMouseLeave(); touchStartPosRef.current = null; }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {viewMode === "explorer" && <ExplorerView lang={lang} cards={CARDS} families={FAMILIES} card={currentCard} onSelect={(card) => { setSelectedCardId(card?.id ?? null); setSelectedFamilyId(card?.familyId ?? null); }} onSwitch={switchViewMode} onQuiz={(familyId) => { setQuizFamilyId(familyId); setShowQuiz(true); }} isSpeaking={isSpeaking} canSpeak={canSpeak} onSpeak={toggleSpeak} onShare={() => currentCard && shareCard(currentCard)} onPrint={() => currentCard && setPrintCards({cards:[currentCard],booklet:false})} />}
+        {viewMode === "explorer" && <ExplorerView returnToMosaic={fromMosaic} lang={lang} cards={CARDS} families={FAMILIES} card={currentCard} onSelect={(card) => { setSelectedCardId(card?.id ?? null); setSelectedFamilyId(card?.familyId ?? null); if (!card && fromMosaic) { setFromMosaic(false); setViewMode("mosaic"); } }} onSwitch={switchViewMode} onQuiz={(familyId) => { setQuizFamilyId(familyId); setShowQuiz(true); }} isSpeaking={isSpeaking} canSpeak={canSpeak} onSpeak={toggleSpeak} onShare={() => currentCard && shareCard(currentCard)} onPrint={() => currentCard && setPrintCards({cards:[currentCard],booklet:false})} />}
         {/* Avant le choix de la vue, la mosaïque reste invisible sur écran large pour éviter un éclair avant la 3D */}
           <div className={viewMode === "mosaic" ? `contents ${modeResolved ? "" : "md:invisible"}` : "hidden"}>
             <MosaicView
               visible={viewMode === "mosaic"}
+              selectedCardId={fromMosaic ? selectedCardId : null}
               onOpenCard={openCardFromMosaic}
               notice={!webglOk ? t.mosaicNotice : undefined}
               onSearch={() => setShowSearch(true)}
@@ -968,6 +999,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             />
           </div>
 
+        {viewMode === "mosaic" && currentCard && <CardViewer card={currentCard} siblings={familyCards} lang={lang} onSelect={openCardFromMosaic} onClose={closeCard} onRead={() => { if (isSpeaking) toggleSpeak(); setViewMode("explorer"); }} onSpeak={toggleSpeak} onShare={() => shareCard(currentCard)} canSpeak={canSpeak} isSpeaking={isSpeaking} />}
+
         {viewMode === "3d" && modeResolved && (
         <>
         {/* CANVAS WEBGL PLEIN ÉCRAN SOUS LES OVERLAYS */}
@@ -975,8 +1008,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
           className={`relative transition-all duration-500 ${
             currentStage === "card"
               ? sheetState === "expanded"
-                ? "hidden md:flex md:w-[45%] h-full"
-                : "w-full md:w-[45%] lg:w-[42%] h-full"
+                ? "hidden md:flex md:w-[48%] h-full"
+                : "w-full md:w-[45%] lg:w-[46%] h-full"
               : "w-full h-full"
           }`}
         >
@@ -1011,6 +1044,11 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
         {/* --- OVERLAYS FLUIDES SELON L'ÉTAPE --- */}
 
+        <nav aria-label={lang === "fr" ? "Parcours des cartes" : "Card navigation"} className={`absolute ${currentStage === "card" ? "bottom-[270px] md:bottom-3" : currentStage === "deck" ? "top-14 bottom-auto" : "bottom-3"} left-3 z-40 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-1 rounded-xl border border-stone-200 bg-white/95 p-1.5 shadow-sm`}>
+          <button className="min-h-[44px] rounded-lg px-3 text-xs font-semibold text-stone-700 hover:bg-stone-100" aria-current={currentStage === "deck" ? "page" : undefined} onClick={() => { setSelectedCardId(null); setSelectedFamilyId(null); }}>{lang === "fr" ? "Toutes les familles" : "All families"}</button>
+          {activeFamily && <><span aria-hidden="true">›</span><button className="min-h-[44px] rounded-lg px-3 text-xs font-semibold text-stone-700 hover:bg-stone-100" aria-current={currentStage === "family" ? "page" : undefined} onClick={() => setSelectedCardId(null)}>{activeFamily.name}</button></>}
+          {currentCard && <><span aria-hidden="true">›</span><span className="px-2 text-xs font-semibold text-stone-800" aria-current="page">{currentCard.num} / 6</span></>}
+        </nav>
         {/* OVERLAY ÉTAPE 1 : DECK ACCUEIL */}
         {currentStage === "deck" && (
           <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6">
@@ -1202,6 +1240,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               </button>
             </div>
 
+            {canSpeak && <div className="absolute top-[72px] left-4 z-30"><button aria-pressed={familyAutoplay} onClick={() => { if (isSpeaking) toggleSpeak(); autoplaySeen.current = false; autoplayId.current = null; if (!familyAutoplay && familyCards[0]) setSelectedCardId(familyCards[0].id); setFamilyAutoplay(!familyAutoplay); }} className="flex min-h-[44px] items-center gap-2 rounded-xl border border-stone-200 bg-white/95 px-3 text-xs font-semibold text-stone-800 shadow-sm focus-visible:ring-2 focus-visible:ring-cyan-500">{familyAutoplay ? <Pause size={17} /> : <Play size={17} />}{lang === "fr" ? (familyAutoplay ? "Arrêter l’écoute" : "Écouter la famille") : (familyAutoplay ? "Stop playback" : "Listen to the family")}<span aria-live="polite">{currentCard.num}/6</span></button></div>}
             {/* Expérience Desktop : Panneau Pédagogique droit sticky */}
             <div className="hidden md:flex flex-col flex-1 h-full border-l border-stone-200/80 bg-white/80 backdrop-blur-xl overflow-hidden z-20 shadow-xl">
               <div tabIndex={0} role="region" aria-label={currentCard.title} className="p-4 md:p-5 flex-1 overflow-y-auto focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1b5d78] focus-visible:outline-none">
@@ -1232,7 +1271,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                   <CardActions
                     isSpeaking={isSpeaking}
                     canSpeak={canSpeak}
-                    onToggleSpeak={toggleSpeak}
+                    onToggleSpeak={() => { setFamilyAutoplay(false); toggleSpeak(); }}
                     onPrint={() => setPrintCards({ cards: [currentCard], booklet: false })}
                       onShare={() => shareCard(currentCard)}
                     t={t}
@@ -1316,7 +1355,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 <CardActions
                       isSpeaking={isSpeaking}
                       canSpeak={canSpeak}
-                      onToggleSpeak={toggleSpeak}
+                      onToggleSpeak={() => { setFamilyAutoplay(false); toggleSpeak(); }}
                       onPrint={() => setPrintCards({ cards: [currentCard], booklet: false })}
                       onShare={() => shareCard(currentCard)}
                     t={t}

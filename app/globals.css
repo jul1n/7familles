@@ -131,3 +131,10 @@ body {
 /* Three display modes must remain reachable on compact headers. */
 @media(max-width:600px){.topbar-brand{display:none}.topbar-controls{margin:auto}.topbar-controls > [role="group"] button{width:34px;padding-left:0;padding-right:0;justify-content:center}}
 @media(max-width:380px){.topbar-controls > [role="group"] button{width:28px}}
+
+/* Small partner-logo tilt, with a matching keyboard-focus cue. */
+.topbar-architectes,.topbar-agency{transition:transform .22s ease-out;transform-origin:50% 50%}
+@media(hover:hover) and (pointer:fine){.topbar-architectes:hover{transform:rotate(-5deg)}.topbar-agency:hover{transform:rotate(6deg)}}
+.topbar-architectes:focus-visible{transform:rotate(-5deg)}
+.topbar-partners a:focus-visible .topbar-agency,.topbar-partners button:focus-visible .topbar-agency{transform:rotate(6deg)}
+@media(prefers-reduced-motion:reduce){.topbar-architectes,.topbar-agency{transition:none!important;transform:none!important}}

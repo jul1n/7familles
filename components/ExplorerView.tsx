@@ -21,10 +21,10 @@ interface Props {
   lang: Lang; cards: CardData[]; families: FamilyData[]; card: CardData | null;
   onSelect: (card: CardData | null) => void; onSwitch: (mode: Mode) => void;
   onQuiz: (familyId: string | null) => void; isSpeaking: boolean; canSpeak: boolean;
-  onSpeak: () => void; onShare: () => void; onPrint: () => void;
+  onSpeak: () => void; onShare: () => void; onPrint: () => void; returnToMosaic?: boolean;
 }
 
-export default function ExplorerView({ lang, cards, families, card, onSelect, onSwitch, onQuiz, isSpeaking, canSpeak, onSpeak, onShare, onPrint }: Props) {
+export default function ExplorerView({ lang, cards, families, card, onSelect, onSwitch, onQuiz, isSpeaking, canSpeak, onSpeak, onShare, onPrint, returnToMosaic = false }: Props) {
   const t = UI[lang];
   const fr = lang === "fr";
   const [familyId, setFamilyId] = useState<string | null>(null);
@@ -233,7 +233,7 @@ export default function ExplorerView({ lang, cards, families, card, onSelect, on
     {card && <div className={styles.readProgress} role="progressbar" aria-label={fr ? "Progression de lecture" : "Reading progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{width: progress + "%"}} /></div>}
     {card ? <div key={card.id} className={styles.reader}>
       <div className={styles.readNav}>
-        <button onClick={() => onSelect(null)}><ArrowLeft size={17} />{fr ? "Retour à l’exploration" : "Back to exploring"}</button>
+        <button onClick={() => onSelect(null)}><ArrowLeft size={17} />{returnToMosaic ? (fr ? "Retour à la mosaïque" : "Back to mosaic") : (fr ? "Retour à l’exploration" : "Back to exploring")}</button>
         <div><button onClick={() => select(siblings[(idx - 1 + siblings.length) % siblings.length])} aria-label={t.prevCard}><ChevronLeft size={18} /></button><span>{idx + 1} / {siblings.length}</span><button onClick={() => select(siblings[(idx + 1) % siblings.length])} aria-label={t.nextCard}><ChevronRight size={18} /></button></div>
       </div>
       <div className={styles.readGrid}>

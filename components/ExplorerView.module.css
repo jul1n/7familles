@@ -97,7 +97,8 @@
 /* Let the upper illustration fill the reading backdrop as the story scrolls. */
 .readVisual{--read-zoom:0}
 .readCrop{display:block;overflow:hidden;border-radius:16px;isolation:isolate}
-.readCrop .inlineFrame{transform-origin:50% 18%;transform:scale(calc(1 + var(--read-zoom)*.38));will-change:transform}
+.readCrop .inlineFrame{transform:none;will-change:auto}
+@media(max-width:900px) and (orientation:portrait){.readCrop .inlineFrame{transform-origin:50% 18%;transform:scale(calc(1 + var(--read-zoom)*.38));will-change:transform}}
 .zoomHint{right:-18px;bottom:24px;width:44px;height:44px;border:1px solid #d5e1d0;z-index:4;background:#fffffff2;box-shadow:0 5px 18px #18302320}
 @media(min-width:761px) and (max-width:1180px){.readGrid{grid-template-columns:minmax(320px,.95fr) minmax(0,1fr);gap:32px}.readVisual{padding:22px 24px}.interactiveCard{max-width:none}}
 @media(max-width:900px) and (orientation:portrait), (max-width:760px){
@@ -134,3 +135,14 @@
 @media(max-width:760px){.viewerHeading{max-width:calc(100% - 60px);padding:8px 10px}.viewerDots{margin-top:70px}}
 @media(max-height:600px){.viewerHeading{display:flex;position:relative;top:auto;left:auto;min-height:44px;padding:5px 12px}.viewerHeading>strong{font-size:14px}.viewerDots{margin-top:0}}
 @media(max-width:900px) and (orientation:portrait), (max-width:760px){.article{color:#183832}.article .lead{color:#304c3d}.readText{color:#233f30;text-shadow:0 1px 2px #ffffff70}.article .eyebrow{color:#365344}}
+
+/* Use the full side column for a complete, larger card from the start. */
+@media(min-width:901px), (min-width:761px) and (orientation:landscape){
+  .readVisual{padding:18px 14px}
+  .interactiveCard{max-width:none;margin:18px auto 12px}
+  .readCrop{overflow:visible}
+  .zoomHint{right:-10px;bottom:24px}
+}
+
+.viewerRead{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 18px;border:1px solid #cad8c3;border-radius:18px;background:#ffffffc9;color:#234b35;font-size:13px;font-weight:700}
+.viewerRead:hover{background:#e8f0df}
