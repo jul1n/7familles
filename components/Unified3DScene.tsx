@@ -29,7 +29,7 @@ interface Unified3DSceneProps {
 
 // Réglage global de la vitesse des animations : 1 = réglage par défaut, 0.7 = environ 40 % plus lent,
 // 1.3 = plus nerveux. Agit sur le survol, l'ouverture / retour des cartes et le déploiement des éventails.
-const ANIM_SPEED = 1;
+const ANIM_SPEED = .7;
 
 function ResponsiveController({ currentStage }: { currentStage: "deck" | "family" | "card" }) {
   const { camera, size } = useThree();
@@ -75,14 +75,14 @@ const PILE_EULER = new THREE.Euler(-0.55, 0.45, 0);
 // Vitesse de suivi des cartes du paquet rassemblé (le bloc de tranche et la boîte la partagent)
 const PILE_LAMBDA = 5;
 
-// Boîte de jeu : proportions du gabarit d'impression (face 1085 × 1549 px, tranche 345 px), à l'échelle des cartes
+// Boîte de jeu : proportions du gabarit d'impression (face 658 × 933 px, tranche 152 px), à l'échelle des cartes
 const BOX_H = 2.72;
-const BOX_W = (BOX_H * 1085) / 1549;
-const BOX_D = (BOX_H * 345) / 1549;
+const BOX_W = (BOX_H * 658) / 933;
+const BOX_D = (BOX_H * 152) / 933;
 // Ordre des faces de BoxGeometry : +x (droite), -x (gauche), +y (dessus), -y (dessous), +z (devant), -z (arrière)
 const BOX_FACES = ["right", "left", "top", "bottom", "front", "back"] as const;
 const BOX_TEXT_FACES: readonly string[] = ["front", "back", "top", "bottom"];
-const BOX_DURATION = 1.5; // secondes pour ranger / sortir les cartes
+const BOX_DURATION = 2.6; // secondes pour ranger / sortir les cartes
 const CARD_H_PILE = 2.428;
 
 // Positions (u, v) dans le plan du paquet : paysage = paquet à gauche, boîte à droite ;
@@ -101,7 +101,7 @@ function boxPlace(s: number, L: ReturnType<typeof boxLayout>) {
 
 // Une fois les cartes rangées, la boîte remonte (au centre de la page en portrait, un peu plus haut en paysage)
 function boxLift(s: number, L: ReturnType<typeof boxLayout>) {
-  return (L.centerV - (L.boxV * L.f + L.dy)) * THREE.MathUtils.smoothstep(s, 0.75, 1);
+  return (L.centerV - (L.boxV * L.f + L.dy)) * THREE.MathUtils.smoothstep(s, 0.9, 1);
 }
 
 // Une fois les cartes rangées, la boîte glisse vers le centre de la scène
@@ -129,8 +129,18 @@ function storedPose(s: number, L: ReturnType<typeof boxLayout>) {
   };
 }
 
+function setBoxEntryPlane(s: number, portrait: boolean, parent: THREE.Matrix4, plane: THREE.Plane) {
+  const layout = boxLayout(portrait);
+  const place = boxPlace(s, layout);
+  const normal = new THREE.Vector3(0, 1, 0).applyEuler(PILE_EULER);
+  const mouth = new THREE.Vector3(place.u, place.v + BOX_H / 2 * layout.f, 0).applyEuler(PILE_EULER);
+  plane.setFromNormalAndCoplanarPoint(normal, mouth).applyMatrix4(parent);
+}
+
 function DeckBlock({ visible, boxProgressRef }: { visible: boolean; boxProgressRef: React.MutableRefObject<number> }) {
   const groupRef = useRef<THREE.Group>(null);
+  const entryPlane = useMemo(() => new THREE.Plane(), []);
+  const entryPlanes = useMemo(() => [entryPlane], [entryPlane]);
   const targetPos = useMemo(() => new THREE.Vector3(), []);
   const { size } = useThree();
   const isPortrait = size.width < size.height;
@@ -193,11 +203,17 @@ function DeckBlock({ visible, boxProgressRef }: { visible: boolean; boxProgressR
       // Le bloc suit le paquet : à côté de la boîte, puis glisse à l'intérieur
       const pose = storedPose(boxProgressRef.current, boxLayout(isPortrait));
       targetPos.set(pose.u, pose.v, 0).applyEuler(PILE_EULER);
-      const lam = PILE_LAMBDA * (reducedMotion ? 3 : 1);
-      groupRef.current.position.x = THREE.MathUtils.damp(groupRef.current.position.x, targetPos.x, lam, delta);
+      const lam = PILE_LAMBDA * ANIM_SPEED * (reducedMotion ? 3 : 1);
+      const inserting = boxProgressRef.current > .001;
+      if (inserting) groupRef.current.position.copy(targetPos);
+      else groupRef.current.position.x = THREE.MathUtils.damp(groupRef.current.position.x, targetPos.x, lam, delta);
       groupRef.current.position.y = THREE.MathUtils.damp(groupRef.current.position.y, targetPos.y, lam, delta);
       groupRef.current.position.z = THREE.MathUtils.damp(groupRef.current.position.z, targetPos.z, lam, delta);
-      groupRef.current.scale.setScalar(THREE.MathUtils.damp(groupRef.current.scale.x, pose.scale, lam, delta));
+      groupRef.current.scale.setScalar(inserting ? pose.scale : THREE.MathUtils.damp(groupRef.current.scale.x, pose.scale, lam, delta));
+      const clipping = boxProgressRef.current > .5 && boxProgressRef.current < .999;
+      if (clipping && groupRef.current.parent) setBoxEntryPlane(boxProgressRef.current, isPortrait, groupRef.current.parent.matrixWorld, entryPlane);
+      else { entryPlane.normal.set(0, 1, 0); entryPlane.constant = 1e6; }
+      for (const material of [capMatRef.current, sideMatRef.current]) if (material) material.clippingPlanes = entryPlanes;
     }
     if (capMatRef.current) capMatRef.current.opacity = op;
     if (sideMatRef.current) sideMatRef.current.opacity = op;
@@ -419,6 +435,8 @@ function PhysicalCard3D({
 }) {
   const meshRef = useRef<THREE.Group>(null);
   const velocity = useRef(new THREE.Vector3());
+  const entryPlane = useMemo(() => new THREE.Plane(), []);
+  const entryPlanes = useMemo(() => [entryPlane], [entryPlane]);
   React.useEffect(() => {
     if (!meshRef.current) return;
     const actors = registry.current;
@@ -799,6 +817,7 @@ function PhysicalCard3D({
     const rigidPile = currentStage === "deck" && !isDeckSpread;
     for (let axis = 0; axis < 3; axis++) {
       if (rigidPile) {
+        if (boxProgressRef.current > .001) { meshRef.current.position.setComponent(axis, targets[axis]); velocity.current.setComponent(axis, 0); continue; }
         meshRef.current.position.setComponent(axis, THREE.MathUtils.damp(meshRef.current.position.getComponent(axis), targets[axis], PILE_LAMBDA * motionScale, delta));
         velocity.current.setComponent(axis, 0);
         continue;
@@ -816,7 +835,7 @@ function PhysicalCard3D({
     meshRef.current.quaternion.slerp(tmp.q, 1 - Math.exp(-lam * delta));
 
     meshRef.current.scale.setScalar(
-      THREE.MathUtils.damp(meshRef.current.scale.x, targetScale, rigidPile ? PILE_LAMBDA * motionScale : lam + 0.2, delta)
+      rigidPile && boxProgressRef.current > .001 ? targetScale : THREE.MathUtils.damp(meshRef.current.scale.x, targetScale, rigidPile ? PILE_LAMBDA * motionScale : lam + 0.2, delta)
     );
 
     // Fondu des familles non sélectionnées (au lieu d'un simple éloignement brutal)
@@ -833,12 +852,16 @@ function PhysicalCard3D({
     if (backMatRef.current) { backMatRef.current.opacity = op; backMatRef.current.visible = !fullBackMatRef.current; }
     if (fullFrontMatRef.current) fullFrontMatRef.current.opacity = op;
     if (fullBackMatRef.current) fullBackMatRef.current.opacity = op;
+    const clipping = rigidPile && boxProgressRef.current > .5 && boxProgressRef.current < .999;
+    if (clipping && meshRef.current.parent) setBoxEntryPlane(boxProgressRef.current, isPortrait, meshRef.current.parent.matrixWorld, entryPlane);
+    else { entryPlane.normal.set(0, 1, 0); entryPlane.constant = 1e6; }
     for (const material of [edgeMatRef.current, frontMatRef.current, backMatRef.current, fullFrontMatRef.current, fullBackMatRef.current]) {
       if (!material) continue;
       const fading = op < .999;
       if (material.transparent !== fading) { material.transparent = fading; material.needsUpdate = true; }
       material.depthWrite = !fading;
       material.depthTest = true;
+      material.clippingPlanes = entryPlanes;
     }
   });
 
@@ -1193,11 +1216,14 @@ function BoxController({
   active,
   progressRef,
   spinRef,
+  registry,
 }: {
   active: boolean;
   progressRef: React.MutableRefObject<number>;
   spinRef: React.MutableRefObject<BoxSpin>;
+  registry: CardRegistry;
 }) {
+  const { size } = useThree();
   const reducedMotion = useMemo(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     []
@@ -1206,6 +1232,15 @@ function BoxController({
     const step = Math.min(delta, 1 / 20) / (BOX_DURATION / (reducedMotion ? 3 : 1));
     const target = active ? 1 : 0;
     const p = progressRef.current;
+    if (active && p < .0005) {
+      const layout = boxLayout(size.width < size.height);
+      const pose = storedPose(0, layout);
+      const center = new THREE.Vector3(pose.u, pose.v, 0).applyEuler(PILE_EULER);
+      const rotation = new THREE.Quaternion().setFromEuler(PILE_EULER);
+      for (const actor of registry.current.values()) {
+        if (actor.group.position.distanceTo(center) > PILE_THICKNESS * layout.f / 2 + .08 || actor.group.quaternion.angleTo(rotation) > .025 || Math.abs(actor.group.scale.x - layout.f) > .025) return;
+      }
+    }
     // Les cartes ne partent (ou ne sortent) que lorsque la boîte est redressée
     if (Math.abs(p - (active ? 0 : 1)) < 0.0005 && (spinError(spinRef.current) > 0.08 || spinRef.current.grow > 0.02)) return;
     progressRef.current = p + Math.max(-step, Math.min(step, target - p));
@@ -1316,10 +1351,11 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
         camera={{ position: [0, 0.15, 6.8], fov: 42, near: .1, far: 50 }}
         dpr={[1, maxDpr]}
         gl={{ antialias: true, alpha: true }}
+        onCreated={({ gl }) => { gl.localClippingEnabled = true; }}
         onPointerMissed={() => props.onBack()}
       >
         <ResponsiveController currentStage={props.currentStage} />
-        <BoxController active={folded && props.isBoxed} progressRef={boxProgressRef} spinRef={boxSpinRef} />
+        <BoxController active={folded && props.isBoxed} progressRef={boxProgressRef} spinRef={boxSpinRef} registry={registry} />
         <ambientLight intensity={1.7} color="#fffcf5" />
         <directionalLight position={[5, 10, 6]} intensity={1.8} color="#fffbf5" />
         <directionalLight position={[-5, -2, -3]} intensity={0.5} color="#e2e8f0" />

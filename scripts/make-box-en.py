@@ -1,6 +1,6 @@
 """Version anglaise des textures de la boîte de jeu (devant, arrière, dessus, dessous).
 
-Source : public/box/*.webp (visuels FR extraits du gabarit d'impression CFBR-6oct.pdf, texte intégré à l'image).
+Source : public/box/*.webp (visuels FR extraits du gabarit d'impression de la boîte, texte intégré à l'image).
 Sortie : public/box/en/{front,back,top,bottom}.webp. Les tranches (sans texte) restent celles de public/box/.
 Le texte français est effacé (aplats blancs / bleu marine / bleu clair), puis le texte anglais est dessiné avec
 Franklin Gothic Medium Condensed (substitut de la police d'origine, comme pour l'EN du PDF imprimé).
@@ -18,6 +18,8 @@ OUT = os.path.join(ROOT, "en")
 FONT = "C:/Windows/Fonts/FRAMDCN.TTF"
 NAVY = (31, 43, 107)
 BLUE = (62, 169, 225)
+BG = (64, 204, 254)
+ROYAL = (1, 23, 168)  # bleu du titre et de l'ovale de la face avant
 WHITE = (255, 255, 255)
 
 
@@ -93,82 +95,95 @@ def erase_text_in_blob(arr, seed, text_is_dark, fill, roi=None, grow=3):
     arr[text] = fill
 
 
+def nearest(arr, color, guess, tol=28):
+    """Pixel de couleur `color` le plus proche de `guess` (x, y) : amorce pour erase_text_in_blob."""
+    near = np.all(np.abs(arr.astype(int) - np.array(color)) < tol, axis=2)
+    ys, xs = np.nonzero(near)
+    i = np.argmin((xs - guess[0]) ** 2 + (ys - guess[1]) ** 2)
+    return int(xs[i]), int(ys[i])
+
+
 def make_front():
     img = Image.open(os.path.join(ROOT, "front.webp")).convert("RGB")
     arr = np.array(img)
-    # Bulle blanche (titre), ovale bleu marine (accroche), pastille blanche (joueurs / durée)
-    erase_text_in_blob(arr, (300, 140), True, WHITE, roi=(90, 150, 590, 480))
-    erase_text_in_blob(arr, (560, 540), False, (45, 49, 113), roi=(520, 480, 1000, 700))
-    erase_text_in_blob(arr, (400, 1345), True, WHITE, roi=(165, 1345, 440, 1455))
+    # Bulle blanche (titre) et ovale bleu marine (accroche)
+    erase_text_in_blob(arr, nearest(arr, WHITE, (70, 250)), True, WHITE, roi=(40, 60, 340, 300))
+    erase_text_in_blob(arr, nearest(arr, ROYAL, (470, 395), 40), False, ROYAL, roi=(310, 240, 620, 410))
     img = Image.fromarray(arr).convert("RGB")
-    rotated_block(img, ["THE CFBR", "HAPPY FAMILIES", "GAME"], (318, 312), 10, 68, NAVY, 82, 2)
-    rotated_block(img, ["A GAME ABOUT THE", "WORLD OF DAMS & OTHER", "HYDRAULIC STRUCTURES"], (750, 570), -9, 40, WHITE, 52, 1)
-    d = ImageDraw.Draw(img)
-    put_lines(d, ["2 to 4 players", "15 to 20 min."], 0, 1375, 46, (31, 69, 123), 58, 1, align="left", x_left=172)
+    rotated_block(img, ["THE CFBR", "HAPPY FAMILIES", "GAME"], (172, 172), 10, 40, ROYAL, 50, 1)
+    rotated_block(img, ["A GAME ABOUT THE", "WORLD OF DAMS & OTHER", "HYDRAULIC STRUCTURES"], (462, 324), -9, 24, WHITE, 31, 1)
     return img
+
+
+# Pastilles de la zone bleue : x de début du texte, x de fin de la pastille, y du centre, libellé
+PILLS = [
+    (150, 312, 594, "AROUND THE WORLD"),
+    (150, 307, 668, "THROUGH TIME"),
+    (150, 288, 743, "COMPONENTS"),
+    (150, 342, 818, "TYPES OF STRUCTURES"),
+    (446, 563, 594, "IN FRANCE"),
+    (446, 538, 668, "JOBS"),
+    (446, 534, 743, "USES"),
+]
+
+PILL_TEXT = (62, 169, 225)
+PANEL_WHITE = WHITE
 
 
 def make_back():
     img = Image.open(os.path.join(ROOT, "back.webp")).convert("RGB")
-    d = ImageDraw.Draw(img)
-    # Panneau blanc : tout le texte est effacé (le gâteau « 100 » est conservé)
-    d.rectangle((100, 105, 990, 232), fill=WHITE)
-    d.rectangle((268, 250, 990, 392), fill=WHITE)
-    d.rectangle((100, 408, 990, 862), fill=WHITE)
-    # Pastilles : texte effacé à droite des pictos
-    pills = [(1002, 237), (1130, 237), (1257, 237), (1384, 237), (1002, 760), (1130, 760), (1257, 760)]
     arr = np.array(img)
-    rights = []
-    for y, x0 in pills:
-        x = x0
-        while arr[y + 28, x].min() > 235 and x < 1070:
-            x += 1
-        rights.append(x - 3)
-    for (y, x0), r in zip(pills, rights):
-        d.rectangle((x0 - 6, y - 27, r, y + 27), fill=WHITE)
-    # Textes
-    f = font(100)
-    title = "THE CFBR HAPPY FAMILIES GAME"
-    size = fit_size(d, [title], 830, 100, 2)
-    d.text((543, 170), title, font=font(size), fill=NAVY, anchor="mm", stroke_width=2, stroke_fill=NAVY)
-    put_lines(d, ["Discover dams and other", "hydraulic structures!"], 0, 288, 58, BLUE, 68, 1, align="left", x_left=275)
+    # Pastille « joueurs » (la durée ne change pas) et pastilles de la zone bleue : le texte fait des trous dans
+    # l'aplat blanc, repeints ; le picto (x < début du texte) est exclu de la zone
+    arr[38:69, 88:214] = WHITE
+    for x0, right, y, _ in PILLS:
+        erase_text_in_blob(arr, nearest(arr, WHITE, (x0 + 4, y + 18)), True, WHITE, roi=(x0 - 2, y - 26, right, y + 26))
+    img = Image.fromarray(arr).convert("RGB")
+    d = ImageDraw.Draw(img)
+    size = fit_size(d, ["2 - 4 players"], 116, 30)
+    d.text((90, 53), "2 - 4 players", font=font(size), fill=PILL_TEXT, anchor="lm")
+    # Panneau blanc : texte effacé (le gâteau « 100 » est conservé)
+    d.rectangle((175, 128, 600, 225), fill=WHITE)
+    d.rectangle((52, 240, 600, 378), fill=WHITE)
+    d.rectangle((52, 398, 600, 505), fill=WHITE)
+    put_lines(d, ["Discover dams and other", "hydraulic structures!"], 0, 155, 34, BLUE, 40, 0, align="left", x_left=188)
     p1 = "To mark its 100th anniversary, the French Committee on Large Dams invites you to explore the world of dams and other hydraulic structures through this game of 7 families."
     p2 = "Discover how they are used, part of their history, and the women and men who design them, in France and around the world!"
-    for text, y0 in ((p1, 450), (p2, 705)):
-        size = 50
+    for text, y0, n in ((p1, 259, 4), (p2, 417, 3)):
+        size = 30
         while True:
-            lines = wrap(d, text, font(size), 840)
-            if len(lines) <= (4 if text is p1 else 3) or size < 30:
+            lines = wrap(d, text, font(size), 535)
+            if len(lines) <= n or size < 16:
                 break
             size -= 1
-        put_lines(d, lines, 543, y0, size, NAVY, 55, 1)
-    labels = ["AROUND THE WORLD", "THROUGH TIME", "COMPONENTS", "TYPES OF STRUCTURES", "IN FRANCE", "JOBS", "USES"]
-    for (y, x0), r, label in zip(pills, rights, labels):
-        size = fit_size(d, [label], r - x0 - 8, 52, 1)
-        d.text((x0, y), label, font=font(size), fill=NAVY, anchor="lm", stroke_width=1, stroke_fill=NAVY)
+        put_lines(d, lines, 326, y0, size, NAVY, int(size * 1.22), 0)
+    # Pastilles : textes anglais
+    for x0, right, y, label in PILLS:
+        r = right - 14
+        size = fit_size(d, [label], r - x0 - 4, 30, 1)
+        d.text((x0, y), label, font=font(size), fill=NAVY, anchor="lm")
     return img
 
 
 def make_top():
     img = Image.open(os.path.join(ROOT, "top.webp")).convert("RGB")
     d = ImageDraw.Draw(img)
-    d.rectangle((0, 0, img.width, img.height), fill=BLUE)
+    d.rectangle((0, 0, img.width, img.height), fill=BG)
     lines = ["THE FRENCH COMMITTEE", "ON LARGE DAMS"]
-    size = fit_size(d, lines, 720, 92, 1)
-    put_lines(d, lines, img.width / 2, img.height / 2 - 36, size, WHITE, 82, 1)
+    size = fit_size(d, lines, 400, 52, 1)
+    put_lines(d, lines, img.width / 2, img.height / 2 - 20, size, WHITE, 44, 1)
     return img
 
 
 def make_bottom():
     img = Image.open(os.path.join(ROOT, "bottom.webp")).convert("RGB")
     d = ImageDraw.Draw(img)
-    d.rectangle((560, 40, img.width, img.height - 40), fill=BLUE)
-    lines = ["AUTHORS: CODOR of the CFBR,", "Franck Sfiligoï Taillandier", "ILLUSTRATIONS & GRAPHIC DESIGN:", "Hello bim bam boum"]
-    size = fit_size(d, lines, 420, 46, 1)
-    ys = [100, 143, 202, 245]
+    d.rectangle((270, 8, 490, img.height - 8), fill=BG)
+    lines = ["AUTHORS: CODOR of the CFBR,", "Franck Sfiligoï Taillandier", "ILLUSTRATION & GRAPHIC DESIGN:", "Hello bim bam boum", "(Marine Monseux, Coline Mestas)"]
+    size = fit_size(d, lines, 205, 24, 1)
     f = font(size)
-    for t, y in zip(lines, ys):
-        d.text((625, y), t, font=f, fill=WHITE, anchor="lm", stroke_width=1, stroke_fill=WHITE)
+    for t, y in zip(lines, [31, 50, 69, 88, 107]):
+        d.text((283, y), t, font=f, fill=WHITE, anchor="lm", stroke_width=0)
     return img
 
 
