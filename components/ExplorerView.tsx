@@ -52,7 +52,6 @@ export default function ExplorerView({ lang, cards, families, card, onSelect, on
     return () => { cancelAnimationFrame(frame); node.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); motion.removeEventListener("change", schedule); };
   }, [card]);
   const [familyOrder, setFamilyOrder] = useState<string[]>([]);
-  const [listenCardId, setListenCardId] = useState<string | null>(null);
   useEffect(() => {
     const order = families.map((f) => f.id);
     const random = new Uint32Array(Math.max(0, order.length - 1));
@@ -64,13 +63,6 @@ export default function ExplorerView({ lang, cards, families, card, onSelect, on
     setFamilyOrder(order);
   }, [families]);
   const orderedFamilies = [...families].sort((a, b) => familyOrder.indexOf(a.id) - familyOrder.indexOf(b.id));
-  useEffect(() => {
-    if (!listenCardId) return;
-    if (!card || card.id !== listenCardId || !canSpeak) { setListenCardId(null); return; }
-    // Wait for the parent to finish resetting audio after selecting the card.
-    const timer = setTimeout(() => { onSpeak(); setListenCardId(null); }, 0);
-    return () => clearTimeout(timer);
-  }, [listenCardId, card, canSpeak, onSpeak]);
   useEffect(() => {
     const node = scroll.current;
     const art = heroArt.current;
@@ -263,7 +255,7 @@ export default function ExplorerView({ lang, cards, families, card, onSelect, on
           <h1>{fr ? "Un autre regard" : "A new perspective"}<br />{fr ? "sur les" : "on"} <em>{fr ? "barrages." : "dams."}</em></h1>
           <p>{fr ? "Derrière chaque barrage, des histoires, des métiers et des idées. Explorez-les, une carte à la fois." : "Behind every dam are stories, people and ideas. Explore them, one card at a time."}</p>
           <div className={styles.heroActions}><a href="#explorer-collection"><BookOpen size={18} />{fr ? "Explorer les cartes" : "Explore the cards"}<ArrowRight size={18} /></a>{QUIZ_ENABLED && <button onClick={() => onQuiz(familyId)}><Trophy size={18} />{fr ? "À vous de jouer" : "Your turn to play"}</button>}</div>
-          <div className={styles.heroMeta}><span><b>7</b> {fr ? "familles" : "families"}</span><span><b>42</b> {fr ? "histoires à découvrir" : "stories to discover"}</span><button className={styles.heroListen} onClick={() => { select(featured); if (canSpeak) setListenCardId(featured.id); }} aria-label={(fr ? "Lire et écouter : " : "Read and listen: ") + featured.title}><Volume2 size={15} />{fr ? "À lire ou à écouter" : "Read or listen"}</button></div>
+          <div className={styles.heroMeta}><span><b>7</b> {fr ? "familles" : "families"}</span><span><b>42</b> {fr ? "histoires à découvrir" : "stories to discover"}</span><button className={styles.heroListen} onClick={() => select(featured)} aria-label={(fr ? "Lire la fiche : " : "Read the story: ") + featured.title}><Volume2 size={15} />{fr ? "À lire ou à écouter" : "Read or listen"}</button></div>
         </div>
         <button ref={heroArt} className={styles.heroArt} onClick={() => select(featured)} aria-label={t.openCard(featured.num,featured.title)}>
           <span className={styles.orbit} />

@@ -9,7 +9,6 @@ import { getContent, paths, type Lang } from "@/lib/content";
 import { UI } from "@/lib/ui";
 import ExplorerView from "@/components/ExplorerView";
 import MosaicView from "@/components/MosaicView";
-import CardViewer from "@/components/CardViewer";
 import SearchDialog from "@/components/SearchDialog";
 import QuizDialog from "@/components/QuizDialog";
 import HelpDialog from "@/components/HelpDialog";
@@ -124,7 +123,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       setViewMode("3d");
     }
     if (params.get("vue") === "explorer") setViewMode("explorer");
-    if (params.get("vue") === "mosaic") { setViewMode("mosaic"); setFromMosaic(!!wanted); }
+    if (params.get("vue") === "mosaic") { setViewMode(wanted ? "explorer" : "mosaic"); setFromMosaic(!!wanted); }
     setModeResolved(true);
     if ((ok || params.get("vue") === "explorer" || params.get("vue") === "mosaic") && wanted) {
       setSelectedFamilyId(wanted.familyId);
@@ -135,6 +134,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   const [fromMosaic, setFromMosaic] = useState<boolean>(false);
+  const previousSelectedCardId = useRef<string | null>(null);
   // Copies lues par l'écouteur « Précédent » du navigateur (enregistré une seule fois)
   const fromMosaicRef = useRef(false);
   fromMosaicRef.current = fromMosaic;
@@ -372,6 +372,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     setSelectedCardId(card.id);
     setSheetState("collapsed");
     setFromMosaic(true);
+    setViewMode("explorer");
   };
 
   // Résultat de recherche : ouvre la carte comme depuis la mosaïque ou le carrousel, selon la vue d'où l'on vient
@@ -441,7 +442,8 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
     stopSpeaking();
     setIsSpeaking(false);
     setIsFlipped(false);
-    if (!selectedCardId) setFromMosaic(false);
+    if (!selectedCardId && previousSelectedCardId.current) setFromMosaic(false);
+    previousSelectedCardId.current = selectedCardId;
   }, [selectedCardId]);
 
   useEffect(() => { speakCurrent.current = toggleSpeak; });
@@ -510,7 +512,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
       setSelectedFamilyId(card ? card.familyId : fam ? fam.id : null);
       // « Précédent » après une carte ouverte depuis la mosaïque : on revient à la mosaïque, pas au carrousel
       if (params.get("vue") === "explorer") setViewMode("explorer");
-      else if (params.get("vue") === "mosaic") { setViewMode("mosaic"); setFromMosaic(!!card); }
+      else if (params.get("vue") === "mosaic") { setViewMode(card ? "explorer" : "mosaic"); setFromMosaic(!!card); }
       else if (!card && !fam && fromMosaicRef.current) setViewMode("mosaic");
     };
     window.addEventListener("popstate", onPop);
@@ -999,7 +1001,6 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             />
           </div>
 
-        {viewMode === "mosaic" && currentCard && <CardViewer card={currentCard} siblings={familyCards} lang={lang} onSelect={openCardFromMosaic} onClose={closeCard} onRead={() => { if (isSpeaking) toggleSpeak(); setViewMode("explorer"); }} onSpeak={toggleSpeak} onShare={() => shareCard(currentCard)} canSpeak={canSpeak} isSpeaking={isSpeaking} />}
 
         {viewMode === "3d" && modeResolved && (
         <>
