@@ -138,3 +138,26 @@ body {
 .topbar-architectes:focus-visible{transform:rotate(-5deg)}
 .topbar-partners a:focus-visible .topbar-agency,.topbar-partners button:focus-visible .topbar-agency{transform:rotate(6deg)}
 @media(prefers-reduced-motion:reduce){.topbar-architectes,.topbar-agency{transition:none!important;transform:none!important}}
+
+/* En-tête : marque + « Merci à » à gauche, modes d'affichage centrés, autres actions à droite.
+   Centrage exact (grille) seulement sur écran large ; en dessous, les modes se placent dans l'espace libre
+   et se rapprochent du bloc de gauche quand l'en-tête est plein. */
+@media (min-width: 1000px) {
+  .topbar:not(.hidden) { display: grid !important; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .topbar-left { justify-self: start; }
+  .topbar-controls { justify-self: end; }
+}
+@media (min-width: 601px) and (max-width: 999px) {
+  .topbar-left { flex-shrink: 1; min-width: 0; }
+  .topbar-modes { margin-left: auto; margin-right: auto; flex-shrink: 0; }
+  .topbar-controls { gap: 4px; }
+}
+@media (max-width: 900px) {
+  .topbar-title, .topbar-date { display: none !important; }
+}
+@media (max-width: 600px) {
+  .topbar-modes button { width: 34px; padding-left: 0; padding-right: 0; justify-content: center; }
+}
+@media (max-width: 380px) {
+  .topbar-modes button { width: 28px; }
+}

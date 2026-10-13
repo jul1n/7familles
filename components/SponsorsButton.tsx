@@ -80,13 +80,13 @@ function ThanksDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
                 <img src={asset("/logos/architectes-de-leau-castor.png")} alt="" className="h-16 w-16 shrink-0 object-contain transition duration-200 group-hover:scale-105" />
                 <span><strong className="block text-sm">Les Architectes de l’Eau</strong><span className="mt-1 block text-xs text-stone-600">{fr ? "Découvrir Les Architectes de l’Eau" : "Meet Les Architectes de l’Eau"}</span><span className="sr-only">{fr ? " (nouvel onglet)" : " (new tab)"}</span></span>
               </a>
-              <div className="flex items-center gap-4 rounded-2xl border border-stone-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#1b5d78] hover:shadow-md">
-                <AgencyCredit placement="top" align="center" lang={lang} className="shrink-0">
+              <AgencyCredit placement="top" align="center" lang={lang} block>
+                <div className="group flex items-center gap-4 rounded-2xl border border-stone-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#1b5d78] hover:shadow-md">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={asset("/logos/hello-bim-bam-boum.png")} alt={BIMBAMBOUM.name} className="h-16 w-24 object-contain transition duration-200 hover:scale-105" />
-                </AgencyCredit>
-                <span><strong className="block text-sm">{BIMBAMBOUM.name}</strong><span className="mt-1 block text-xs text-stone-600">{fr ? "Illustrations et design des cartes" : "Card illustrations and design"}</span></span>
-              </div>
+                  <img src={asset("/logos/hello-bim-bam-boum.png")} alt="" className="h-16 w-24 shrink-0 object-contain transition duration-200 group-hover:scale-105" />
+                  <span><strong className="block text-sm">{BIMBAMBOUM.name}</strong><span className="mt-1 block text-xs text-stone-600">{fr ? "Illustrations et design des cartes" : "Card illustrations and design"}</span><span className="sr-only">{fr ? " (Instagram, nouvel onglet)" : " (Instagram, new tab)"}</span></span>
+                </div>
+              </AgencyCredit>
             </div>
           </section>
 
@@ -99,10 +99,11 @@ function ThanksDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
 export default function SponsorsButton({ lang }: { lang: Lang }) {
   const [open, setOpen] = useState(false);
   const title = lang === "fr" ? "Merci à" : "Thanks to";
+  const invite = lang === "fr" ? "Découvrir nos sponsors" : "Meet our sponsors";
   return <>
-    <button type="button" onClick={() => setOpen(true)} aria-label={lang === "fr" ? "Merci à nos sponsors et partenaires" : "Thanks to our sponsors and partners"} aria-haspopup="dialog" aria-expanded={open} title={title}
-      className="flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-stone-200/90 bg-white/95 px-2.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5d78]">
-      <Heart className="h-4 w-4 fill-rose-500 text-rose-500" /><span className="hidden lg:inline">{title}</span>
+    <button type="button" onClick={() => setOpen(true)} aria-label={lang === "fr" ? "Merci à nos sponsors et partenaires" : "Thanks to our sponsors and partners"} aria-haspopup="dialog" aria-expanded={open}
+      className="group relative flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-stone-200/90 bg-white/95 px-2.5 text-xs font-semibold text-rose-600 shadow-xs transition hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b5d78]">
+      <Heart className="h-4 w-4 fill-rose-500 text-rose-500" /><span className="hidden min-[1200px]:inline">{title}</span><span role="tooltip" aria-hidden="true" className="pointer-events-none absolute left-0 top-full z-50 mt-2 whitespace-nowrap rounded-lg bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">{invite}</span>
     </button>
     {open && <ThanksDialog lang={lang} onClose={() => setOpen(false)} />}
   </>;

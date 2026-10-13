@@ -217,7 +217,7 @@ export default function ExplorerView({ lang, cards, families, card, onSelect, on
     <header className={styles.header}>
       <a className={styles.brand} href={CFBR_URL} target="_blank" rel="noopener noreferrer" aria-label={fr ? "Site du CFBR (nouvel onglet)" : "CFBR website (new tab)"}>
         <img src={asset("/cfbr-logo.png")} alt="CFBR" />
-        <span className={styles.brandText}><span className={styles.brandTitle}><span className={styles.brandFull}>{t.siteName}</span><span className={styles.brandShort}>{t.siteNameShort}</span><em className={styles.brandDate}>1926–2026</em></span><small>{t.subtitle}</small></span>
+        <span className={styles.brandText}><span className={styles.brandTitle}><span className={styles.brandFull}>{t.siteName}</span><span className={styles.brandShort}>{t.siteNameShort}</span><em className={styles.brandDate}>1926–2026</em></span></span>
       </a>
       <div className={styles.headerActions}>
         <SponsorsButton lang={lang} />

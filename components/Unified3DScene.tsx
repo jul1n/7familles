@@ -891,11 +891,15 @@ function PhysicalCard3D({
     <group
       ref={meshRef}
       onPointerOver={(e) => {
+        // Paquet fermé : seule la carte du dessus réagit. Sinon, quand elle se soulève, le curseur
+        // tombe sur la carte 6 en dessous, le survol bascule de l'une à l'autre et l'affichage saute.
+        if (currentStage === "deck" && indexInFamily > 0) return;
         e.stopPropagation();
         setHoveredCardId(card.id);
         document.body.style.cursor = "pointer";
       }}
       onPointerOut={() => {
+        if (currentStage === "deck" && indexInFamily > 0) return;
         setHoveredCardId(null);
         document.body.style.cursor = "";
       }}

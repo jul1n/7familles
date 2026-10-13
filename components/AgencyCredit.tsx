@@ -11,17 +11,18 @@ interface AgencyCreditProps {
   placement?: "top" | "bottom";
   align?: "center" | "right";
   lang?: Lang;
+  block?: boolean; // le déclencheur est une tuile entière (logo et texte), pas seulement un logo rond
   children?: React.ReactNode; // déclencheur personnalisé (ex. le logo) ; par défaut, le texte du crédit
 }
 
 // Crédit des illustrations et du design des cartes, avec une infobulle (survol ou clavier) qui présente l'agence.
 // L'infobulle touche son déclencheur (le vide est comblé par un remplissage transparent) : on peut y descendre
 // avec la souris et cliquer sur les liens LinkedIn et Instagram sans qu'elle disparaisse.
-export default function AgencyCredit({ className = "", placement = "top", align = "center", lang = "fr", children }: AgencyCreditProps) {
+export default function AgencyCredit({ className = "", placement = "top", align = "center", lang = "fr", block = false, children }: AgencyCreditProps) {
   const vertical = placement === "top" ? "bottom-full pb-2" : "top-full pt-2";
   const horizontal = align === "right" ? "right-0" : "left-1/2 -translate-x-1/2";
   return (
-    <span className={`group relative inline-block ${className}`}>
+    <span className={`group relative ${block ? "block" : "inline-block"} ${className}`}>
       <a
         href={BIMBAMBOUM.instagram}
         target="_blank"
@@ -29,7 +30,7 @@ export default function AgencyCredit({ className = "", placement = "top", align 
         aria-label={children ? `${BIMBAMBOUM.name} (Instagram)` : undefined}
         className={
           children
-            ? "block rounded-full focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            ? `block ${block ? "rounded-2xl" : "rounded-full"} focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none`
             : "underline decoration-dotted underline-offset-2 hover:decoration-solid focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none rounded"
         }
       >

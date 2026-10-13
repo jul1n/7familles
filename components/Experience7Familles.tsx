@@ -786,8 +786,9 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
 
       <header
         role="banner"
-        className={`${viewMode === "explorer" ? "hidden" : "flex"} topbar h-16 shrink-0 gap-3 [@media(max-height:500px)]:h-12 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 z-40 transition-colors`}
+        className={`${viewMode === "explorer" ? "hidden" : "flex"} topbar h-16 shrink-0 gap-3 [@media(max-height:500px)]:h-12 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 relative z-[55] transition-colors`}
       >
+        <div className="topbar-left flex min-w-0 items-center gap-3">
         <div className="topbar-brand flex min-w-0 items-center gap-3">
           {/* Logo et titre : lien commun vers le site du CFBR */}
           <a
@@ -824,17 +825,15 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                   1926–2026
                 </span>
               </div>
-              <p className="topbar-subtitle text-xs text-stone-600 hidden md:block">
-                {t.subtitle}
-              </p>
             </div>
           </a>
 
         </div>
+        <SponsorsButton lang={lang} />
+        </div>
 
-        {/* Contrôles supérieurs */}
-        <div className="topbar-controls flex shrink-0 items-center gap-1.5 sm:gap-2">
-          {/* Choix du mode d'affichage : carrousel 3D ou toutes les cartes */}
+        {/* Choix du mode d'affichage : centré dans l'en-tête */}
+        <div className="topbar-modes flex shrink-0 items-center justify-center">
           <div
             role="group"
             aria-label={t.displayMode}
@@ -862,7 +861,55 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             ))}
           </div>
 
-          <SponsorsButton lang={lang} />
+        </div>
+
+        {/* Contrôles supérieurs : alignés à droite */}
+        <div className="topbar-controls flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {/* Recherche dans les cartes (sur téléphone : bouton de la mosaïque) */}
+          <button
+            type="button"
+            onClick={() => setShowSearch(true)}
+            aria-label={t.search}
+            title={`${t.search} ( / )`}
+            className="hidden sm:flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+
+          {/* Quiz (sur téléphone : bouton de la mosaïque) */}
+          {QUIZ_ENABLED && (
+            <button
+              type="button"
+              onClick={() => { setQuizFamilyId(null); setShowQuiz(true); }}
+              aria-label={t.quiz.open}
+              title={t.quiz.open}
+              className="hidden sm:flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-amber-600 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+            >
+              <Trophy className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Dossier complet à imprimer ou à enregistrer en PDF */}
+          <button
+            onClick={() => setPrintCards({ cards: CARDS, booklet: true })}
+            title={t.printAllHint}
+            aria-label={t.printAll}
+            className="min-h-[44px] px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+
+          {/* Aide : gestes et raccourcis */}
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            aria-label={t.help}
+            title={t.help}
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
+          >
+            <CircleHelp className="w-4 h-4" />
+          </button>
+
           <GetCopyButton t={t} lang={lang} />
 
           {/* Changement de langue : on garde la carte ouverte (?carte=...) */}
@@ -880,52 +927,6 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
           >
             {otherLang === "en" ? <UkFlag className="h-5 w-[30px] rounded-[3px] shadow-sm ring-1 ring-black/10" /> : <FrFlag className="h-5 w-[30px] rounded-[3px] shadow-sm ring-1 ring-black/10" />}
           </a>
-
-          {/* Quiz (sur téléphone : bouton de la mosaïque) */}
-          {QUIZ_ENABLED && (
-            <button
-              type="button"
-              onClick={() => { setQuizFamilyId(null); setShowQuiz(true); }}
-              aria-label={t.quiz.open}
-              title={t.quiz.open}
-              className="hidden sm:flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-amber-600 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
-            >
-              <Trophy className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Recherche dans les cartes (sur téléphone : bouton de la mosaïque) */}
-          <button
-            type="button"
-            onClick={() => setShowSearch(true)}
-            aria-label={t.search}
-            title={`${t.search} ( / )`}
-            className="hidden sm:flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-
-          {/* Aide : gestes et raccourcis */}
-          <button
-            type="button"
-            onClick={() => setShowHelp(true)}
-            aria-label={t.help}
-            title={t.help}
-            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
-          >
-            <CircleHelp className="w-4 h-4" />
-          </button>
-
-          {/* Dossier complet à imprimer ou à enregistrer en PDF */}
-          <button
-            onClick={() => setPrintCards({ cards: CARDS, booklet: true })}
-            title={t.printAllHint}
-            aria-label={t.printAll}
-            className="min-h-[44px] px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
-          >
-            <Printer className="w-4 h-4" />
-            <span className="topbar-action-label hidden md:inline">{t.print}</span>
-          </button>
 
           {/* Outil d'édition des contenus : réservé au développement (absent du site publié) */}
           {process.env.NODE_ENV === "development" && (
