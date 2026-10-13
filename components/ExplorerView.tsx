@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, Search, Sparkles, Trophy, Volume2, Square, X, Maximize2, Share2, Play, Pause } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, Search, Sparkles, Trophy, Volume2, Square, X, Maximize2, Share2, Play, Pause, Printer } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import type { CardData, FamilyData } from "@/data/cards";
 import { type Lang, paths } from "@/lib/content";
@@ -15,6 +15,7 @@ import { CardActions, MoreLinks } from "@/components/CardWidgets";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import ResourcesNav from "@/components/ResourcesNav";
 import SponsorsButton from "@/components/SponsorsButton";
+import { FrFlag, UkFlag } from "@/components/Flags";
 import styles from "./ExplorerView.module.css";
 
 type Mode = "3d" | "mosaic" | "explorer";
@@ -22,10 +23,10 @@ interface Props {
   lang: Lang; cards: CardData[]; families: FamilyData[]; card: CardData | null;
   onSelect: (card: CardData | null) => void; onSwitch: (mode: Mode) => void;
   onQuiz: (familyId: string | null) => void; isSpeaking: boolean; canSpeak: boolean;
-  onSpeak: () => void; onShare: () => void; onPrint: () => void; returnToMosaic?: boolean;
+  onSpeak: () => void; onShare: () => void; onPrint: () => void; onPrintAll?: () => void; returnToMosaic?: boolean;
 }
 
-export default function ExplorerView({ lang, cards, families, card, onSelect, onSwitch, onQuiz, isSpeaking, canSpeak, onSpeak, onShare, onPrint, returnToMosaic = false }: Props) {
+export default function ExplorerView({ lang, cards, families, card, onSelect, onSwitch, onQuiz, isSpeaking, canSpeak, onSpeak, onShare, onPrint, onPrintAll, returnToMosaic = false }: Props) {
   const t = UI[lang];
   const fr = lang === "fr";
   const [familyId, setFamilyId] = useState<string | null>(null);
@@ -216,12 +217,13 @@ export default function ExplorerView({ lang, cards, families, card, onSelect, on
     <header className={styles.header}>
       <a className={styles.brand} href={CFBR_URL} target="_blank" rel="noopener noreferrer" aria-label={fr ? "Site du CFBR (nouvel onglet)" : "CFBR website (new tab)"}>
         <img src={asset("/cfbr-logo.png")} alt="CFBR" />
-        <span>7 {fr ? "Familles" : "Families"}<small>{fr ? "Le monde des barrages" : "The world of dams"}</small></span>
+        <span className={styles.brandText}><span className={styles.brandTitle}><span className={styles.brandFull}>{t.siteName}</span><span className={styles.brandShort}>{t.siteNameShort}</span><em className={styles.brandDate}>1926–2026</em></span><small>{t.subtitle}</small></span>
       </a>
       <div className={styles.headerActions}>
         <SponsorsButton lang={lang} />
         <label className={styles.mode}><span className="sr-only">{t.displayMode}</span><select value="explorer" onChange={(e) => onSwitch(e.target.value as Mode)}><option value="explorer">{fr ? "Explorer" : "Explore"}</option><option value="mosaic">{t.mosaic}</option><option value="3d">{t.carousel}</option></select></label>
-        <a className={styles.language} href={asset(paths.home(fr ? "en" : "fr")) + "?vue=explorer" + (card ? "&carte=" + card.id : "")} aria-label={`${t.switchLang} – ${t.switchLangLabel}`}>{t.switchLang}</a>
+        {onPrintAll && <button type="button" className={styles.printBtn} onClick={onPrintAll} aria-label={t.printAll} title={t.printAllHint}><Printer size={18} aria-hidden="true" /></button>}
+        <a className={styles.language} href={asset(paths.home(fr ? "en" : "fr")) + "?vue=explorer" + (card ? "&carte=" + card.id : "")} aria-label={`${t.switchLang} – ${t.switchLangLabel}`} title={t.switchLangLabel}>{fr ? <UkFlag className={styles.flag} /> : <FrFlag className={styles.flag} />}</a>
       </div>
     </header>
     {card && <div className={styles.readProgress} role="progressbar" aria-label={fr ? "Progression de lecture" : "Reading progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{width: progress + "%"}} /></div>}

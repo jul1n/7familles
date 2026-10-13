@@ -146,3 +146,6 @@
 
 .viewerRead{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 18px;border:1px solid #cad8c3;border-radius:18px;background:#ffffffc9;color:#234b35;font-size:13px;font-weight:700}
 .viewerRead:hover{background:#e8f0df}
+.brandText{display:block}.brandTitle{display:flex;align-items:center;gap:10px;white-space:nowrap}.brandShort{display:none}.brandDate{font-style:normal;font-size:11px;font-weight:700;letter-spacing:0;color:#1b5d78;background:#1b5d781a;border:1px solid #1b5d7833;border-radius:30px;padding:2px 9px}.flag{display:block;width:30px;height:20px;border-radius:3px;box-shadow:0 0 0 1px #0000001a,0 1px 2px #0000001f}.language{padding:0 12px}.printBtn{display:grid;place-items:center;min-width:44px;min-height:44px;border:1px solid #cfd9d3;border-radius:30px;background:#fff;color:#29433e}
+@media(max-width:1100px){.brandDate{display:none}}
+@media(max-width:760px){.brandFull{display:none}.brandShort{display:inline}.brandTitle{gap:6px}}

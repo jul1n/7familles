@@ -20,11 +20,12 @@ import { badgeColors } from "@/lib/color";
 import { QUIZ_ENABLED, absoluteUrl } from "@/lib/site";
 import PrintSheets from "@/components/PrintSheets";
 import AgencyCredit from "@/components/AgencyCredit";
+import { FrFlag, UkFlag } from "@/components/Flags";
 import { CardActions, EnglishTerm, GetCopyButton, MoreLinks } from "@/components/CardWidgets";
 import { markdownToSpeech, markdownToSpeechEn, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import audioManifest from "@/data/audio-manifest.json";
 import audioManifestEn from "@/data/audio-manifest-en.json";
-import { ARCHITECTES_URL, CFBR_URL, LEGAL_URL, cardLinks, otherLanguageTerm } from "@/lib/links";
+import { CFBR_URL, LEGAL_URL, cardLinks, otherLanguageTerm } from "@/lib/links";
 import {
   Printer,
   Edit3,
@@ -829,27 +830,6 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             </div>
           </a>
 
-          {/* Partenaires : le logo renvoie directement vers leur site ou leur compte */}
-          <div className="topbar-partners hidden md:flex shrink-0 items-center gap-3 ml-2 pl-4 border-l border-stone-200">
-            <a
-              href={ARCHITECTES_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Les Architectes de l’Eau"
-              className="topbar-architectes block shrink-0 rounded-lg focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={asset("/logos/architectes-de-leau.png")} alt="Les Architectes de l’Eau" className="h-8 w-auto max-w-none" />
-            </a>
-            <AgencyCredit placement="bottom" align="center" lang={lang}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={asset("/logos/hello-bim-bam-boum-small.png")}
-                alt="Hello Bim Bam Boum"
-                className="topbar-agency h-9 w-9 rounded-full"
-              />
-            </AgencyCredit>
-          </div>
         </div>
 
         {/* Contrôles supérieurs */}
@@ -871,13 +851,13 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 disabled={mode === "3d" && !webglOk}
                 aria-pressed={viewMode === mode}
                 aria-label={label}
-                title={hint}
-                className={`h-10 px-2.5 sm:px-3 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none ${
+                className={`group relative h-10 w-10 justify-center rounded-[10px] text-xs font-semibold flex items-center whitespace-nowrap transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none ${
                   viewMode === mode ? "bg-[#1b5d78] text-white shadow-sm" : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 <Icon className="w-4 h-4" />
-                <span className={`topbar-action-label ${mode === "mosaic" ? "hidden sm:inline" : "hidden md:inline"}`}>{label}</span>
+                <span className="sr-only">{label}</span>
+                <span role="tooltip" aria-hidden="true" className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">{hint}</span>
               </button>
             ))}
           </div>
@@ -898,7 +878,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             title={t.switchLangLabel}
             className="h-11 min-w-11 flex-shrink-0 px-2 inline-flex items-center justify-center rounded-xl bg-white/95 hover:bg-white text-xs font-bold text-stone-700 hover:text-stone-900 border border-stone-200/90 shadow-xs transition focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
           >
-            {t.switchLang}
+            {otherLang === "en" ? <UkFlag className="h-5 w-[30px] rounded-[3px] shadow-sm ring-1 ring-black/10" /> : <FrFlag className="h-5 w-[30px] rounded-[3px] shadow-sm ring-1 ring-black/10" />}
           </a>
 
           {/* Quiz (sur téléphone : bouton de la mosaïque) */}
@@ -983,7 +963,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {viewMode === "explorer" && <ExplorerView returnToMosaic={fromMosaic} lang={lang} cards={CARDS} families={FAMILIES} card={currentCard} onSelect={(card) => { setSelectedCardId(card?.id ?? null); setSelectedFamilyId(card?.familyId ?? null); if (!card && fromMosaic) { setFromMosaic(false); setViewMode("mosaic"); } }} onSwitch={switchViewMode} onQuiz={(familyId) => { setQuizFamilyId(familyId); setShowQuiz(true); }} isSpeaking={isSpeaking} canSpeak={canSpeak} onSpeak={toggleSpeak} onShare={() => currentCard && shareCard(currentCard)} onPrint={() => currentCard && setPrintCards({cards:[currentCard],booklet:false})} />}
+        {viewMode === "explorer" && <ExplorerView returnToMosaic={fromMosaic} lang={lang} cards={CARDS} families={FAMILIES} card={currentCard} onSelect={(card) => { setSelectedCardId(card?.id ?? null); setSelectedFamilyId(card?.familyId ?? null); if (!card && fromMosaic) { setFromMosaic(false); setViewMode("mosaic"); } }} onSwitch={switchViewMode} onQuiz={(familyId) => { setQuizFamilyId(familyId); setShowQuiz(true); }} isSpeaking={isSpeaking} canSpeak={canSpeak} onSpeak={toggleSpeak} onShare={() => currentCard && shareCard(currentCard)} onPrint={() => currentCard && setPrintCards({cards:[currentCard],booklet:false})} onPrintAll={() => setPrintCards({ cards: CARDS, booklet: true })} />}
         {/* Avant le choix de la vue, la mosaïque reste invisible sur écran large pour éviter un éclair avant la 3D */}
           <div className={viewMode === "mosaic" ? `contents ${modeResolved ? "" : "md:invisible"}` : "hidden"}>
             <MosaicView
