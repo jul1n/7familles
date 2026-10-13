@@ -12,6 +12,7 @@ import MosaicView from "@/components/MosaicView";
 import SearchDialog from "@/components/SearchDialog";
 import QuizDialog from "@/components/QuizDialog";
 import HelpDialog from "@/components/HelpDialog";
+import SponsorsButton from "@/components/SponsorsButton";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
 import QuizPrint from "@/components/QuizPrint";
 import { trackEvent, trackView } from "@/lib/analytics";
@@ -23,7 +24,7 @@ import { CardActions, EnglishTerm, GetCopyButton, MoreLinks } from "@/components
 import { markdownToSpeech, markdownToSpeechEn, playAudio, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import audioManifest from "@/data/audio-manifest.json";
 import audioManifestEn from "@/data/audio-manifest-en.json";
-import { ARCHITECTES_URL, LEGAL_URL, cardLinks, otherLanguageTerm } from "@/lib/links";
+import { ARCHITECTES_URL, CFBR_URL, LEGAL_URL, cardLinks, otherLanguageTerm } from "@/lib/links";
 import {
   Printer,
   Edit3,
@@ -787,18 +788,14 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
         className={`${viewMode === "explorer" ? "hidden" : "flex"} topbar h-16 shrink-0 gap-3 [@media(max-height:500px)]:h-12 px-4 md:px-8 border-b border-stone-200/80 flex items-center justify-between backdrop-blur-md bg-[#FDFBF7]/90 z-40 transition-colors`}
       >
         <div className="topbar-brand flex min-w-0 items-center gap-3">
-          {/* Logo officiel CFBR & Titre avec retour accueil */}
-          <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label={t.home}
+          {/* Logo et titre : lien commun vers le site du CFBR */}
+          <a
+            href={CFBR_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={lang === "fr" ? "Site du CFBR (nouvel onglet)" : "CFBR website (new tab)"}
             aria-describedby="cfbr-logo-tip"
-            className="relative cursor-pointer group focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none rounded-xl"
-            onClick={() => {
-              setSelectedFamilyId(null);
-              setSelectedCardId(null);
-              setViewMode(webglOk && !phone && !reducedMotion ? "3d" : "mosaic");
-            }}
+            className="relative group flex items-center gap-3 rounded-xl focus-visible:ring-2 focus-visible:ring-[#1b5d78] focus-visible:outline-none"
           >
             {/* Vignette épurée du logo CFBR */}
             <span className="relative flex items-center justify-center group-hover:scale-105 transition">
@@ -816,8 +813,6 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 {t.logoTip}
               </span>
             </span>
-          </button>
-
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="topbar-title text-sm md:text-base font-bold tracking-tight text-stone-900 leading-tight whitespace-nowrap">
@@ -832,7 +827,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                 {t.subtitle}
               </p>
             </div>
-          </div>
+          </a>
 
           {/* Partenaires : le logo renvoie directement vers leur site ou leur compte */}
           <div className="topbar-partners hidden md:flex shrink-0 items-center gap-3 ml-2 pl-4 border-l border-stone-200">
@@ -887,6 +882,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
             ))}
           </div>
 
+          <SponsorsButton lang={lang} />
           <GetCopyButton t={t} lang={lang} />
 
           {/* Changement de langue : on garde la carte ouverte (?carte=...) */}

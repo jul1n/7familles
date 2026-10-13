@@ -9,11 +9,12 @@ import { asset, thumb } from "@/lib/asset";
 import { UI } from "@/lib/ui";
 import { enableAudioMeter, audioLevel } from "@/lib/speech";
 import { searchCards } from "@/lib/search";
-import { cardLinks } from "@/lib/links";
+import { CFBR_URL, cardLinks } from "@/lib/links";
 import { QUIZ_ENABLED } from "@/lib/site";
 import { CardActions, MoreLinks } from "@/components/CardWidgets";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import ResourcesNav from "@/components/ResourcesNav";
+import SponsorsButton from "@/components/SponsorsButton";
 import styles from "./ExplorerView.module.css";
 
 type Mode = "3d" | "mosaic" | "explorer";
@@ -213,11 +214,12 @@ export default function ExplorerView({ lang, cards, families, card, onSelect, on
 
   return <div ref={scroll} className={styles.root} style={zoomed ? { overflowY: "hidden" } : undefined} onScroll={(e) => { if (card) { const node = e.currentTarget; const max = node.scrollHeight - node.clientHeight; setProgress(max > 0 ? Math.round(node.scrollTop / max * 100) : 100); } }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
     <header className={styles.header}>
-      <button className={styles.brand} onClick={() => onSelect(null)} aria-label={t.home}>
+      <a className={styles.brand} href={CFBR_URL} target="_blank" rel="noopener noreferrer" aria-label={fr ? "Site du CFBR (nouvel onglet)" : "CFBR website (new tab)"}>
         <img src={asset("/cfbr-logo.png")} alt="CFBR" />
         <span>7 {fr ? "Familles" : "Families"}<small>{fr ? "Le monde des barrages" : "The world of dams"}</small></span>
-      </button>
+      </a>
       <div className={styles.headerActions}>
+        <SponsorsButton lang={lang} />
         <label className={styles.mode}><span className="sr-only">{t.displayMode}</span><select value="explorer" onChange={(e) => onSwitch(e.target.value as Mode)}><option value="explorer">{fr ? "Explorer" : "Explore"}</option><option value="mosaic">{t.mosaic}</option><option value="3d">{t.carousel}</option></select></label>
         <a className={styles.language} href={asset(paths.home(fr ? "en" : "fr")) + "?vue=explorer" + (card ? "&carte=" + card.id : "")} aria-label={`${t.switchLang} – ${t.switchLangLabel}`}>{t.switchLang}</a>
       </div>
