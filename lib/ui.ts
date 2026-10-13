@@ -158,6 +158,7 @@ interface UiText {
   rulesImagesNote: string;
   cfbrSite: string;
   legal: string;
+  legalShort: string;
   cardSheetHeading: string;
   prevNextNav: string;
   famNavLabel: string;
@@ -358,6 +359,7 @@ const fr: UiText = {
   rulesImagesNote: "",
   cfbrSite: "Site du CFBR",
   legal: "Mentions légales et données personnelles (site du CFBR)",
+  legalShort: "Mentions légales",
   cardSheetHeading: "Fiche pédagogique",
   prevNextNav: "Cartes de la famille",
   famNavLabel: "Toutes les fiches du jeu",
@@ -569,6 +571,7 @@ const en: UiText = {
     "Note: the illustrations printed on the cards are in French; this website translates the texts, the fact sheets and the audio.",
   cfbrSite: "CFBR website",
   legal: "Legal notice and personal data (CFBR website, in French)",
+  legalShort: "Legal notice",
   cardSheetHeading: "Educational fact sheet",
   prevNextNav: "Cards of the family",
   famNavLabel: "All the game sheets",

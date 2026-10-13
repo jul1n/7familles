@@ -370,9 +370,12 @@ function CardContacts({ registry, stage, familyId }: { registry: CardRegistry; s
     return { center: group.position.toArray() as Vec3, axes: [[e[0],e[1],e[2]],[e[4],e[5],e[6]],[e[8],e[9],e[10]]], halfSize: [.85*group.scale.x,1.214*group.scale.y,.008*group.scale.z] };
   };
   useFrame(() => {
-    const actors = [...registry.current.values()].filter(actor => actor.group.visible && (stage === "deck" || actor.familyId === familyId));
+    // Carrousel de paquets : l'empilement est déjà réglé par construction. Le solveur y écrasait les piles
+    // (la carte 1 reculait, la 6 avançait) en « corrigeant » des chevauchements avec les paquets voisins.
+    if (stage === "deck") return;
+    const actors = [...registry.current.values()].filter(actor => actor.group.visible && actor.familyId === familyId);
     const bodies = actors.map(bodyFor);
-    for (let iteration = 0; iteration < (stage === "deck" ? 3 : 4); iteration++) {
+    for (let iteration = 0; iteration < 4; iteration++) {
       for (let i = 0; i < actors.length; i++) for (let j = i + 1; j < actors.length; j++) {
         const a = actors[i], b = actors[j];
         const bodyA = bodies[i], bodyB = bodies[j];
@@ -630,7 +633,7 @@ function PhysicalCard3D({
         targetRotZ = -angle * 0.12;
 
         // La carte n°1 (indexInFamily = 0) est au-dessus du paquet de 6, orientée vers le joueur
-        const stackOffset = (5 - indexInFamily) * 0.028;
+        const stackOffset = (5 - indexInFamily) * 0.04;
 
         let baseX = Math.sin(angle) * arcRadius + Math.sin(targetRotY) * stackOffset + jitter.offsetX;
         let baseZ = -Math.cos(angle) * (arcRadius * 0.42) + 2.0 + Math.cos(targetRotY) * stackOffset;
@@ -802,7 +805,9 @@ function PhysicalCard3D({
     // Vitesse de suivi : un seul niveau de lissage visible.
     // Trajectoire pilotée par une progression -> suivi serré ; sinon -> décalage (stagger) par carte,
     // la carte du dessus part en premier et les suivantes la rattrapent (effet d'éventail qui se déploie).
-    const baseLambda = (5 - indexInFamily * 0.4 - familyIndex * 0.05) * motionScale;
+    // Dans le carrousel de paquets, les 6 cartes d'un paquet suivent à la même vitesse : avec un retard
+    // différent par carte, le défilement inverserait l'ordre de la pile (la carte 1 passerait derrière).
+    const baseLambda = (5 - (currentStage === "deck" ? 0 : indexInFamily * 0.4) - familyIndex * 0.05) * motionScale;
     // Paquet rassemblé : vitesse unique, pour que les cartes restent alignées avec le bloc de tranche
     const lambdaTarget =
       currentStage === "deck" && !isDeckSpread
@@ -1352,7 +1357,7 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
       aria-label={lang === "fr" ? "Scène 3D interactive des cartes et des familles de barrages" : "Interactive 3D scene of the dam cards and families"}
     >
       <Canvas
-        camera={{ position: [0, 0.15, 6.8], fov: 42, near: .1, far: 50 }}
+        camera={{ position: [0, 0.15, 6.8], fov: 42, near: .8, far: 40 }}
         dpr={[1, maxDpr]}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ gl }) => { gl.localClippingEnabled = true; }}
@@ -1405,10 +1410,9 @@ export default function Unified3DScene(rawProps: Unified3DSceneProps) {
                   onSelectFamily={props.onSelectFamily}
                   onSelectCard={props.onSelectCard}
                   isHovered={
-                    props.hoveredCardId === card.id ||
-                    (props.currentStage === "deck" &&
-                      !!props.hoveredCardId?.startsWith(family.id) &&
-                      cIdx === 0)
+                    props.currentStage === "deck"
+                      ? cIdx === 0 && !!props.hoveredCardId?.startsWith(family.id)
+                      : props.hoveredCardId === card.id
                   }
                   hoveredIndexInFamily={hoveredIndexInFamily}
                   hoveredFamilyIndex={hoveredFamilyIndex}

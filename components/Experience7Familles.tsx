@@ -1081,44 +1081,48 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               </div>
 
               <div className="flex items-center gap-3">
-              {/* Bouton éventail / paquet */}
+              {/* Bouton éventail / paquet : icône seule, texte au survol */}
               <button
                 onClick={toggleDeckSpread}
-                className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-white/95 text-stone-800 border border-stone-300 hover:bg-stone-50 transition flex items-center gap-2 shadow-lg backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                className="group relative flex h-11 w-11 items-center justify-center rounded-full bg-white/80 text-stone-800 border border-white/80 ring-1 ring-stone-900/5 hover:bg-white transition shadow-[0_8px_24px_-10px_rgba(60,45,20,0.4)] backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
                 aria-label={isDeckSpread ? t.spreadOn : t.spreadOff}
               >
-                <Compass className="w-4 h-4 text-cyan-600" />
-                <span>{isDeckSpread ? t.spreadOn : t.spreadOff}</span>
+                <Compass className="w-5 h-5 text-cyan-600" aria-hidden="true" />
+                <span role="tooltip" aria-hidden="true" className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">{isDeckSpread ? t.spreadOn : t.spreadOff}</span>
               </button>
 
               {/* Boîte de jeu : visible quand le paquet est rassemblé */}
               {!isDeckSpread && (
                 <button
                   onClick={() => setIsBoxed((prev) => !prev)}
-                  className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-white/95 text-stone-800 border border-stone-300 hover:bg-stone-50 transition flex items-center gap-2 shadow-lg backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                  className="group relative flex h-11 w-11 items-center justify-center rounded-full bg-white/80 text-stone-800 border border-white/80 ring-1 ring-stone-900/5 hover:bg-white transition shadow-[0_8px_24px_-10px_rgba(60,45,20,0.4)] backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
                   aria-pressed={isBoxed}
+                  aria-label={isBoxed ? t.boxOut : t.boxIn}
                 >
-                  {isBoxed ? <PackageOpen className="w-4 h-4 text-cyan-600" /> : <Package className="w-4 h-4 text-cyan-600" />}
-                  <span>{isBoxed ? t.boxOut : t.boxIn}</span>
+                  {isBoxed ? <PackageOpen className="w-5 h-5 text-cyan-600" aria-hidden="true" /> : <Package className="w-5 h-5 text-cyan-600" aria-hidden="true" />}
+                  <span role="tooltip" aria-hidden="true" className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">{isBoxed ? t.boxOut : t.boxIn}</span>
                 </button>
               )}
 
               {/* Règles du jeu : le seul lien utile ici, les autres sont dans la barre du haut */}
               <a
                 href={asset(paths.rules(lang))}
-                className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold bg-white/95 text-stone-800 border border-stone-300 hover:bg-stone-50 transition flex items-center gap-2 shadow-lg backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                className="group relative flex h-11 w-11 items-center justify-center rounded-full bg-white/80 text-stone-800 border border-white/80 ring-1 ring-stone-900/5 hover:bg-white transition shadow-[0_8px_24px_-10px_rgba(60,45,20,0.4)] backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none"
+                aria-label={t.rules}
               >
-                <BookOpen className="w-4 h-4 text-[#1b5d78]" />
-                <span>{t.rules}</span>
+                <BookOpen className="w-5 h-5 text-[#1b5d78]" aria-hidden="true" />
+                <span role="tooltip" aria-hidden="true" className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">{t.rules}</span>
               </a>
               </div>
               <a
                 href={LEGAL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
+                title={t.legal}
+                aria-label={t.legal}
                 className="inline-flex min-h-[44px] items-center rounded-lg bg-white/70 px-3 text-xs font-medium text-stone-700 underline underline-offset-2 backdrop-blur-md focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none [@media(max-height:620px)]:hidden"
               >
-                {t.legal}
+                {t.legalShort}
               </a>
             </div>
             </div>
