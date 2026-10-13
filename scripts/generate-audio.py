@@ -70,7 +70,7 @@ PRONUNCIATION = [
     (r"\bFoux\b", "Fou"),
     (r"\ble Las\b(?! Vegas)", "le Lasse"),
     (r"\bRizzanese\b", "Ritsa-nèze"),
-    (r"\bMigouélou\b", "Mi-gou-é-lou"),
+    (r"\bMigouélou\b", "Mi-goué-lou"),  # un « é » isolé entre tirets est lu comme la lettre (« euh, accent aigu »)
     (r"\bGolfech\b", "Golfèche"),
     (r"\bLesseps\b", "Lessepse"),
     (r"\bRiquet\b", "Riqué"),
