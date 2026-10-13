@@ -161,3 +161,15 @@ body {
 @media (max-width: 380px) {
   .topbar-modes button { width: 28px; }
 }
+
+/* Sélecteur de familles : défilement horizontal sans barre visible, bords fondus */
+.family-rail {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x proximity;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+}
+.family-rail::-webkit-scrollbar { display: none; }
+.family-rail > button { scroll-snap-align: center; }
+.family-rail > button, .family-rail > a { scroll-snap-align: start; }

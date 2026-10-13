@@ -66,7 +66,7 @@ export default function MosaicView({ visible = true, onOpenCard, onSearch, onQui
         <div
           role="group"
           aria-label={t.filterByFamily}
-          className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-6xl mx-auto"
+          className="family-rail flex items-center gap-1.5 overflow-x-auto py-1 max-w-6xl mx-auto"
         >
           <button
             onClick={onSearch}

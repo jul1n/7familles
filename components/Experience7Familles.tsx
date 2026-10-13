@@ -1052,7 +1052,7 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
               <div
                 role="group"
                 aria-label={t.quickPick}
-                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/95 border border-stone-200/90 backdrop-blur-xl shadow-lg overflow-x-auto max-w-full"
+                className="family-rail relative flex items-center gap-1 px-5 py-1.5 rounded-full bg-white/70 border border-white/80 ring-1 ring-stone-900/5 backdrop-blur-xl shadow-[0_8px_30px_-12px_rgba(60,45,20,0.35)] overflow-x-auto max-w-full"
               >
                 {FAMILIES.map((fam, idx) => {
                   const isCentered = deckIdx === idx;
@@ -1061,10 +1061,10 @@ export default function Experience7Familles({ lang = "fr" }: { lang?: Lang }) {
                       key={fam.id}
                       data-deck-idx={idx}
                       onClick={() => (isCentered ? setSelectedFamilyId(fam.id) : setDeckScrollOffset(3 - idx))}
-                      className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
+                      className={`min-h-[44px] px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex shrink-0 items-center gap-2 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${
                         isCentered
-                          ? "bg-stone-900 text-white shadow-sm border border-stone-900 scale-105"
-                          : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+                          ? "bg-stone-900 text-white shadow-md ring-1 ring-amber-300/60"
+                          : "text-stone-600 hover:text-stone-900 hover:bg-white/80"
                       }`}
                       title={isCentered ? t.openFamily(fam.name) : t.centerFamily(fam.name)}
                       aria-label={isCentered ? t.openFamily(fam.name) : t.centerFamily(fam.name)}
