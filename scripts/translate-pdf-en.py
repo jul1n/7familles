@@ -33,7 +33,7 @@ FAMILY = {
 
 # Noms courts des listes « membres de la famille » (clé normalisée : apostrophes droites)
 NAMES = {
-    "Propriétaire": "Owner", "Concepteur": "Designer", "Constructeur": "Builder", "Expert sécurité": "Safety expert",
+    "Propriétaire": "Owner", "Concepteur": "Designer", "Conceptrice": "Designer", "Constructeur": "Builder", "Expert sécurité": "Safety expert",
     "Hydrologue": "Hydrologist", "Géologue": "Geologist",
     "Eau potable": "Drinking water", "Hydroélectricité": "Hydroelectricity", "Irrigation": "Irrigation",
     "Régulation débit": "Flow regulation", "Transport": "Transport", "Tourisme": "Tourism",
@@ -101,7 +101,7 @@ DESCRIPTIONS = {
     "Il fait passer les bateaux": "It lets ships pass between the Mediterranean Sea and the Red Sea without having to sail around Africa.",
     "Il retient l'eau des montagnes suisses": "It holds back water from the Swiss mountains to produce electricity with hydroelectric power plants.",
     "Il forme un grand lac": "It forms a large lake by holding back the waters of the Zambezi River, between Zambia and Zimbabwe.",
-    "Située sur le fleuve Yangtsé": "Located on the Yangtze River, it is one of the most powerful hydroelectric dams in the world.",
+    "Situé sur le fleuve Yangtsé": "Located on the Yangtze River, it is one of the most powerful hydroelectric dams in the world.",
     "Il retient les eaux du fleuve Colorado": "It holds back the waters of the Colorado River to produce electricity and manage the region's water.",
     "Multi-usages": "Multi-purpose, it forms a tourist lake, produces electricity, irrigates and regulates the Durance.",
     "Il retient l'eau des montagnes dans": "It holds back mountain water in the Pyrenees to produce electricity with a power plant.",
